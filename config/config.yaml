@@ -1,0 +1,52 @@
+# Add the pathnames to the directories inside quotes, as well as the files' format type (tsv or csv).
+workspace:
+  output_dir: "/path/to/output/directory/"
+  files_dir: "/path/to/file/directory/"
+  filetype: tsv
+
+# Protein markers should be named exactly as in the "Positivity" columns in the csv files.
+# To add a new protein marker, simply add a new line following the format of the previous ones,
+#  without forgetting that the protein marker's name must be inside quotes.
+protein_markers:
+  - "Positivity - Pan-CK* (MV - CYTO)"      # first element
+  - "Positivity - CD45* (MV - CYTO)"        # second element
+  - "Positivity - Vimentin* (MV - CYTO)"    # third element
+  - "Positivity - CD31* (MV - CYTO)"        # ...
+
+# For defining cell types: 
+# - Name all the cell types using quotes.
+# - For each cell type, generate a list containing only 0, 1, and ~ values.
+# - Lists corresponds to the previous protein_markers list and resemble their presense or absent in
+#    the defined type of cells.
+# - 1 means is protein marker is present, 0 means is abscent, ~ means is not being consider as part of
+#    the definition for this cell type.
+# - Lists MUST have the same amount of values as proteins in the protein_markers list.
+# - To add a new cell type, simply add a new line following the format of the previous ones.
+cell_types:
+  "C cells": [0, 0, 1, 0]  # [first element, second element, third element, ...]
+  "T1 cells": [1, 0, 0, 0]
+  "T2 cells": [1, 0, 1, 0]
+  "I cells": [0, 1, ~, 0]
+
+# If needed, please establish the HEX color code for each cell type. If not needed, comment or delete this option.
+# Cell type's name MUST be the same as in cell_types.
+# It MUST contain an "Other cells" name with its corresponding HEX color value.
+# Cell type's names in custom_colors MUST be ordered in descending order.
+custom_colors:
+  "C cells": "#00aded"
+  "I cells": "#ff0000"
+  "Other cells": "#a3a3a3"
+  "T1 cells": "#fbfb00"
+  "T2 cells": "#00ff00"
+
+# Setting this value to True will overwrite previously output files, such as csv files and plots.
+overwrite_existing_files: False
+
+# Setting this value to False will not locally save anndata files and it will require to reprocess
+#  information each time pipeline is run.
+locally_save_anndata_files: True
+
+# Spatial plot adjusts
+spatial_plot:
+  dpi: 300
+  scatter_point_size: 100

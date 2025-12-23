@@ -3,6 +3,7 @@
 
 from pathlib import Path
 import os
+import yaml
 
 import numpy as np
 np.float_ = np.float64
@@ -23,23 +24,52 @@ from scipy.stats import mannwhitneyu
 
 # Functions
 
+## Loading configurations
+def load_config():
+    try:
+        with open("../config/config.yaml", "r") as file:
+            config = yaml.safe_load(file)  # Load YAML into a Python dict
+            config['workspace']['output_dir'] = Path(config['workspace']['output_dir'])
+            config['workspace']['files_dir'] = Path(config['workspace']['output_dir'])
+            return config if config else {}
+    except FileNotFoundError:
+        print("Error: config.yaml not found.")
+    except yaml.YAMLError as e:
+        print("YAML parsing error:", e)
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+    return {}
+
+## Saving adata files
+def save_anndata_files(adata_dicts, adata_dir):
+    for k, adata in adata_dicts.items():
+        adata.write(adata_dir / "Sample_{k}.h5ad")
+
 ## Loading adata files
-def load_anndata_files():
-    sample_names = pd.read_csv(f"{results_dir}Samples Id.csv")['Samples Id'].tolist()
+def load_anndata_files(output_dir):
+    sample_names = pd.read_csv(output_dir / "results/Samples Id.csv")['Samples Id'].tolist()
     adata_dicts = {}
     for sample in sample_names:
-        adata_dicts[sample] = sc.read_h5ad(f"{adata_dir}Sample_{sample}_after_umap.h5ad")
+        adata_path = output_dir / f"adata/Sample_{sample}.h5ad"
+        if os.path.exists(adata_path):
+            adata_dicts[sample] = sc.read_h5ad(adata_path)
+        else:
+            print(f"Unexpected error: Sample_{sample}.h5ad doesn't exists or it's missing.")
+            adata_dicts[sample] = None
     return adata_dicts
 
 ## Obtaining filenames
-def filenames():
-    path = Path(files_dir)
-    entries = list(path.iterdir())
-    filenames = [entry for entry in entries if entry.is_file() and entry.match(f"*objects.{filetype}")]
-    return filenames
+def filenames(files_dir, filetype):
+    if os.path.exists(files_dir):
+        entries = list(files_dir.iterdir())
+        filenames = [entry for entry in entries if entry.is_file() and entry.match(f"*objects.{filetype}")]
+        return filenames
+    else:
+        print("Directory with files doesn't exists or it's missing.")
+        return []
 
 ## Cleaning data
-def cleaned_data(file_names, results_dir, filetype):
+def cleaned_data(file_names, output_dir, filetype='tsv'):
     adata_dicts = {}
     data_dicts  = {}
     for filename in file_names:
@@ -48,7 +78,7 @@ def cleaned_data(file_names, results_dir, filetype):
         data = data[data['Positivity - DAPI (MV - NUC)']==1]                                        # filter out cells without nucleus
         
         temp = pd.concat([data.iloc[:,3], data.iloc[:, 12:]], axis=1)                               # retain only "Name" and data columns
-        temp['Name'] = [f"{s[-5]}{s[-2]}_{i:05}" for s,i in zip(temp['Name'],temp['Name'].index)]   # retain letter and number for identifying samples
+        temp['Name'] = [f"{s[11]}{s[14]}_{i:05}" for s,i in zip(temp['Name'],temp['Name'].index)]   # retain letter and number for identifying samples
         temp.rename(columns={"Name":"cellID"}, inplace=True)
         
         pos_cols = [col for col in temp.columns if "Positivity" in col and "(MV" in col]            # identify columns that says if protein marker is present (1) or abscent (0)
@@ -69,46 +99,73 @@ def cleaned_data(file_names, results_dir, filetype):
         )
         adata_dicts[f"{data.iloc[0,0][:2]}"] = adata
         data_dicts[f"{data.iloc[0,0][:2]}"] = data
+    
     df = pd.DataFrame({"Samples Id": list(data_dicts.keys())})
-    df.to_csv(f"{results_dir}Samples Id.csv", index=False)
+    os.makedirs(output_dir / "results", exist_ok=True)
+    df.to_csv(output_dir / "results/Samples Id.csv", index=False)
+    
     df = pd.DataFrame({"Positivity column names": list(data[pos_cols].columns)})
-    df.to_csv(f"{results_dir}Positivity column names.csv", index=False)
+    df.to_csv(output_dir/ "results/Positivity column names.csv", index=False)
+    
     return data_dicts, adata_dicts
 
-## Assign cell types
-def assign_cell_type(row):
+## Creating cell type dictionary
+def create_cell_type_dict(protein_markers, cell_types):
+    cell_type_dict = {}
     for cell_type, rule in cell_types.items():
+        cell_type_dict[cell_type] = {protein_markers[i]:rule[i] for i in range(len(rule)) if rule[i] is not None}
+    return cell_type_dict
+
+## Assign cell types
+def assign_cell_type(row, cell_type_dict):
+    for cell_type, rule in cell_type_dict.items():
         if all(row[m] == v for m, v in rule.items()):
             return str(cell_type)
     return "Other cells"
 
 ## Labeling cell types
-def labeling_cell_types(data_dicts, adata_dicts, cell_type_dict):
+def labeling_cell_types(data_dicts, adata_dicts, cell_type_dict, output_dir, save_anndata=True):
     for (k_data, data), (k, adata) in zip(data_dicts.items(), adata_dicts.items()):
-        adata.obs['clusters'] = data.apply(assign_cell_type, axis=1).tolist()
+        adata.obs['clusters'] = data.apply(assign_cell_type, axis=1, args=(cell_type_dict,)).tolist()
         for cell_type, _ in cell_type_dict.items():
             adata.obs[f"only {cell_type}"] = [t if t==cell_type else "Other cells" for t in adata.obs['clusters']]
         adata_dicts[k] = adata
+    if save_anndata:
+        path = output_dir / "adata"
+        os.makedirs(path, exist_ok=True)
+        save_anndata_files(adata_dicts,adata_dir=path)
     return adata_dicts
 
-## Saving adata files
-def save_anndata_files(adata_dicts):
-    for k, adata in adata_dicts.items():
-        adata.write(f"{adata_dir}Sample_{k}_after_umap.h5ad")
+## Create or load anndata
+def create_or_load_anndata(config):
+    output_dir = config['workspace']['output_dir']
+    if os.path.exists(output_dir / "results/Samples Id.csv"):
+        adata_dicts = load_anndata_files(output_dir)
+    else: 
+        file_names = filenames(config['workspace']['files_dir'], config['workspace']['filetype'])
+        data_dicts, adata_dicts = cleaned_data(
+            file_names   = file_names, 
+            output_dir   = output_dir, 
+            filetype     = config['workspace']['filetype']
+        )
+        cell_type_dict = create_cell_type_dict(config['protein_markers'], config['cell_types'])
+        adata_dicts = labeling_cell_types(data_dicts, adata_dicts, cell_type_dict, output_dir, save_anndata = config['locally_save_anndata_files'])
+    return adata_dicts
+
 
 ## Plotting spacial data
-def plot_spatial(adata_dicts,custom_colors,dpi=300,size=100):
+def plot_spatial(adata_dicts,custom_colors,output_dir,overwrite_existing_files=False,dpi=300,size=100):
     for k, adata in adata_dicts.items():
         title_name = f"Sample {k} ({adata.n_obs} cells)"
-        save_namefile = f"{plots_dir}Spatial - {title_name}.png"
-        if os.path.exists(save_namefile) and not override_existing_plots:
+        save_namefile = output_dir / f"plots/Spatial - {title_name}.png"
+        if os.path.exists(save_namefile) and not overwrite_existing_files:
             for cell_type, selected_color in custom_colors.items():
                 if cell_type=='Other cells': continue
                 if (adata.obs['clusters'] == cell_type).sum()==0: continue
                 
-                title_name = f"Sample {k} - {cell_type} ({adata.n_obs} cells)"
-                save_namefile = f"{plots_dir}Spatial - {title_name}.png"
-                if os.path.exists(save_namefile) and not override_existing_plots: continue
+                title_name2 = f"Sample {k} - {cell_type} ({adata.n_obs} cells)"
+                save_namefile2 = output_dir / f"plots/Spatial - {title_name2}.png"
+                if os.path.exists(save_namefile2) and not overwrite_existing_files: continue
                 
                 color_spatial = f"only {cell_type}"
                 cmap_gene = selected_color
@@ -121,7 +178,7 @@ def plot_spatial(adata_dicts,custom_colors,dpi=300,size=100):
                     adata, 
                     shape=None, 
                     color=color_spatial,
-                    title=title_name,
+                    title=title_name2,
                     dpi=dpi,
                     cmap=cmap_gene,
                     palette=own_palette,
@@ -130,10 +187,9 @@ def plot_spatial(adata_dicts,custom_colors,dpi=300,size=100):
                 ax.set_facecolor("black")
                 ax.set_aspect('equal')
                 fig.tight_layout()
-                plt.savefig(save_namefile)
+                plt.savefig(save_namefile2)
                 plt.close()
             continue
-        
         color_spatial = "clusters"
         cmap_gene = None
         which_colors = []
@@ -163,9 +219,9 @@ def plot_spatial(adata_dicts,custom_colors,dpi=300,size=100):
             if cell_type=='Other cells': continue
             if (adata.obs['clusters'] == cell_type).sum()==0: continue
             
-            title_name = f"Sample {k} - {cell_type} ({adata.n_obs} cells)"
-            save_namefile = f"{plots_dir}Spatial - {title_name}.png"
-            if os.path.exists(save_namefile) and not override_existing_plots: continue
+            title_name2 = f"Sample {k} - {cell_type} ({adata.n_obs} cells)"
+            save_namefile2 = output_dir / f"plots/Spatial - {title_name2}.png"
+            if os.path.exists(save_namefile2) and not overwrite_existing_files: continue
             
             color_spatial = f"only {cell_type}"
             cmap_gene = selected_color
@@ -178,7 +234,7 @@ def plot_spatial(adata_dicts,custom_colors,dpi=300,size=100):
                 adata, 
                 shape=None, 
                 color=color_spatial,
-                title=title_name,
+                title=title_name2,
                 dpi=dpi,
                 cmap=cmap_gene,
                 palette=own_palette,
@@ -187,15 +243,15 @@ def plot_spatial(adata_dicts,custom_colors,dpi=300,size=100):
             ax.set_facecolor("black")
             ax.set_aspect('equal')
             fig.tight_layout()
-            plt.savefig(save_namefile)
+            plt.savefig(save_namefile2)
             plt.close()
 
 ## Calculating cell proportions and saving them in csv files
-def calculate_cell_proportions(adata_dicts,custom_colors,pie_plot=False):
+def calculate_cell_proportions(adata_dicts,custom_colors, output_dir, overwrite_existing_files=False):
     for k, adata in adata_dicts.items():
         title_name = f"Sample {k} ({adata.n_obs} cells)"
-        save_namefile = f"{results_dir}Cell type proportions - {title_name}.csv"
-        if os.path.exists(save_namefile) and not override_existing_plots: continue
+        save_namefile = output_dir / f"results/Cell type proportions - {title_name}.csv"
+        if os.path.exists(save_namefile) and not overwrite_existing_files: continue
             
         sum_dict = {}
         sum_dict["Total cells"] = adata.n_obs
@@ -206,6 +262,13 @@ def calculate_cell_proportions(adata_dicts,custom_colors,pie_plot=False):
             prop_dict[cell_type] = str(np.round(sum_dict[cell_type]/sum_dict["Total cells"]*100,2))+"%"
         
         df = pd.DataFrame(data = {cell_type:[sum_dict[cell_type],prop_dict[cell_type]] for cell_type,_ in custom_colors.items()}, index = ["Total cells in cell type", "Percentage"])
-        df.to_csv(f"{results_dir}Cell type proportions - {title_name}.csv", index=False)
-        
-        if pie_plot: plot_pie_plots(sum_dict,custom_colors,title_name)
+        df.to_csv(save_namefile, index=False)
+
+
+
+
+
+
+
+
+
