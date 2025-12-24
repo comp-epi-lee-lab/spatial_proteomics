@@ -1,8 +1,6 @@
-
-# Load needed libraries
+# Loading needed libraries
 
 from pathlib import Path
-import os
 import yaml
 
 import numpy as np
@@ -25,53 +23,120 @@ from scipy.stats import mannwhitneyu
 # Functions
 
 ## Loading configurations
-def load_config():
-    try:
-        with open("../config/config.yaml", "r") as file:
-            config = yaml.safe_load(file)  # Load YAML into a Python dict
-            config['workspace']['output_dir'] = Path(config['workspace']['output_dir'])
-            config['workspace']['files_dir'] = Path(config['workspace']['files_dir'])
-            return config if config else {}
-    except FileNotFoundError:
-        print("Error: config.yaml not found.")
-    except yaml.YAMLError as e:
-        print("YAML parsing error:", e)
-    except Exception as e:
-        print(f"Unexpected error: {e}")
-    return {}
+def load_config(config_path):
+    """
+    Loads and validates a YAML configuration file.
+    
+    Parameters
+    -----
+    config_path : str | Path
+        Path to the YAML configuration file.
+
+    Return
+    ------
+    Dict
+        Parsed configuration dictionary.
+    """
+    config_path = Path(config_path)
+    if not config_path.exists(): raise FileNotFoundError(f"Config file not found: {config_path}")
+    with open(config_path, "r") as file:
+        try: config = yaml.safe_load(file)
+        except yaml.YAMLError as e: raise ValueError(f"YAML parsing error in {config_path}") from e
+    if not config: raise ValueError("Config file is empty")
+    config['workspace']['input_dir'] = Path(config['workspace']['input_dir'])
+    config['workspace']['output_dir'] = Path(config['workspace']['output_dir'])
+    return config
 
 ## Saving adata files
 def save_anndata_files(adata_dicts, adata_dir):
+    """
+    Saves AnnData files in anndata directory.
+    
+    Parameters
+    -----
+    adata_dicts : Dict[str:AnnData]
+        Dictionary containing multiple annotated data matrices.
+    adata_dir : Path
+        Path to the anndata directory.
+    """
     for k, adata in adata_dicts.items():
         adata.write(adata_dir / f"Sample_{k}.h5ad")
 
 ## Loading adata files
 def load_anndata_files(output_dir):
-    if os.path.exists(output_dir / "results/Samples Id.csv"):
-        sample_names = pd.read_csv(output_dir / "results/Samples Id.csv")['Samples Id'].tolist()
+    """
+    Loads AnnData files from anndata directory (if they exists).
+    
+    Parameters
+    -----
+    output_dir : Path
+        Path to the output directory.
+
+    Return
+    ------
+    Dict[str:AnnData] | Dict[str:None] | Dict
+       Dictionary containing multiple annotated data matrices. 
+    """
+    filepath = output_dir / "results" / "Samples Id.csv"
+    if filepath.exists():
+        sample_names = pd.read_csv(filepath)['Samples Id'].tolist()
         adata_dicts = {}
         for sample in sample_names:
-            adata_path = output_dir / f"adata/Sample_{sample}.h5ad"
-            if os.path.exists(adata_path):
+            adata_path = output_dir / "adata" / f"Sample_{sample}.h5ad"
+            if adata_path.exists():
                 adata_dicts[sample] = sc.read_h5ad(adata_path)
             else:
                 print(f"Unexpected error: Sample_{sample}.h5ad doesn't exists or it's missing.")
                 adata_dicts[sample] = None
         return adata_dicts
-    return None
+    print(f"File '{filepath}' doesn't exists or it's missing. An empty dictionary is returned.")
+    return {}
 
 ## Obtaining filenames
-def filenames(files_dir, filetype):
-    if os.path.exists(files_dir):
-        entries = list(files_dir.iterdir())
+def filenames(input_dir, filetype):
+    """
+    Gets files' paths from input directory.
+    
+    Parameters
+    -----
+    input_dir : Path
+        Path to the input directory.
+    filetype : str
+        File extension to search.
+
+    Return
+    ------
+    List[str]
+       List containing multiple paths to input files. 
+    """
+    if input_dir.exists():
+        entries = list(input_dir.iterdir())
         filenames = [entry for entry in entries if entry.is_file() and entry.match(f"*objects.{filetype}")]
         return filenames
-    else:
-        print("Directory with files doesn't exists or it's missing.")
-        return []
+    print("Input directory doesn't exists or it's missing. An empty list is returned.")
+    return []
 
 ## Cleaning data
 def cleaned_data(file_names, output_dir, filetype='tsv'):
+    """
+    Performs QC to input data and generates AnnData dictionary.
+    
+    Parameters
+    -----
+    file_names : List[str]
+        List containing multiple paths to input files.
+    output_dir : Path
+        Path to the output directory.
+    filetype : str
+        File extension of all input files.
+
+    Return
+    ------
+    data_dicts : Dict[str:pd.DataFrame]
+       Dictionary containing all data cleaned. 
+    adata_dicts : Dict[str:AnnData]
+       Dictionary containing multiple annotated data matrices. 
+    """
     adata_dicts = {}
     data_dicts  = {}
     for filename in file_names:
@@ -103,16 +168,32 @@ def cleaned_data(file_names, output_dir, filetype='tsv'):
         data_dicts[f"{data.iloc[0,0][:2]}"] = data
     
     df = pd.DataFrame({"Samples Id": list(data_dicts.keys())})
-    os.makedirs(output_dir / "results", exist_ok=True)
-    df.to_csv(output_dir / "results/Samples Id.csv", index=False)
+    results_path = output_dir / "results"
+    results_path.mkdir(parents=True, exist_ok=True)
+    df.to_csv(results_path / "Samples Id.csv", index=False)
     
     df = pd.DataFrame({"Positivity column names": list(data[pos_cols].columns)})
-    df.to_csv(output_dir/ "results/Positivity column names.csv", index=False)
+    df.to_csv(results_path/ "Positivity column names.csv", index=False)
     
     return data_dicts, adata_dicts
 
 ## Creating cell type dictionary
 def create_cell_type_dict(protein_markers, cell_types):
+    """
+    Creates a dictionary with the definition of the pre-established cell types considering the presence or absent of protein markers.
+    
+    Parameters
+    -----
+    protein_markers : List[str]
+        List containing protein markers.
+    cell_types : Dict[str:List]
+        Dictionary containing cell types as keys and a list with 0, 1, and None as values.
+
+    Return
+    ------
+    Dict[str:Dict]
+       Dictionary containing the definition of each cell types.
+    """
     cell_type_dict = {}
     for cell_type, rule in cell_types.items():
         cell_type_dict[cell_type] = {protein_markers[i]:rule[i] for i in range(len(rule)) if rule[i] is not None}
@@ -120,6 +201,21 @@ def create_cell_type_dict(protein_markers, cell_types):
 
 ## Assign cell types
 def assign_cell_type(row, cell_type_dict):
+    """
+    Assigns a cell type to a cell.
+    
+    Parameters
+    -----
+    row : pd.Series()
+        Row from DataFrame to modify.
+    cell_type_dict : Dict[str:Dict]
+        Dictionary containing the definition of each cell types.
+
+    Return
+    ------
+    str
+       Assigned cell type.
+    """
     for cell_type, rule in cell_type_dict.items():
         if all(row[m] == v for m, v in rule.items()):
             return str(cell_type)
@@ -127,22 +223,56 @@ def assign_cell_type(row, cell_type_dict):
 
 ## Labeling cell types
 def labeling_cell_types(data_dicts, adata_dicts, cell_type_dict, output_dir, save_anndata=True):
+    """
+    Labels all cells in AnnData with the corresponding cell type.
+    
+    Parameters
+    -----
+    data_dicts : Dict[str:pd.DataFrame]
+       Dictionary containing all data cleaned. 
+    adata_dicts : Dict[str:AnnData]
+       Dictionary containing multiple annotated data matrices. 
+    cell_type_dict : Dict[str:Dict]
+        Dictionary containing the definition of each cell types.
+    output_dir : Path
+        Path to the output directory.
+    save_anndata : Bool (Optional; Default is True)
+        Boolean value to decide if AnnData files will be saved in anndata directory or not.
+
+    Return
+    ------
+    adata_dicts : Dict[str:AnnData]
+       Dictionary containing multiple updated annotated data matrices. 
+    """
     for (k_data, data), (k, adata) in zip(data_dicts.items(), adata_dicts.items()):
         adata.obs['clusters'] = data.apply(assign_cell_type, axis=1, args=(cell_type_dict,)).tolist()
         for cell_type, _ in cell_type_dict.items():
             adata.obs[f"only {cell_type}"] = [t if t==cell_type else "Other cells" for t in adata.obs['clusters']]
         adata_dicts[k] = adata
     if save_anndata:
-        path = output_dir / "adata"
-        os.makedirs(path, exist_ok=True)
-        save_anndata_files(adata_dicts,adata_dir=path)
+        adata_path = output_dir / "adata"
+        adata_path.mkdir(parents=True, exist_ok=True)
+        save_anndata_files(adata_dicts,adata_dir=adata_path)
     return adata_dicts
 
 ## Create or load anndata
 def create_or_load_anndata(config):
+    """
+    Creates or loads AnnData files from anndata directory (if they exists).
+    
+    Parameters
+    -----
+    config : Dict
+        Parsed configuration dictionary.
+
+    Return
+    ------
+    adata_dicts : Dict[str:AnnData]
+       Dictionary containing multiple annotated data matrices. 
+    """
     output_dir = config['workspace']['output_dir']
     adata_dicts = load_anndata_files(output_dir)
-    if any(v is None for v in adata_dicts.values()) or adata_dicts is None:
+    if any(v is None for v in adata_dicts.values()) or not adata_dicts:
         print("Generating anndata files for analysis...")
         file_names = filenames(config['workspace']['files_dir'], config['workspace']['filetype'])
         data_dicts, adata_dicts = cleaned_data(
@@ -161,19 +291,38 @@ def create_or_load_anndata(config):
 
 ## Plotting spacial data
 def plot_spatial(adata_dicts,custom_colors,output_dir,overwrite_existing_files=False,dpi=300,size=100):
+    """
+    Plots spatial data from AnnData and saves it in plots directory.
+    
+    Parameters
+    -----
+    adata_dicts : Dict[str:AnnData]
+       Dictionary containing multiple annotated data matrices. 
+    custom_colors : Dict[str:str]
+       Dictionary containing HEX colors per cell type. 
+    output_dir : Path
+        Path to the output directory.
+    overwrite_existing_files : Bool (Optional; Default is False)
+        Boolean value to decide if plots will be overwrited in plots directory or not.
+    dpi : int (Optional; Default is 300)
+        Dots per inch for spatial plot.
+    size : int (Optional; Default is 100)
+        Scatter dots size for spatial plot.
+    """
+    plots_path = output_dir / "plots" 
+    plots_path.mkdir(parents=True, exist_ok=True)
     for k, adata in adata_dicts.items():
-        os.makedirs(output_dir / "plots", exist_ok=True)
         title_name = f"Sample {k} ({adata.n_obs} cells)"
-        save_namefile = output_dir / f"plots/Spatial - {title_name}.png"
-        if os.path.exists(save_namefile) and not overwrite_existing_files:
+        save_namefile = plots_path / f"Spatial - {title_name}.png"
+        if save_namefile.exists() and not overwrite_existing_files:
             print(f"File 'Spatial - {title_name}.png' already exists...")
             for cell_type, selected_color in custom_colors.items():
                 if cell_type=='Other cells': continue
                 if (adata.obs['clusters'] == cell_type).sum()==0: continue
                 
                 title_name2 = f"Sample {k} - {cell_type} ({adata.n_obs} cells)"
-                save_namefile2 = output_dir / f"plots/Spatial - {title_name2}.png"
-                if os.path.exists(save_namefile2) and not overwrite_existing_files:
+                save_namefile2 = plots_path / f"Spatial - {title_name2}.png"
+                if save_namefile2.exists() and not overwrite_existing_files:
                     print(f"File 'Spatial - {title_name2}.png' already exists...")
                     continue
                 color_spatial = f"only {cell_type}"
@@ -231,8 +380,8 @@ def plot_spatial(adata_dicts,custom_colors,output_dir,overwrite_existing_files=F
             if (adata.obs['clusters'] == cell_type).sum()==0: continue
             
             title_name2 = f"Sample {k} - {cell_type} ({adata.n_obs} cells)"
-            save_namefile2 = output_dir / f"plots/Spatial - {title_name2}.png"
-            if os.path.exists(save_namefile2) and not overwrite_existing_files: 
+            save_namefile2 = plots_path / f"Spatial - {title_name2}.png"
+            if save_namefile2.exists() and not overwrite_existing_files: 
                 print(f"File 'Spatial - {title_name2}.png' already exists...")
                 continue
             color_spatial = f"only {cell_type}"
@@ -261,10 +410,24 @@ def plot_spatial(adata_dicts,custom_colors,output_dir,overwrite_existing_files=F
 
 ## Calculating cell proportions and saving them in csv files
 def calculate_cell_proportions(adata_dicts,custom_colors, output_dir, overwrite_existing_files=False):
+    """
+    Quantifies cell population from AnnData and saves it to csv files in results directory.
+    
+    Parameters
+    -----
+    adata_dicts : Dict[str:AnnData]
+       Dictionary containing multiple annotated data matrices. 
+    custom_colors : Dict[str:str]
+       Dictionary containing HEX colors per cell type. 
+    output_dir : Path
+        Path to the output directory.
+    overwrite_existing_files : Bool (Optional; Default is False)
+        Boolean value to decide if plots will be overwrited in plots directory or not.
+    """
     for k, adata in adata_dicts.items():
         title_name = f"Sample {k} ({adata.n_obs} cells)"
-        save_namefile = output_dir / f"results/Cell type proportions - {title_name}.csv"
-        if os.path.exists(save_namefile) and not overwrite_existing_files: 
+        save_namefile = output_dir / "results" / f"Cell type proportions - {title_name}.csv"
+        if save_namefile.exists() and not overwrite_existing_files: 
             print(f"File 'Cell type proportions - {title_name}' already exists...")
             continue
         sum_dict = {}
