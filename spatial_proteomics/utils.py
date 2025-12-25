@@ -139,42 +139,45 @@ def cleaned_data(file_names, output_dir, filetype='tsv'):
     """
     adata_dicts = {}
     data_dicts  = {}
-    for filename in file_names:
-        separator = '\t' if filetype=='tsv' else ','
-        data = pd.read_csv(f"{filename}",sep=separator)
-        data = data[data['Positivity - DAPI (MV - NUC)']==1]                                        # filter out cells without nucleus
+    if len(file_names)!=0:
+        for filename in file_names:
+            separator = '\t' if filetype=='tsv' else ','
+            data = pd.read_csv(f"{filename}",sep=separator)
+            data = data[data['Positivity - DAPI (MV - NUC)']==1]                                        # filter out cells without nucleus
+            
+            temp = pd.concat([data.iloc[:,3], data.iloc[:, 12:]], axis=1)                               # retain only "Name" and data columns
+            temp['Name'] = [f"{s[11]}{s[14]}_{i:05}" for s,i in zip(temp['Name'],temp['Name'].index)]   # retain letter and number for identifying samples
+            temp.rename(columns={"Name":"cellID"}, inplace=True)
+            
+            pos_cols = [col for col in temp.columns if "Positivity" in col and "(MV" in col]            # identify columns that says if protein marker is present (1) or abscent (0)
+            data = temp[~(temp[pos_cols].eq(-1).any(axis=1))]                                           # filter out those cells that does contain a NaN value (-1) in the previous columns
+            columns_nuc = data.columns[                                                                 # keep columns with protein intensity in the nucleus
+                (data.columns.isin(['cellID']))|
+                ((data.columns.str.contains("MV - NUC - "))&(~data.columns.str.contains("Type")))
+            ]
+            columns_pos = data.columns[data.columns.isin(['cellID', 'X-coordinate', 'Y-coordinate'])]   # keep spatial columns
+            
+            adata = AnnData(                                                                            # generate AnnData file to include spatial data
+                data[columns_nuc].iloc[:,1:],
+                obsm={
+                    "spatial": data[columns_pos].iloc[:,1:].to_numpy(),
+                    "ID_cell":data[['cellID']].to_numpy(),
+                    "Positivity":data[pos_cols].to_numpy()
+                }
+            )
+            adata_dicts[f"{data.iloc[0,0][:2]}"] = adata
+            data_dicts[f"{data.iloc[0,0][:2]}"] = data
         
-        temp = pd.concat([data.iloc[:,3], data.iloc[:, 12:]], axis=1)                               # retain only "Name" and data columns
-        temp['Name'] = [f"{s[11]}{s[14]}_{i:05}" for s,i in zip(temp['Name'],temp['Name'].index)]   # retain letter and number for identifying samples
-        temp.rename(columns={"Name":"cellID"}, inplace=True)
+        df = pd.DataFrame({"Samples Id": list(data_dicts.keys())})
+        results_path = output_dir / "results"
+        results_path.mkdir(parents=True, exist_ok=True)
+        df.to_csv(results_path / "Samples Id.csv", index=False)
         
-        pos_cols = [col for col in temp.columns if "Positivity" in col and "(MV" in col]            # identify columns that says if protein marker is present (1) or abscent (0)
-        data = temp[~(temp[pos_cols].eq(-1).any(axis=1))]                                           # filter out those cells that does contain a NaN value (-1) in the previous columns
-        columns_nuc = data.columns[                                                                 # keep columns with protein intensity in the nucleus
-            (data.columns.isin(['cellID']))|
-            ((data.columns.str.contains("MV - NUC - "))&(~data.columns.str.contains("Type")))
-        ]
-        columns_pos = data.columns[data.columns.isin(['cellID', 'X-coordinate', 'Y-coordinate'])]   # keep spatial columns
-        
-        adata = AnnData(                                                                            # generate AnnData file to include spatial data
-            data[columns_nuc].iloc[:,1:],
-            obsm={
-                "spatial": data[columns_pos].iloc[:,1:].to_numpy(),
-                "ID_cell":data[['cellID']].to_numpy(),
-                "Positivity":data[pos_cols].to_numpy()
-            }
-        )
-        adata_dicts[f"{data.iloc[0,0][:2]}"] = adata
-        data_dicts[f"{data.iloc[0,0][:2]}"] = data
-    
-    df = pd.DataFrame({"Samples Id": list(data_dicts.keys())})
-    results_path = output_dir / "results"
-    results_path.mkdir(parents=True, exist_ok=True)
-    df.to_csv(results_path / "Samples Id.csv", index=False)
-    
-    df = pd.DataFrame({"Positivity column names": list(data[pos_cols].columns)})
-    df.to_csv(results_path/ "Positivity column names.csv", index=False)
-    
+        df = pd.DataFrame({"Positivity column names": list(data[pos_cols].columns)})
+        df.to_csv(results_path/ "Positivity column names.csv", index=False)
+    else: 
+        data_dicts = {}
+        adata_dicts = {}
     return data_dicts, adata_dicts
 
 ## Creating cell type dictionary
@@ -274,12 +277,13 @@ def create_or_load_anndata(config):
     adata_dicts = load_anndata_files(output_dir)
     if any(v is None for v in adata_dicts.values()) or not adata_dicts:
         print("Generating anndata files for analysis...")
-        file_names = filenames(config['workspace']['files_dir'], config['workspace']['filetype'])
+        file_names = filenames(config['workspace']['input_dir'], config['workspace']['filetype'])
         data_dicts, adata_dicts = cleaned_data(
             file_names   = file_names, 
             output_dir   = output_dir, 
             filetype     = config['workspace']['filetype']
         )
+        if len(adata_dicts)==0: raise ValueError("No anndata files were generated. Please check your input directory and configuration file.")
         print("Anndata generated!")
         cell_type_dict = create_cell_type_dict(config['protein_markers'], config['cell_types'])
         adata_dicts = labeling_cell_types(data_dicts, adata_dicts, cell_type_dict, output_dir, save_anndata = config['locally_save_anndata_files'])

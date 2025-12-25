@@ -1,4 +1,4 @@
-from .utils import *
+from spatial_proteomics.utils import *
 import argparse
 import sys
 

@@ -1,7 +1,7 @@
 # Add the pathnames to the directories inside quotes, as well as the files' format type (tsv or csv).
 workspace:
-  input_dir: "/data/example/input"
-  output_dir: "/data/example"
+  input_dir: "./data/example/input"
+  output_dir: "./data/example"
   filetype: tsv
 
 # Protein markers should be named exactly as in the "Positivity" columns in the csv files.

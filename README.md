@@ -72,11 +72,10 @@ Zamora-Erazo, S., Franco-Barraza, J., Lee, H. **SpPrAn**: a Bioinformatics pipel
 
 (A formal software citation will be added once licensing is finalized.)
 
-Contact
+### Contact
 For questions, issues, or collaboration inquiries, please contact:
-- Sergio Zamora-Erazo
-Lee Lab
-Cancer Epigenetics Institute
-Fox Chase Cancer Center
-Philadelphia, PA, USA
-sergio.zamora-erazo@fccc.edu
+- Sergio Zamora-Erazo     
+sergio.zamora-erazo@fccc.edu     
+Lee Lab, Cancer Epigenetics Institute     
+Fox Chase Cancer Center     
+Philadelphia, PA, USA     
