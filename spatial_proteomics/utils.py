@@ -145,13 +145,13 @@ def cleaned_data(file_names, output_dir, filetype='tsv'):
             data = pd.read_csv(f"{filename}",sep=separator)
             if data.columns.isin(['Positivity - DAPI (MV - NUC)']).any():
                 data = data[data['Positivity - DAPI (MV - NUC)']==1]                                        # filter out cells without nucleus
-            
+            else: print("WARNING: This pipeline uses 'Positivity - DAPI' for filtering out cells without nucleus. However, such column was not found.\nContinue without filtering...")
             # temp = pd.concat([data.iloc[:,3], data.iloc[:, 12:]], axis=1)                               # retain only "Name" and data columns
             name_of_file = str(filename)
             if name_of_file[:11]=='COMET_6x6 (':
-                data['Name'] = [f"{s[11]}{s[14]}_{i:05}" for s,i in zip([name_of_file]*len(data),data.index)]   # retain letter and number for identifying samples
+                data['Name'] = [f"{s[11]}{s[14]}_{i:05}" for s,i in zip([name_of_file.split('/')[-1]]*len(data),data.index)]   # retain letter and number for identifying samples
             else:
-                data['Name'] = [f"{s}_{i:05}" for s,i in zip([name_of_file[:-12]]*len(data),data.index)]        # retain filename for identifying samples
+                data['Name'] = [f"{s}_{i:05}" for s,i in zip([name_of_file.split('/')[-1][:-12]]*len(data),data.index)]        # retain filename for identifying samples
             # temp['Name'] = [f"{s[11]}{s[14]}_{i:05}" for s,i in zip(temp['Name'],temp['Name'].index)]   # retain letter and number for identifying samples
             data.rename(columns={"Name":"cellID"}, inplace=True)
             
@@ -171,11 +171,15 @@ def cleaned_data(file_names, output_dir, filetype='tsv'):
                     "spatial": data[columns_pos].iloc[:,1:].to_numpy(),
                     "ID_cell":data[['cellID']].to_numpy(),
                     "Positivity":data[pos_cols].to_numpy()
+                },
+                uns={
+                    "spatial":{"unique":{}}
                 }
             )
-            adata_dicts[f"{data.iloc[0,0][:2]}"] = adata
-            data_dicts[f"{data.iloc[0,0][:2]}"] = data[["cellID"]+pos_cols.tolist()]
-        
+
+            data = data[["cellID"]+pos_cols.tolist()]
+            adata_dicts[f"{data.iloc[0,0][-8:-6]}"] = adata
+            data_dicts[f"{data.iloc[0,0][-8:-6]}"] = data
         df = pd.DataFrame({"Samples Id": list(data_dicts.keys())})
         results_path = output_dir / "results"
         results_path.mkdir(parents=True, exist_ok=True)
@@ -340,19 +344,20 @@ def plot_spatial(adata_dicts,custom_colors,output_dir,overwrite_existing_files=F
                     print(f"File 'Spatial - {title_name2}.png' already exists...")
                     continue
                 color_spatial = f"only {cell_type}"
-                cmap_gene = selected_color
+                # cmap_gene = selected_color
                 own_palette_list = [selected_color,custom_colors['Other cells']] if cell_type<'Other cells' else [custom_colors['Other cells'],selected_color]
                 own_palette = ListedColormap(own_palette_list)
-                cmap_gene = ListedColormap(cmap_gene)
+                # cmap_gene = ListedColormap(cmap_gene)
                 
                 fig, ax = plt.subplots()
                 sq.pl.spatial_scatter(
                     adata, 
                     shape=None, 
+                    library_id="unique",
                     color=color_spatial,
                     title=title_name2,
                     dpi=dpi,
-                    cmap=cmap_gene,
+                    # cmap=cmap_gene,
                     palette=own_palette,
                     size=size,
                     ax=ax)
@@ -364,7 +369,7 @@ def plot_spatial(adata_dicts,custom_colors,output_dir,overwrite_existing_files=F
                 print(f"File 'Spatial - {title_name2}.png' created!")
             continue
         color_spatial = "clusters"
-        cmap_gene = None
+        # cmap_gene = None
         which_colors = []
         for cell_type,selected_color in custom_colors.items():
             if (adata.obs['clusters'] == cell_type).sum()!=0: which_colors.append(selected_color)
@@ -375,10 +380,11 @@ def plot_spatial(adata_dicts,custom_colors,output_dir,overwrite_existing_files=F
         sq.pl.spatial_scatter(
             adata, 
             shape=None, 
+            library_id="unique",
             color=color_spatial,
             title=title_name,
             dpi=dpi,
-            cmap=cmap_gene,
+            # cmap=cmap_gene,
             palette=own_palette,
             size=size,
             ax=ax)
@@ -399,19 +405,20 @@ def plot_spatial(adata_dicts,custom_colors,output_dir,overwrite_existing_files=F
                 print(f"File 'Spatial - {title_name2}.png' already exists...")
                 continue
             color_spatial = f"only {cell_type}"
-            cmap_gene = selected_color
+            # cmap_gene = selected_color
             own_palette_list = [selected_color,custom_colors['Other cells']] if cell_type<'Other cells' else [custom_colors['Other cells'],selected_color]
             own_palette = ListedColormap(own_palette_list)
-            cmap_gene = ListedColormap(cmap_gene)
+            # cmap_gene = ListedColormap(cmap_gene)
             
             fig, ax = plt.subplots()
             sq.pl.spatial_scatter(
                 adata, 
                 shape=None, 
+                library_id="unique",
                 color=color_spatial,
                 title=title_name2,
                 dpi=dpi,
-                cmap=cmap_gene,
+                # cmap=cmap_gene,
                 palette=own_palette,
                 size=size,
                 ax=ax)

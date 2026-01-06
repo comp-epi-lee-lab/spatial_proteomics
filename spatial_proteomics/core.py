@@ -68,5 +68,5 @@ def main():
         sys.exit(1)
     sppran_steps(config)
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
