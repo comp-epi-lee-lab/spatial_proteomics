@@ -143,14 +143,22 @@ def cleaned_data(file_names, output_dir, filetype='tsv'):
         for filename in file_names:
             separator = '\t' if filetype=='tsv' else ','
             data = pd.read_csv(f"{filename}",sep=separator)
-            data = data[data['Positivity - DAPI (MV - NUC)']==1]                                        # filter out cells without nucleus
+            if data.columns.isin(['Positivity - DAPI (MV - NUC)']).any():
+                data = data[data['Positivity - DAPI (MV - NUC)']==1]                                        # filter out cells without nucleus
             
-            temp = pd.concat([data.iloc[:,3], data.iloc[:, 12:]], axis=1)                               # retain only "Name" and data columns
-            temp['Name'] = [f"{s[11]}{s[14]}_{i:05}" for s,i in zip(temp['Name'],temp['Name'].index)]   # retain letter and number for identifying samples
-            temp.rename(columns={"Name":"cellID"}, inplace=True)
+            # temp = pd.concat([data.iloc[:,3], data.iloc[:, 12:]], axis=1)                               # retain only "Name" and data columns
+            name_of_file = str(filename)
+            if name_of_file[:11]=='COMET_6x6 (':
+                data['Name'] = [f"{s[11]}{s[14]}_{i:05}" for s,i in zip([name_of_file]*len(data),data.index)]   # retain letter and number for identifying samples
+            else:
+                data['Name'] = [f"{s}_{i:05}" for s,i in zip([name_of_file[:-12]]*len(data),data.index)]        # retain filename for identifying samples
+            # temp['Name'] = [f"{s[11]}{s[14]}_{i:05}" for s,i in zip(temp['Name'],temp['Name'].index)]   # retain letter and number for identifying samples
+            data.rename(columns={"Name":"cellID"}, inplace=True)
             
-            pos_cols = [col for col in temp.columns if "Positivity" in col and "(MV" in col]            # identify columns that says if protein marker is present (1) or abscent (0)
-            data = temp[~(temp[pos_cols].eq(-1).any(axis=1))]                                           # filter out those cells that does contain a NaN value (-1) in the previous columns
+            pos_cols = data.columns[(data.columns.str.contains('Positivity'))&(data.columns.str.contains('MV'))]  # identify columns that says if protein marker is present (1) or abscent (0)
+            # pos_cols = [col for col in data.columns if "Positivity" in col and "(MV" in col]
+            # data = temp[~(temp[pos_cols].eq(-1).any(axis=1))]
+            data = data[~(data[pos_cols].eq(-1).any(axis=1))]                                           # filter out those cells that does contain a NaN value (-1) in the previous columns
             columns_nuc = data.columns[                                                                 # keep columns with protein intensity in the nucleus
                 (data.columns.isin(['cellID']))|
                 ((data.columns.str.contains("MV - NUC - "))&(~data.columns.str.contains("Type")))
@@ -166,7 +174,7 @@ def cleaned_data(file_names, output_dir, filetype='tsv'):
                 }
             )
             adata_dicts[f"{data.iloc[0,0][:2]}"] = adata
-            data_dicts[f"{data.iloc[0,0][:2]}"] = data
+            data_dicts[f"{data.iloc[0,0][:2]}"] = data[["cellID"]+pos_cols.tolist()]
         
         df = pd.DataFrame({"Samples Id": list(data_dicts.keys())})
         results_path = output_dir / "results"
@@ -274,7 +282,8 @@ def create_or_load_anndata(config):
        Dictionary containing multiple annotated data matrices. 
     """
     output_dir = config['workspace']['output_dir']
-    adata_dicts = load_anndata_files(output_dir)
+    if not config['overwrite_existing_files']: adata_dicts = load_anndata_files(output_dir)
+    else: adata_dicts = {}
     if any(v is None for v in adata_dicts.values()) or not adata_dicts:
         print("Generating anndata files for analysis...")
         file_names = filenames(config['workspace']['input_dir'], config['workspace']['filetype'])
@@ -294,7 +303,7 @@ def create_or_load_anndata(config):
 
 
 ## Plotting spacial data
-def plot_spatial(adata_dicts,custom_colors,output_dir,overwrite_existing_files=False,dpi=300,size=100):
+def plot_spatial(adata_dicts,custom_colors,output_dir,overwrite_existing_files=False,dpi=300,size=50):
     """
     Plots spatial data from AnnData and saves it in plots directory.
     
@@ -310,9 +319,10 @@ def plot_spatial(adata_dicts,custom_colors,output_dir,overwrite_existing_files=F
         Boolean value to decide if plots will be overwrited in plots directory or not.
     dpi : int (Optional; Default is 300)
         Dots per inch for spatial plot.
-    size : int (Optional; Default is 100)
+    size : int (Optional; Default is 50)
         Scatter dots size for spatial plot.
     """
+    rcParams["figure.figsize"] = (10,10)
     plots_path = output_dir / "plots" 
     plots_path.mkdir(parents=True, exist_ok=True)
     for k, adata in adata_dicts.items():
@@ -349,7 +359,7 @@ def plot_spatial(adata_dicts,custom_colors,output_dir,overwrite_existing_files=F
                 ax.set_facecolor("black")
                 ax.set_aspect('equal')
                 fig.tight_layout()
-                plt.savefig(save_namefile2)
+                plt.savefig(save_namefile2, dpi=dpi)
                 plt.close()
                 print(f"File 'Spatial - {title_name2}.png' created!")
             continue
@@ -375,7 +385,7 @@ def plot_spatial(adata_dicts,custom_colors,output_dir,overwrite_existing_files=F
         ax.set_facecolor("black")
         ax.set_aspect('equal')
         fig.tight_layout()
-        plt.savefig(save_namefile)
+        plt.savefig(save_namefile, dpi=dpi)
         plt.close()
         print(f"File 'Spatial - {title_name}.png' created!")
         
@@ -408,7 +418,7 @@ def plot_spatial(adata_dicts,custom_colors,output_dir,overwrite_existing_files=F
             ax.set_facecolor("black")
             ax.set_aspect('equal')
             fig.tight_layout()
-            plt.savefig(save_namefile2)
+            plt.savefig(save_namefile2, dpi=dpi)
             plt.close()
             print(f"File 'Spatial - {title_name2}.png' created!")
 
