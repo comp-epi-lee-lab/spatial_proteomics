@@ -36,10 +36,7 @@ def spatial_proteomics_pipeline(config_path):
     config_path : str | Path
         Path to the YAML configuration file.
     """
-    try: config = load_config(config_path)
-    except Exception as e:
-        print(f"[ERROR] {e}", file=sys.stderr)
-        sys.exit(1)
+    config = load_config(config_path)
     sppran_steps(config)
 
 def parse_args():
@@ -67,6 +64,3 @@ def main():
         print(f"[ERROR] {e}", file=sys.stderr)
         sys.exit(1)
     sppran_steps(config)
-
-# if __name__ == "__main__":
-#     main()

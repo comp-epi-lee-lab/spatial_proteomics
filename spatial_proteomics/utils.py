@@ -92,14 +92,15 @@ def load_anndata_files(output_dir):
         sample_names = pd.read_csv(filepath)['Samples Id'].tolist()
         adata_dicts = {}
         for sample in sample_names:
+            sample = str(sample)                                                                                             # Ensuring we can deal with numbers as identifiers.
             adata_path = output_dir / "adata" / f"Sample_{sample}.h5ad"
             if adata_path.exists():
                 adata_dicts[sample] = sc.read_h5ad(adata_path)
             else:
-                print(f"Unexpected error: Sample_{sample}.h5ad doesn't exists or it's missing.")
+                print(f"WARNING: Anndata loading cannot be completed. Sample_{sample}.h5ad doesn't exists or it's missing.") # An None value is saved in the dictionary.
                 adata_dicts[sample] = None
         return adata_dicts
-    print(f"File '{filepath}' doesn't exists or it's missing. An empty dictionary is returned.")
+    print(f"WARNING: Anndata loading cannot be completed. File '{filepath}' doesn't exists or it's missing.")                # An empty dictionary is returned.
     return {}
 
 ## Obtaining filenames
@@ -123,7 +124,7 @@ def filenames(input_dir, filetype):
         entries = list(input_dir.iterdir())
         filenames = [entry for entry in entries if entry.is_file() and entry.match(f"*objects.{filetype}")]
         return filenames
-    print("Input directory doesn't exists or it's missing. An empty list is returned.")
+    print(f"WARNING: Input directory '{input_dir}' doesn't exists or it's misspelled.") # An empty list is returned.
     return []
 
 ## Cleaning data
@@ -154,28 +155,24 @@ def cleaned_data(file_names, output_dir, filetype='tsv'):
             separator = '\t' if filetype=='tsv' else ','
             data = pd.read_csv(f"{filename}",sep=separator)
             if data.columns.isin(['Positivity - DAPI (MV - NUC)']).any():
-                data = data[data['Positivity - DAPI (MV - NUC)']==1]                                        # filter out cells without nucleus
+                data = data[data['Positivity - DAPI (MV - NUC)']==1]                                                           # filter out cells without nucleus
             else: print("WARNING: This pipeline uses 'Positivity - DAPI' for filtering out cells without nucleus. However, such column was not found. Continue without filtering...")
-            # temp = pd.concat([data.iloc[:,3], data.iloc[:, 12:]], axis=1)                               # retain only "Name" and data columns
             name_of_file = str(filename)
             if name_of_file[:11]=='COMET_6x6 (':
                 data['Name'] = [f"{s[11]}{s[14]}_{i:05}" for s,i in zip([name_of_file.split('/')[-1]]*len(data),data.index)]   # retain letter and number for identifying samples
             else:
                 data['Name'] = [f"{s}_{i:05}" for s,i in zip([name_of_file.split('/')[-1][:-12]]*len(data),data.index)]        # retain filename for identifying samples
-            # temp['Name'] = [f"{s[11]}{s[14]}_{i:05}" for s,i in zip(temp['Name'],temp['Name'].index)]   # retain letter and number for identifying samples
             data.rename(columns={"Name":"cellID"}, inplace=True)
             
-            pos_cols = data.columns[(data.columns.str.contains('Positivity'))&(data.columns.str.contains('MV'))]  # identify columns that says if protein marker is present (1) or abscent (0)
-            # pos_cols = [col for col in data.columns if "Positivity" in col and "(MV" in col]
-            # data = temp[~(temp[pos_cols].eq(-1).any(axis=1))]
-            data = data[~(data[pos_cols].eq(-1).any(axis=1))]                                           # filter out those cells that does contain a NaN value (-1) in the previous columns
-            columns_nuc = data.columns[                                                                 # keep columns with protein intensity in the nucleus
+            pos_cols = data.columns[(data.columns.str.contains('Positivity'))&(data.columns.str.contains('MV'))]               # identify columns that says if protein marker is present (1) or abscent (0)
+            data = data[~(data[pos_cols].eq(-1).any(axis=1))]                                                                  # filter out those cells that does contain a NaN value (-1) in the previous columns
+            columns_nuc = data.columns[                                                                                        # keep columns with protein intensity in the nucleus
                 (data.columns.isin(['cellID']))|
                 ((data.columns.str.contains("MV - NUC - "))&(~data.columns.str.contains("Type")))
             ]
-            columns_pos = data.columns[data.columns.isin(['cellID', 'X-coordinate', 'Y-coordinate'])]   # keep spatial columns
+            columns_pos = data.columns[data.columns.isin(['cellID', 'X-coordinate', 'Y-coordinate'])]                          # keep spatial columns
             data_temp = data[columns_nuc].iloc[:,1:]
-            adata = AnnData(                                                                            # generate AnnData file to include spatial data
+            adata = AnnData(                                                                                                   # generate AnnData file to include spatial data
                 data_temp.set_index((str(x) for x in data_temp.index)),
                 obsm={
                     "spatial": data[columns_pos].iloc[:,1:].to_numpy(),
@@ -311,7 +308,7 @@ def create_or_load_anndata(config):
         cell_type_dict = create_cell_type_dict(config['protein_markers'], config['cell_types'])
         adata_dicts = labeling_cell_types(data_dicts, adata_dicts, cell_type_dict, output_dir, save_anndata = config['locally_save_anndata_files'])
         if config['locally_save_anndata_files']: print("Anndata saved!")
-        else: print("Anndata not saved...")
+        else: print("WARNING: Anndata not saved.")
     else: print("Anndata loaded!")
     return adata_dicts
 
