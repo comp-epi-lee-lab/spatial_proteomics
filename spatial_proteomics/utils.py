@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import yaml
+import warnings
 
 import numpy as np
 np.float_ = np.float64
@@ -9,7 +10,16 @@ import pandas as pd
 from anndata import AnnData
 
 import scanpy as sc
-import squidpy as sq
+with warnings.catch_warnings(): # Filtering harmless warnings
+    warnings.filterwarnings(
+        "ignore",
+        message=".*Dask DataFrame.*"
+    )
+    warnings.filterwarnings(
+        "ignore",
+        message=".*Import anndata.io.read_text instead.*"
+    )
+    import squidpy as sq
 
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
@@ -145,7 +155,7 @@ def cleaned_data(file_names, output_dir, filetype='tsv'):
             data = pd.read_csv(f"{filename}",sep=separator)
             if data.columns.isin(['Positivity - DAPI (MV - NUC)']).any():
                 data = data[data['Positivity - DAPI (MV - NUC)']==1]                                        # filter out cells without nucleus
-            else: print("WARNING: This pipeline uses 'Positivity - DAPI' for filtering out cells without nucleus. However, such column was not found.\nContinue without filtering...")
+            else: print("WARNING: This pipeline uses 'Positivity - DAPI' for filtering out cells without nucleus. However, such column was not found. Continue without filtering...")
             # temp = pd.concat([data.iloc[:,3], data.iloc[:, 12:]], axis=1)                               # retain only "Name" and data columns
             name_of_file = str(filename)
             if name_of_file[:11]=='COMET_6x6 (':
@@ -164,9 +174,9 @@ def cleaned_data(file_names, output_dir, filetype='tsv'):
                 ((data.columns.str.contains("MV - NUC - "))&(~data.columns.str.contains("Type")))
             ]
             columns_pos = data.columns[data.columns.isin(['cellID', 'X-coordinate', 'Y-coordinate'])]   # keep spatial columns
-            
+            data_temp = data[columns_nuc].iloc[:,1:]
             adata = AnnData(                                                                            # generate AnnData file to include spatial data
-                data[columns_nuc].iloc[:,1:],
+                data_temp.set_index((str(x) for x in data_temp.index)),
                 obsm={
                     "spatial": data[columns_pos].iloc[:,1:].to_numpy(),
                     "ID_cell":data[['cellID']].to_numpy(),
@@ -350,17 +360,22 @@ def plot_spatial(adata_dicts,custom_colors,output_dir,overwrite_existing_files=F
                 # cmap_gene = ListedColormap(cmap_gene)
                 
                 fig, ax = plt.subplots()
-                sq.pl.spatial_scatter(
-                    adata, 
-                    shape=None, 
-                    library_id="unique",
-                    color=color_spatial,
-                    title=title_name2,
-                    dpi=dpi,
-                    # cmap=cmap_gene,
-                    palette=own_palette,
-                    size=size,
-                    ax=ax)
+                with warnings.catch_warnings(): # Filtering harmless warning
+                    warnings.filterwarnings(
+                        "ignore",
+                        message=".*No data for colormapping provided via 'c'. Parameters 'cmap', 'norm' will be ignored.*"
+                    )
+                    sq.pl.spatial_scatter(
+                        adata, 
+                        shape=None, 
+                        library_id="unique",
+                        color=color_spatial,
+                        title=title_name2,
+                        dpi=dpi,
+                        # cmap=cmap_gene,
+                        palette=own_palette,
+                        size=size,
+                        ax=ax)
                 ax.set_facecolor("black")
                 ax.set_aspect('equal')
                 fig.tight_layout()
@@ -377,17 +392,22 @@ def plot_spatial(adata_dicts,custom_colors,output_dir,overwrite_existing_files=F
         own_palette = ListedColormap(own_palette_list)
         
         fig, ax = plt.subplots()
-        sq.pl.spatial_scatter(
-            adata, 
-            shape=None, 
-            library_id="unique",
-            color=color_spatial,
-            title=title_name,
-            dpi=dpi,
-            # cmap=cmap_gene,
-            palette=own_palette,
-            size=size,
-            ax=ax)
+        with warnings.catch_warnings(): # Filtering harmless warning
+            warnings.filterwarnings(
+                "ignore",
+                message=".*No data for colormapping provided via 'c'. Parameters 'cmap', 'norm' will be ignored.*"
+            )
+            sq.pl.spatial_scatter(
+                adata, 
+                shape=None, 
+                library_id="unique",
+                color=color_spatial,
+                title=title_name,
+                dpi=dpi,
+                # cmap=cmap_gene,
+                palette=own_palette,
+                size=size,
+                ax=ax)
         ax.set_facecolor("black")
         ax.set_aspect('equal')
         fig.tight_layout()
@@ -411,17 +431,22 @@ def plot_spatial(adata_dicts,custom_colors,output_dir,overwrite_existing_files=F
             # cmap_gene = ListedColormap(cmap_gene)
             
             fig, ax = plt.subplots()
-            sq.pl.spatial_scatter(
-                adata, 
-                shape=None, 
-                library_id="unique",
-                color=color_spatial,
-                title=title_name2,
-                dpi=dpi,
-                # cmap=cmap_gene,
-                palette=own_palette,
-                size=size,
-                ax=ax)
+            with warnings.catch_warnings(): # Filtering harmless warning
+                warnings.filterwarnings(
+                    "ignore",
+                    message=".*No data for colormapping provided via 'c'. Parameters 'cmap', 'norm' will be ignored.*"
+                )
+                sq.pl.spatial_scatter(
+                    adata, 
+                    shape=None, 
+                    library_id="unique",
+                    color=color_spatial,
+                    title=title_name2,
+                    dpi=dpi,
+                    # cmap=cmap_gene,
+                    palette=own_palette,
+                    size=size,
+                    ax=ax)
             ax.set_facecolor("black")
             ax.set_aspect('equal')
             fig.tight_layout()
