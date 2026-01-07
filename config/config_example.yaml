@@ -31,7 +31,6 @@ cell_types:
 # If needed, please establish the HEX color code for each cell type. If not needed, comment or delete this option.
 # Cell type's name MUST be the same as in cell_types.
 # It MUST contain an "Other cells" name with its corresponding HEX color value.
-# Cell type's names in custom_colors MUST be ordered in descending order.
 custom_colors:
   "C cells": "#00aded"
   "I cells": "#ff0000"

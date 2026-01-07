@@ -383,6 +383,9 @@ def plot_spatial(adata_dicts,custom_colors,output_dir,overwrite_existing_files=F
         color_spatial = "clusters"
         # cmap_gene = None
         which_colors = []
+        colors_temp = list(custom_colors.keys())
+        colors_temp.sort()
+        custom_colors = {k:custom_colors[k] for k in colors_temp}
         for cell_type,selected_color in custom_colors.items():
             if (adata.obs['clusters'] == cell_type).sum()!=0: which_colors.append(selected_color)
         own_palette_list = (which_colors)
