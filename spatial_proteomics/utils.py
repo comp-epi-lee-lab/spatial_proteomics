@@ -157,11 +157,11 @@ def cleaned_data(file_names, output_dir, filetype='tsv'):
             if data.columns.isin(['Positivity - DAPI (MV - NUC)']).any():
                 data = data[data['Positivity - DAPI (MV - NUC)']==1]                                                           # filter out cells without nucleus
             else: print("WARNING: This pipeline uses 'Positivity - DAPI' for filtering out cells without nucleus. However, such column was not found. Continue without filtering...")
-            name_of_file = str(filename)
+            name_of_file = str(filename.split('/')[-1].split('\\')[-1])
             if name_of_file[:11]=='COMET_6x6 (':
-                data['Name'] = [f"{s[11]}{s[14]}_{i:05}" for s,i in zip([name_of_file.split('/')[-1]]*len(data),data.index)]   # retain letter and number for identifying samples
+                data['Name'] = [f"{s[11]}{s[14]}_{i:05}" for s,i in zip([name_of_file]*len(data),data.index)]   # retain letter and number for identifying samples
             else:
-                data['Name'] = [f"{s}_{i:05}" for s,i in zip([name_of_file.split('/')[-1][:-12]]*len(data),data.index)]        # retain filename for identifying samples
+                data['Name'] = [f"{s}_{i:05}" for s,i in zip([name_of_file[:-12]]*len(data),data.index)]        # retain filename for identifying samples
             data.rename(columns={"Name":"cellID"}, inplace=True)
             
             pos_cols = data.columns[(data.columns.str.contains('Positivity'))&(data.columns.str.contains('MV'))]               # identify columns that says if protein marker is present (1) or abscent (0)

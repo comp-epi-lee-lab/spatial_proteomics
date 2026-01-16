@@ -495,7 +495,7 @@ downloadBtn.addEventListener('click', function(ev){
 
   const a = document.createElement('a');
   a.href = url;
-  a.download = (data.title ? data.title.replace(/\s+/g, '_').toLowerCase() : 'form') + '.yaml';
+  a.download = 'config.yaml';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
