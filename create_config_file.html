@@ -51,7 +51,6 @@
       </div>
     </div>
     <div id="proteinMarkersList" aria-live="polite"></div>
-    
     <hr />
 
     <!-- Cell types -->
@@ -98,7 +97,7 @@
     <input id="scatter_point_size" type="number" placeholder="50" />
     <hr />
 
-
+    <!-- Download and preview YAML file -->
     <div style="margin-top:14px;">
       <button id="downloadYaml">Download YAML</button>
       <button id="previewYaml">Preview YAML</button>
@@ -109,18 +108,13 @@
   </form>
 
 <script>
-/* Utility: simple YAML serializer for basic objects/arrays/primitives */
-/* This is intentionally simple: handles strings, numbers, booleans, arrays, and nested objects.
-   It will escape strings with quotes if needed. For complex needs, adapt or use a YAML lib. */
 function toYAML(obj, indent = 0) {
   const pad = '  '.repeat(indent);
   const lines = [];
 
   function quoteIfNeeded(s) {
     if (s === null) return 'null';
-    // if (typeof s === 'number' || typeof s === 'boolean') return String(s);
     if (typeof s === 'number' || typeof s === 'boolean') return s;
-    // if string contains special chars or starts with certain characters, quote it
     if (/^[\d-]+$/.test(s) || s === '' || /[:#{}\[\],&*?]|^\s|^\-?\d|^true$|^false$/.test(s)) {
       // escape double quotes and backslashes
       return '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
@@ -136,7 +130,7 @@ function toYAML(obj, indent = 0) {
         lines.push(toYAML(item, indent + 1));
       } else {
         // lines.push(pad + '- ' + quoteIfNeeded(String(item)));
-        lines.push(pad + '- ' + quoteIfNeeded(item));
+        lines.push(pad + '- ' + item);
       }
     });
     return lines.join('\n');
@@ -163,26 +157,22 @@ function toYAML(obj, indent = 0) {
         }
       } else {
         // lines.push(pad + safeKey + ': ' + quoteIfNeeded(String(val)));
-        lines.push(pad + safeKey + ': ' + quoteIfNeeded(val));
+        lines.push(pad + safeKey + ': ' + val);
       }
     });
     return lines.join('\n');
   }
 
-  // primitive
   // return pad + quoteIfNeeded(String(obj));
-  return pad + quoteIfNeeded(obj);
+  return pad + obj;
 }
 
-/* Form logic for dynamic subcategory options */
 const protein_markers = document.getElementById('protein_markers');
-const newOption = document.getElementById('newOption');
+// const newOption = document.getElementById('newOption');
 const newProteinMarker = document.getElementById('newProteinMarker');
 const addProteinMarkerBtn = document.getElementById('addProteinMarkerBtn');
 const addOptionBtn = document.getElementById('addOptionBtn');
 const proteinMarkersList = document.getElementById('proteinMarkersList');
-
-
 
 let proteinMarkers = [];
 
@@ -198,7 +188,6 @@ function renderProteinMarkers() {
     div.innerHTML = escapeHtml(b.name) + '<div style="margin-top:8px;"><button data-idx="' + idx + '">Remove</button></div>';
     proteinMarkersList.appendChild(div);
   });
-  // attach remove handlers
   Array.from(proteinMarkersList.querySelectorAll('button[data-idx]')).forEach(btn => {
     btn.addEventListener('click', function(ev){
       const i = Number(this.getAttribute('data-idx'));
@@ -213,9 +202,7 @@ function renderProteinMarkers() {
 function normalizeProteinMarkerInput(raw) {
   let s = (raw || '').trim();
   if (!s) return '';
-  // si el usuario pega el prefijo, lo quitamos para estandarizar
   s = s.replace(/^Positivity\s*-\s*/i, '').trim();
-  // lo que guardas internamente (formato canónico)
   return 'Positivity - ' + s;
 }
 
@@ -236,8 +223,6 @@ addProteinMarkerBtn.addEventListener('click', function(ev){
   renderCellTypes();
 });
 
-
-
 let cellTypes = [];
 
 function renderCellTypes() {
@@ -250,7 +235,7 @@ function renderCellTypes() {
 
   cellTypes.forEach((t, idx) => {
     const block = document.createElement('div');
-    const colorBox = '<span style="display:inline-block;width:16px;height:16px;vertical-align:middle;margin-right:8px;border-radius:3px;background:' + t.color + ';"></span>';
+    // const colorBox = '<span style="display:inline-block;width:16px;height:16px;vertical-align:middle;margin-right:8px;border-radius:3px;background:' + t.color + ';"></span>';
     block.className = 'list-item';
 
     block.innerHTML = `
@@ -305,13 +290,11 @@ function renderCellTypes() {
     inp.addEventListener('input', function () {
       const i = Number(this.getAttribute('data-color-idx'));
       cellTypes[i].color = this.value;
-      renderCellTypes(); // simple: re-render para que el swatch cambie
+      renderCellTypes();
     });
 });
 
   });
-
-  // remove handlers
   cellTypesList.querySelectorAll('button[data-remove]').forEach(btn => {
     btn.addEventListener('click', function () {
       const i = Number(this.getAttribute('data-remove'));
@@ -321,31 +304,25 @@ function renderCellTypes() {
   });
 }
 
-
-
-
 function createEmptySubcategoryMap() {
   const opts = Array.from(proteinMarkers)
   .map(o => o.name)
   .filter(v => v);
   
   const map = {};
-  opts.forEach(o => map[o] = -1); // default
+  opts.forEach(o => map[o] = -1);
   return map;
 }
 
 addCellTypeBtn.addEventListener('click', function(ev){
   ev.preventDefault();
   const name = newCellType.value && newCellType.value.trim();
-  // const color = cellTypeColor.value || '#000000';
   const color = '#00aaff';
   if (!name) { alert('Cell type name required'); return; }
   cellTypes.push({ name: name, subcategory_presence: createEmptySubcategoryMap(), color: color});
   newCellType.value = '';
-  // cellTypeColor.value = '#00aaff';
   renderCellTypes();
 });
-
 
 renderCellTypes();
 
@@ -355,13 +332,11 @@ function syncTypesWithSubcategories() {
     .filter(v => v);
 
   cellTypes.forEach(t => {
-    // add missing
     opts.forEach(o => {
       if (!(o in t.subcategory_presence)) {
         t.subcategory_presence[o] = -1;
       }
     });
-    // remove deleted
     Object.keys(t.subcategory_presence).forEach(o => {
       if (!opts.includes(o)) delete t.subcategory_presence[o];
     });
@@ -372,12 +347,9 @@ function syncCellTypesWithProteinMarkers() {
   const keys = proteinMarkers.map(m => m.name).filter(Boolean);
 
   cellTypes.forEach(t => {
-    // agregar faltantes
     keys.forEach(k => {
       if (!(k in t.subcategory_presence)) t.subcategory_presence[k] = -1;
     });
-
-    // (opcional) eliminar los que ya no existen
     Object.keys(t.subcategory_presence).forEach(k => {
       if (!keys.includes(k)) delete t.subcategory_presence[k];
     });
@@ -388,7 +360,7 @@ function escapeHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
-/* YAML generation */
+/* YAML generator */
 const previewBtn = document.getElementById('previewYaml');
 const downloadBtn = document.getElementById('downloadYaml');
 const yamlPreview = document.getElementById('yamlPreview');
@@ -404,11 +376,7 @@ function getNum(id, fallback) {
 function getBool(id, fallback = false) {
   const el = document.getElementById(id);
   if (!el) return fallback;
-
-  // Si es checkbox, usa checked
   if (el.type === 'checkbox') return !!el.checked;
-
-  // Si es select o input text, interpreta strings típicos
   const v = String(el.value).trim().toLowerCase();
   if (['true', '1', 'yes', 'y', 'on'].includes(v)) return true;
   if (['false', '0', 'no', 'n', 'off'].includes(v)) return false;
@@ -416,17 +384,14 @@ function getBool(id, fallback = false) {
 }
 
 function presenceToYamlValue(v) {
-  // tu UI guarda 1, 0, -1
-  if (v === -1) return null;   // YAML null
+  if (v === -1) return null;
   if (v === 1) return 1;
   if (v === 0) return 0;
-  return null; // fallback
+  return null;
 }
 
 function buildCellTypesMap() {
-  // Orden CANÓNICO: el orden de proteinMarkers
   const markerOrder = proteinMarkers.map(m => m.name);
-
   return cellTypes.reduce((acc, c) => {
     acc[c.name] = markerOrder.map(markerName => {
       const v = c.subcategory_presence?.[markerName];
@@ -462,10 +427,7 @@ function collectFormData() {
     },
     protein_markers: proteinMarkers.map(b => (b.name)) || '',
     cell_types: buildCellTypesMap(),
-    custom_colors: cellTypes.reduce((acc, c) => {
-      acc[c.name] = c.color;   // clave = nombre, valor = color
-      return acc;
-    }, {}),
+    custom_colors: cellTypes.reduce((acc, c) => { acc[c.name] = c.color; return acc; }, {}),
     overwrite_existing_files: getBool('overwrite_existing_files', true),
     locally_save_anndata_files: getBool('locally_save_anndata_files', true),
     spatial_plot:{
