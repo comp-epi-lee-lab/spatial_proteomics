@@ -19,15 +19,6 @@
   <p class="small">
     Adjust the configurations to your needs filling the fileds. Then, download the config file.<br>
     After created, you can edit it directly in a code editor or using the Jupyter Notebook "edit_config_file.ipynb".<br>
-    <!-- 1. **Workspace**: Here, you need to establish the ***input directory*** (where your data file is located), the ***filetype*** of your data (usually is *tsv*, but also pipeline accepts *csv*), and the ***output directory*** (where the results from the pipeline will be saved).
-
-    2. Adding a list of **protein markers** that will be used for cell typing (they must appear in the data file columns).
-
-    3. Adding a dictionary for estabishing the **cell types** and which protein markers should be listen for defining them.
-
-    4. Adding a dictionary of **custom colors** for identifying the cell types.
-
-    5. Other configurations related to the pipeline. -->
   </p>
 
   <form id="mainForm" onsubmit="return false;">
@@ -77,70 +68,36 @@
     </div>
     <div id="cellTypesList" aria-live="polite">
     </div>
-    <!-- <div id="subcategoryPresence" class="small">
-      No subcategories available.
-    </div> -->
     <hr />
-
-
-
-
-
-    <label for="protein_markerss">Protein markers</label>
-    <p class="small">Protein markers should be named exactly as in the "Positivity" columns in the csv files.<br>
-      To add a new protein marker, simply add a new line following the format of the previous ones,</p>
-    <textarea id="protein_markerss" rows="5" placeholder="Enter a protein marker per line"></textarea>
-
-    <label for="categoryInput">Category (type something to change subcategory options)</label>
-    <input id="categoryInput" type="text" placeholder="e.g. Fruit, Vehicle, ColorfulThing" />
-
-    <label for="subcategory">Subcategory (options change based on Category text)</label>
-    <select id="subcategory">
-      <option value="">-- choose or add --</option>
+    
+    <label for="output_files">Output files</label>
+    <!-- Overwrite files -->
+    <p class="small">Each time the pipeline is run, new output files are generated, but they are not automatically replaced with existing files unless you decide it.</p>
+    <label class="small" for="overwrite_existing_files">Do you want to overwrite existing output files?</label>
+    <select id="overwrite_existing_files">
+      <option type="boolean" value=false>No, I want to keep my old output files and not to save the new ones</option>
+      <option type="boolean" value=true>Yes, I want to overwrite all output files</option>
     </select>
-
-    <div class="row">
-      <div>
-        <label for="newOption">Add option to Subcategory</label>
-        <input id="newOption" type="text" placeholder="New subcategory option" />
-      </div>
-      <div style="flex:0 0 150px">
-        <button id="addOptionBtn">Add</button>
-      </div>
-    </div>
-
+    
+    <!-- Save anndata files -->
+    <p class="small">Anndata files are used for a faster pipeline rerun since they contains cleaned neccesary data for generate outputs.</p>
+    <label class="small" for="locally_save_anndata_files">Do you want to generate and save anndata files?</label>
+    <select id="locally_save_anndata_files">
+      <option type="boolean" value=true>Yes</option>
+      <option type="boolean" value=false>No</option>
+    </select>
     <hr />
 
-    <label>Attributes (add multiple)</label>
-    <div class="row">
-      <div>
-        <label for="attrName">Name</label>
-        <input id="attrName" type="text" placeholder="attribute name" />
-      </div>
-      <div>
-        <label for="attrType">Type</label>
-        <select id="attrType">
-          <option value="string">string</option>
-          <option value="number">number</option>
-          <option value="boolean">boolean</option>
-        </select>
-      </div>
-      <div>
-        <label for="attrColor">Color</label>
-        <!-- native color wheel/picker -->
-        <input id="attrColor" type="color" value="#00aaff" title="Choose color" />
-      </div>
-      <div style="flex:0 0 120px">
-        <button id="addAttrBtn">Add Attribute</button>
-      </div>
-    </div>
-
-    <div id="attributesList" aria-live="polite"></div>
-
+    <label for="spatial_plot_settings">Spatial plot settings</label>
+    <!-- Overwrite files -->
+    <label class="small" for="dpi">Dots per inch (DPI) for output plots:</label>
+    <input id="dpi" type="number" placeholder="300" />
+    
+    <!-- Save anndata files -->
+    <label class="small" for="scatter_point_size">Size of scatter points for output plots:</label>
+    <input id="scatter_point_size" type="number" placeholder="50" />
     <hr />
 
-    <label for="notes">Notes (optional)</label>
-    <textarea id="notes" rows="3" placeholder="Any extra notes"></textarea>
 
     <div style="margin-top:14px;">
       <button id="downloadYaml">Download YAML</button>
@@ -161,7 +118,8 @@ function toYAML(obj, indent = 0) {
 
   function quoteIfNeeded(s) {
     if (s === null) return 'null';
-    if (typeof s === 'number' || typeof s === 'boolean') return String(s);
+    // if (typeof s === 'number' || typeof s === 'boolean') return String(s);
+    if (typeof s === 'number' || typeof s === 'boolean') return s;
     // if string contains special chars or starts with certain characters, quote it
     if (/^[\d-]+$/.test(s) || s === '' || /[:#{}\[\],&*?]|^\s|^\-?\d|^true$|^false$/.test(s)) {
       // escape double quotes and backslashes
@@ -177,7 +135,8 @@ function toYAML(obj, indent = 0) {
         lines.push(pad + '- ' + (Object.keys(item).length ? '' : '{}'));
         lines.push(toYAML(item, indent + 1));
       } else {
-        lines.push(pad + '- ' + quoteIfNeeded(String(item)));
+        // lines.push(pad + '- ' + quoteIfNeeded(String(item)));
+        lines.push(pad + '- ' + quoteIfNeeded(item));
       }
     });
     return lines.join('\n');
@@ -203,19 +162,19 @@ function toYAML(obj, indent = 0) {
           lines.push(toYAML(val, indent + 1));
         }
       } else {
-        lines.push(pad + safeKey + ': ' + quoteIfNeeded(String(val)));
+        // lines.push(pad + safeKey + ': ' + quoteIfNeeded(String(val)));
+        lines.push(pad + safeKey + ': ' + quoteIfNeeded(val));
       }
     });
     return lines.join('\n');
   }
 
   // primitive
-  return pad + quoteIfNeeded(String(obj));
+  // return pad + quoteIfNeeded(String(obj));
+  return pad + quoteIfNeeded(obj);
 }
 
 /* Form logic for dynamic subcategory options */
-const categoryInput = document.getElementById('categoryInput');
-const subcategory = document.getElementById('subcategory');
 const protein_markers = document.getElementById('protein_markers');
 const newOption = document.getElementById('newOption');
 const newProteinMarker = document.getElementById('newProteinMarker');
@@ -223,57 +182,6 @@ const addProteinMarkerBtn = document.getElementById('addProteinMarkerBtn');
 const addOptionBtn = document.getElementById('addOptionBtn');
 const proteinMarkersList = document.getElementById('proteinMarkersList');
 
-
-/* Logic for dynamic cell type definition */
-let subcategoryPresence = {};
-const subcategoryPresenceDiv = document.getElementById('subcategoryPresence');
-
-function renderSubcategoryPresence() {
-  const options = Array.from(subcategory.options)
-    .map(o => o.value)
-    .filter(v => v); // sin el "-- choose --"
-
-  // eliminar entradas que ya no existen
-  // Object.keys(subcategoryPresence).forEach(k => {
-  //   if (!options.includes(k)) delete subcategoryPresence[k];
-  // });
-
-  subcategoryPresenceDiv.innerHTML = '';
-
-  if (options.length === 0) {
-    subcategoryPresenceDiv.textContent = 'No subcategories available.';
-    return;
-  }
-
-  options.forEach(name => {
-    if (!(name in subcategoryPresence)) {
-      subcategoryPresence[name] = -1; // default
-    }
-
-    const row = document.createElement('div');
-    row.className = 'row';
-
-    row.innerHTML = `
-      <div><strong>${escapeHtml(name)}</strong></div>
-      <div>
-        <select data-name="${escapeHtml(name)}">
-          <option value="1">Present</option>
-          <option value="0">Abscent</option>
-          <option value="-1">Not applicable</option>
-        </select>
-      </div>
-    `;
-
-    const select = row.querySelector('select');
-    select.value = String(subcategoryPresence[name]);
-
-    select.addEventListener('change', function () {
-      subcategoryPresence[name] = Number(this.value);
-    });
-
-    subcategoryPresenceDiv.appendChild(row);
-  });
-}
 
 
 let proteinMarkers = [];
@@ -296,18 +204,36 @@ function renderProteinMarkers() {
       const i = Number(this.getAttribute('data-idx'));
       proteinMarkers.splice(i,1);
       renderProteinMarkers();
+      syncCellTypesWithProteinMarkers();
+      renderCellTypes();
     });
   });
 }
 
+function normalizeProteinMarkerInput(raw) {
+  let s = (raw || '').trim();
+  if (!s) return '';
+  // si el usuario pega el prefijo, lo quitamos para estandarizar
+  s = s.replace(/^Positivity\s*-\s*/i, '').trim();
+  // lo que guardas internamente (formato canónico)
+  return 'Positivity - ' + s;
+}
+
+function markerExists(markerName) {
+  const needle = markerName.trim().toLowerCase();
+  return proteinMarkers.some(m => (m.name || '').trim().toLowerCase() === needle);
+}
+
 addProteinMarkerBtn.addEventListener('click', function(ev){
   ev.preventDefault();
-  const name = {temp: newProteinMarker.value && newProteinMarker.value.trim()};
-  if (!name.temp) { alert('Protein marker name required'); return; }
-  if (name.temp.includes('Positivity - ')) { name.temp = name.temp.replace('Positivity - ','');}
-  proteinMarkers.push({ name: 'Positivity - '+name.temp});
+  const canonical = normalizeProteinMarkerInput(newProteinMarker.value);
+  if (!canonical) { alert('Protein marker name required'); return; }
+  if (markerExists(canonical)) { alert('Protein marker name already added!'); newProteinMarker.value = ''; return; }
+  proteinMarkers.push({ name: canonical });
   newProteinMarker.value = '';
   renderProteinMarkers();
+  syncCellTypesWithProteinMarkers();
+  renderCellTypes();
 });
 
 
@@ -324,10 +250,23 @@ function renderCellTypes() {
 
   cellTypes.forEach((t, idx) => {
     const block = document.createElement('div');
+    const colorBox = '<span style="display:inline-block;width:16px;height:16px;vertical-align:middle;margin-right:8px;border-radius:3px;background:' + t.color + ';"></span>';
     block.className = 'list-item';
 
     block.innerHTML = `
-      <strong>${escapeHtml(t.name)}</strong>
+      <div class="row" style="align-items:center; justify-content:space-between;">
+        <div>
+          <strong>${escapeHtml(t.name)}</strong>
+          <span class="color-swatch"
+            style="display:inline-block;width:16px;height:16px;vertical-align:middle;margin-left:8px;border-radius:3px;background:${t.color};">
+          </span>
+        </div>
+
+        <div style="display:flex; gap:10px; align-items:center;">
+          <label class="small" style="margin:0;">Change color</label>
+          <input type="color" value="${t.color}" data-color-idx="${idx}" title="Choose color" />
+        </div>
+      </div>
       <div style="margin-top:6px">
         <button data-remove="${idx}">Remove</button>
       </div>
@@ -362,12 +301,20 @@ function renderCellTypes() {
     });
 
     cellTypesList.appendChild(block);
+    cellTypesList.querySelectorAll('input[type="color"][data-color-idx]').forEach(inp => {
+    inp.addEventListener('input', function () {
+      const i = Number(this.getAttribute('data-color-idx'));
+      cellTypes[i].color = this.value;
+      renderCellTypes(); // simple: re-render para que el swatch cambie
+    });
+});
+
   });
 
   // remove handlers
   cellTypesList.querySelectorAll('button[data-remove]').forEach(btn => {
     btn.addEventListener('click', function () {
-      const i = Number(this.remove);
+      const i = Number(this.getAttribute('data-remove'));
       cellTypes.splice(i, 1);
       renderCellTypes();
     });
@@ -375,26 +322,6 @@ function renderCellTypes() {
 }
 
 
-// function renderCellTypes() {
-//   cellTypesList.innerHTML = '';
-//   if (cellTypes.length === 0) {
-//     cellTypesList.innerHTML = '<div class="small"><br>No cell types added yet.</div>';
-//     return;
-//   }
-//   cellTypes.forEach((c, idx) => {
-//     const div = document.createElement('div');
-//     div.className = 'list-item';
-//     div.innerHTML = escapeHtml(c.name) + '<div style="margin-top:8px;"><button data-idx="' + idx + '">Remove</button></div>'
-//     cellTypesList.appendChild(div);
-//   });
-//   Array.from(cellTypesList.querySelectorAll('button[data-idx]')).forEach(btn => {
-//     btn.addEventListener('click', function(ev){
-//       const i = Number(this.getAttribute('data-idx'));
-//       cellTypes.splice(i,1);
-//       renderCellTypes();
-//     });
-//   });
-// }
 
 
 function createEmptySubcategoryMap() {
@@ -410,60 +337,16 @@ function createEmptySubcategoryMap() {
 addCellTypeBtn.addEventListener('click', function(ev){
   ev.preventDefault();
   const name = newCellType.value && newCellType.value.trim();
+  // const color = cellTypeColor.value || '#000000';
+  const color = '#00aaff';
   if (!name) { alert('Cell type name required'); return; }
-  cellTypes.push({ name: name, subcategory_presence: createEmptySubcategoryMap()});
+  cellTypes.push({ name: name, subcategory_presence: createEmptySubcategoryMap(), color: color});
   newCellType.value = '';
+  // cellTypeColor.value = '#00aaff';
   renderCellTypes();
 });
 
 
-
-function defaultOptionsForCategory(cat) {
-  // simple mapping; modify to fit your real data
-  const c = (cat || '').trim().toLowerCase();
-  if (!c) return [];
-  if (c.includes('fruit')) return ['apple','banana','orange','pear'];
-  if (c.includes('vehicle')) return ['car','motorcycle','bicycle','truck'];
-  if (c.includes('color')) return ['red','green','blue','gradient'];
-  if (c.includes('tech')) return ['web','mobile','embedded'];
-  // fallback: return some generated options
-  return [c + '-type1', c + '-type2', c + '-misc'];
-}
-
-function populateSubcategory() {
-  const cat = categoryInput.value;
-  const options = defaultOptionsForCategory(cat);
-  // keep currently added custom options (data attribute)
-  const existingCustom = Array.from(subcategory.querySelectorAll('option[data-custom="1"]')).map(o => o.value);
-  // clear
-  subcategory.innerHTML = '';
-  subcategory.appendChild(new Option('-- choose or add --', ''));
-  options.forEach(o => subcategory.appendChild(new Option(o, o)));
-  existingCustom.forEach(o => subcategory.appendChild(new Option(o, o, false, false)));
-}
-
-// categoryInput.addEventListener('input', populateSubcategory);
-categoryInput.addEventListener('input', function () {
-  populateSubcategory();
-  renderSubcategoryPresence();
-});
-
-addOptionBtn.addEventListener('click', function(ev){
-  ev.preventDefault();
-  const v = newOption.value && newOption.value.trim();
-  if (!v) { alert('Enter a non-empty option'); return; }
-  // create option flagged as custom
-  const opt = new Option(v, v, false, true);
-  opt.setAttribute('data-custom', '1');
-  subcategory.appendChild(opt);
-  // select the new option
-  subcategory.value = v;
-  newOption.value = '';
-});
-
-
-populateSubcategory();
-renderSubcategoryPresence();
 renderCellTypes();
 
 function syncTypesWithSubcategories() {
@@ -485,53 +368,21 @@ function syncTypesWithSubcategories() {
   });
 }
 
+function syncCellTypesWithProteinMarkers() {
+  const keys = proteinMarkers.map(m => m.name).filter(Boolean);
 
-/* Attributes dynamic list */
-const attrName = document.getElementById('attrName');
-const attrType = document.getElementById('attrType');
-const attrColor = document.getElementById('attrColor');
-const addAttrBtn = document.getElementById('addAttrBtn');
-const attributesList = document.getElementById('attributesList');
+  cellTypes.forEach(t => {
+    // agregar faltantes
+    keys.forEach(k => {
+      if (!(k in t.subcategory_presence)) t.subcategory_presence[k] = -1;
+    });
 
-let attributes = [];
-
-function renderAttributes() {
-  attributesList.innerHTML = '';
-  if (attributes.length === 0) {
-    attributesList.innerHTML = '<div class="small">No attributes added yet.</div>';
-    return;
-  }
-  attributes.forEach((a, idx) => {
-    const div = document.createElement('div');
-    div.className = 'list-item';
-    const colorBox = '<span style="display:inline-block;width:16px;height:16px;vertical-align:middle;margin-right:8px;border-radius:3px;background:' + a.color + ';"></span>';
-    div.innerHTML = '<strong>' + escapeHtml(a.name) + '</strong> <span class="small">(' + a.type + ')</span><br/>' +
-                    '<div class="small">color: ' + colorBox + ' ' + a.color + '</div>' +
-                    '<div style="margin-top:8px;"><button data-idx="' + idx + '">Remove</button></div>';
-    attributesList.appendChild(div);
-  });
-  // attach remove handlers
-  Array.from(attributesList.querySelectorAll('button[data-idx]')).forEach(btn => {
-    btn.addEventListener('click', function(ev){
-      const i = Number(this.getAttribute('data-idx'));
-      attributes.splice(i,1);
-      renderAttributes();
+    // (opcional) eliminar los que ya no existen
+    Object.keys(t.subcategory_presence).forEach(k => {
+      if (!keys.includes(k)) delete t.subcategory_presence[k];
     });
   });
 }
-
-addAttrBtn.addEventListener('click', function(ev){
-  ev.preventDefault();
-  const name = attrName.value && attrName.value.trim();
-  if (!name) { alert('Attribute name required'); return; }
-  const type = attrType.value;
-  const color = attrColor.value || '#000000';
-  attributes.push({ name: name, type: type, color: color });
-  attrName.value = '';
-  attrType.value = 'string';
-  attrColor.value = '#00aaff';
-  renderAttributes();
-});
 
 function escapeHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -542,22 +393,85 @@ const previewBtn = document.getElementById('previewYaml');
 const downloadBtn = document.getElementById('downloadYaml');
 const yamlPreview = document.getElementById('yamlPreview');
 
+function getNum(id, fallback) {
+  const el = document.getElementById(id);
+  const raw = (el && el.value != null) ? String(el.value).trim() : '';
+  if (raw === '') return fallback;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function getBool(id, fallback = false) {
+  const el = document.getElementById(id);
+  if (!el) return fallback;
+
+  // Si es checkbox, usa checked
+  if (el.type === 'checkbox') return !!el.checked;
+
+  // Si es select o input text, interpreta strings típicos
+  const v = String(el.value).trim().toLowerCase();
+  if (['true', '1', 'yes', 'y', 'on'].includes(v)) return true;
+  if (['false', '0', 'no', 'n', 'off'].includes(v)) return false;
+  return fallback;
+}
+
+function presenceToYamlValue(v) {
+  // tu UI guarda 1, 0, -1
+  if (v === -1) return null;   // YAML null
+  if (v === 1) return 1;
+  if (v === 0) return 0;
+  return null; // fallback
+}
+
+function buildCellTypesMap() {
+  // Orden CANÓNICO: el orden de proteinMarkers
+  const markerOrder = proteinMarkers.map(m => m.name);
+
+  return cellTypes.reduce((acc, c) => {
+    acc[c.name] = markerOrder.map(markerName => {
+      const v = c.subcategory_presence?.[markerName];
+      return presenceToYamlValue(v);
+    });
+    return acc;
+  }, {});
+}
+
+function validateRequiredFields(data) {
+  const errors = [];
+
+  const inDir = (data.workspace?.input_dir || '').trim();
+  const outDir = (data.workspace?.output_dir || '').trim();
+
+  if (!inDir) errors.push('input_dir must not be empty');
+  if (!outDir) errors.push('output_dir must not be empty');
+
+  if (errors.length > 0) {
+    alert('Cannot download:\n- ' + errors.join('\n- '));
+    return false;
+  }
+  return true;
+}
+
+
 function collectFormData() {
   return {
     workspace: {
-      input_dir: `"${document.getElementById('input_dir').value}"` || '',
-      output_dir: `"${document.getElementById('output_dir').value}"` || '',
+      input_dir: document.getElementById('input_dir').value || '',
+      output_dir: document.getElementById('output_dir').value || '',
       filetype: document.getElementById('filetype').value || csv,
     },
-    protein_markers: protein_markers.map(b => ([b.name])) || '',
-    category: categoryInput.value || '',
-    subcategory: subcategory.value || '',
-    attributes: attributes.map(a => ({
-      name: a.name,
-      type: a.type,
-      color: a.color
-    })),
-    notes: document.getElementById('notes').value || ''
+    protein_markers: proteinMarkers.map(b => (b.name)) || '',
+    cell_types: buildCellTypesMap(),
+    custom_colors: cellTypes.reduce((acc, c) => {
+      acc[c.name] = c.color;   // clave = nombre, valor = color
+      return acc;
+    }, {}),
+    overwrite_existing_files: getBool('overwrite_existing_files', true),
+    locally_save_anndata_files: getBool('locally_save_anndata_files', true),
+    spatial_plot:{
+      dpi: getNum('dpi', 300),
+      scatter_point_size: getNum('scatter_point_size', 50),
+    },
   };
 }
 
@@ -570,9 +484,12 @@ previewBtn.addEventListener('click', function(ev){
 
 downloadBtn.addEventListener('click', function(ev){
   ev.preventDefault();
-  const data = collectFormData();
-  const yaml = toYAML(data);
 
+  const data = collectFormData();
+
+  if (!validateRequiredFields(data)) return;
+
+  const yaml = toYAML(data);
   const blob = new Blob([yaml], { type: 'text/yaml;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
 
@@ -581,17 +498,13 @@ downloadBtn.addEventListener('click', function(ev){
   a.download = (data.title ? data.title.replace(/\s+/g, '_').toLowerCase() : 'form') + '.yaml';
   document.body.appendChild(a);
   a.click();
-
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 });
 
-/* initialize defaults */
-populateSubcategory();
-renderAttributes();
+
 renderProteinMarkers();
 renderCellTypes();
-renderSubcategoryPresence();
 
 </script>
 
