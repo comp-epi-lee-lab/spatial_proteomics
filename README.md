@@ -1,9 +1,9 @@
 # Spatial Proteomics Analysis (SpPrAn)
-A bioinformatic pipeline to analyze spatial proteomics samples data obtained via Lunaphore COMET™ using cell types defined by presence or abscent of protein markers.
+A bioinformatic pipeline to analyze spatial proteomics samples data obtained via Visiopharm® using cell types defined by presence or abscent of protein markers.
 
 ---
 ## Introduction
-This repository contains an end-to-end python-based pipeline for **processing and analyzing presence or abscent of protein markers in single cell spatial proteomics data**. The pipeline is designed for reproducible analysis using multiple Lunaphore COMET™ objects outputs as inputs. Supports different cancer types as well as configurable protein markers and cell types via a YAML configuration file.
+This repository contains an end-to-end python-based pipeline for **processing and analyzing presence or abscent of protein markers in single cell spatial proteomics data**. The pipeline is designed for reproducible analysis using multiple objects outputs as inputs. Supports different cancer types as well as configurable protein markers and cell types via a YAML configuration file.
 
 The primary use case is research-grade data analysis in an academic or translational research setting.
 
