@@ -153,6 +153,7 @@ def cleaned_data(file_names, output_dir, filetype='tsv'):
     if len(file_names)!=0:
         for filename in file_names:
             separator = '\t' if filetype=='tsv' else ','
+            filename = str(filename)
             data = pd.read_csv(f"{filename}",sep=separator)
             if data.columns.isin(['Positivity - DAPI (MV - NUC)']).any():
                 data = data[data['Positivity - DAPI (MV - NUC)']==1]                                                           # filter out cells without nucleus
