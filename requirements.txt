@@ -2,6 +2,7 @@ anndata==0.12.10
 matplotlib==3.10.8
 numpy==2.4.2
 pandas==2.3.3
+pyarrow==24.0.0
 pyyaml==6.0.3
 scanpy==1.12
 scipy==1.17.1

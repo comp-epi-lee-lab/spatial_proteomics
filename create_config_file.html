@@ -142,6 +142,7 @@ function toYAML(obj, indent = 0) {
     keys.forEach(key => {
       const val = obj[key];
       const safeKey = /^[A-Za-z0-9_/"\-]+$/.test(key) ? key : '"' + key.replace(/"/g, '\\"') + '"';
+      const s = String(val).startsWith('#') ? JSON.stringify(String(val)) : val;
       if (typeof val === 'object' && val !== null) {
         if (Array.isArray(val)) {
           if (val.length === 0) {
@@ -157,7 +158,8 @@ function toYAML(obj, indent = 0) {
         }
       } else {
         // lines.push(pad + safeKey + ': ' + quoteIfNeeded(String(val)));
-        lines.push(pad + safeKey + ': ' + val);
+        //lines.push(pad + safeKey + ': ' + val);
+        lines.push(pad + safeKey + ': ' + s);
       }
     });
     return lines.join('\n');
@@ -427,7 +429,7 @@ function collectFormData() {
     },
     protein_markers: proteinMarkers.map(b => (b.name)) || '',
     cell_types: buildCellTypesMap(),
-    custom_colors: cellTypes.reduce((acc, c) => { acc[c.name] = c.color; return acc; }, {}),
+    custom_colors: {...cellTypes.reduce((acc, c) => { acc[c.name] = c.color; return acc; }, {}), "Other cells": "#a3a3a3"},
     overwrite_existing_files: getBool('overwrite_existing_files', true),
     locally_save_anndata_files: getBool('locally_save_anndata_files', true),
     spatial_plot:{

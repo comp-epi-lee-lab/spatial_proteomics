@@ -64,3 +64,13 @@ def main():
         print(f"[ERROR] {e}", file=sys.stderr)
         sys.exit(1)
     sppran_steps(config)
+
+def main_gui(config_path):
+    """
+    Applies Spatial Proteomics Analaysis (SpPrAn) pipeline from GUI.
+    """
+    try: config = load_config(config_path)
+    except Exception as e:
+        print(f"[ERROR] {e}", file=sys.stderr)
+        sys.exit(1)
+    sppran_steps(config)

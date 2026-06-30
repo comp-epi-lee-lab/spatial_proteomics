@@ -200,6 +200,24 @@ def cleaned_data(file_names, output_dir, filetype='tsv'):
         adata_dicts = {}
     return data_dicts, adata_dicts
 
+## Considering groups and subgroups (its a reordering)
+def ascending_order_for_cell_type_by_def(cell_type_dict):
+    """
+    Order the pre-established cell types considering types and subtypes of cells by definition.
+    
+    Parameters
+    -----
+    Dict[str:Dict]
+       Dictionary containing the definition of each cell types.
+
+    Return
+    ------
+    Dict[str:Dict]
+       Dictionary containing the definition of each cell types ordered by cell subtypes.
+    """
+    
+    return cell_type_dict
+
 ## Creating cell type dictionary
 def create_cell_type_dict(protein_markers, cell_types):
     """
