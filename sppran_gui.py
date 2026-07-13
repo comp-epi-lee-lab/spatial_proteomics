@@ -85,7 +85,7 @@ class SpPrAnGUI:
         """Opens a file dialog to select a YAML config file and displays its content in the text area."""
         config_file_path = filedialog.askopenfilename(
             title="Select config YAML file",
-            filetypes=[("YAML files", "*.yaml, *.yml")]
+            filetypes=[("YAML files", ("*.yaml","*.yml"))]
         )
         self.config_label.config(text=config_file_path)
         with open(config_file_path, "r", encoding="utf-8", errors="replace") as file:

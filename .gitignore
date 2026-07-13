@@ -7,5 +7,4 @@ dist/
 SpPrAn.spec
 SpPrAn-GUI.spec
 sppran.egg-info/
-sppran_gui.py
-sppran_gui_V0.2.py
+version/
