@@ -100,10 +100,10 @@ def load_anndata_files(output_dir):
             if adata_path.exists():
                 adata_dicts[sample] = sc.read_h5ad(adata_path)
             else:
-                print(f"WARNING: Anndata loading cannot be completed. Sample_{sample}.h5ad doesn't exists or it's missing.") # An None value is saved in the dictionary.
+                print(f"WARNING: Anndata loading cannot be completed. Sample_{sample}.h5ad doesn't exist or it's missing.") # An None value is saved in the dictionary.
                 adata_dicts[sample] = None
         return adata_dicts
-    print(f"WARNING: Anndata loading cannot be completed. File '{filepath}' doesn't exists or it's missing.")                # An empty dictionary is returned.
+    print(f"WARNING: Anndata loading cannot be completed. File '{filepath}' doesn't exist or it's missing.")                # An empty dictionary is returned.
     return {}
 
 ## Obtaining filenames
@@ -283,6 +283,19 @@ def assign_cell_type(row, cell_type_dict):
         if all(value_matches(row[marker], expected) for marker, expected in rule.items()):
             return str(cell_type)
     return "Other cells"
+
+def assign_cell_types_vectorized(data, cell_type_dict, container):
+    labels = pd.Series("Other cells", index=data.index)
+    unassigned = pd.Series(True, index=data.index)
+    for cell_type, rule in cell_type_dict.items():
+        mask = unassigned.copy()
+        for marker, expected in rule.items():
+            if expected is None: continue
+            if isinstance(expected, (list, tuple, set)): mask &= data[marker].isin(expected)
+            else: mask &= data[marker] == expected
+        labels[mask] = cell_type if cell_type!=container else f"Other {cell_type}"
+        unassigned &= ~mask
+    return labels
 
 def get_index_nones(cell_types, protein_markers, sub_protein_markers, sub_cell_types):
     """
@@ -491,6 +504,7 @@ def create_intersection_color(intersection_label, list_intersected_cell_subtypes
     if intersection_label not in custom_colors.keys():
         component_colors = [custom_colors[subtype] for subtype in list_intersected_cell_subtypes]
         return mix_hex_colors(component_colors, dim_factor=dim_factor, background=background)
+    else: return custom_colors[intersection_label]
 
 def plot_digraph(ct_df, protein_markers, output_dir, output_filename_identifier, order_dicc, custom_colors):
     """
@@ -508,8 +522,6 @@ def plot_digraph(ct_df, protein_markers, output_dir, output_filename_identifier,
         Identifier for the output filename.
     order_dicc : Dict[int, List]
         Ordered dictionary of cell types.
-    max_N : int
-        Maximum total of None values in the updated dictionary.
     custom_colors : Dict[str, str]
         Dictionary mapping cell types to colors.
 
@@ -543,12 +555,15 @@ def plot_digraph(ct_df, protein_markers, output_dir, output_filename_identifier,
             case x if x==len(temp_0): 
                 print(f'{elem[0]} is subset of {elem[1]}')
                 cell_type_chart.add_edges_from([(elem[0],elem[1])])
+                # print(f"We added the path from {elem[0]} to {elem[1]}") # debugging
                 final_subsets[elem[1]].append(elem[0])
                 if len(temp_1) != 1:
                     for pos_subset in range([key for key in dicc_temp.keys() if elem[0] in dicc_temp[key]][0]):
                         for pot_subset in dicc_temp[pos_subset]:
-                            if nx.has_path(cell_type_chart,source=pot_subset,target=elem[1]):
+                            if nx.has_path(cell_type_chart,source=pot_subset,target=elem[1]) and nx.shortest_path_length(cell_type_chart, source=pot_subset, target=elem[1])==1:
+                                # print(f"We attempted removing the path from {pot_subset} to {elem[1]}") # debugging
                                 cell_type_chart.remove_edge(pot_subset, elem[1])
+                                # print(f"We succeeded removing the path from {pot_subset} to {elem[1]}") # debugging
                                 final_subsets[elem[1]].remove(pot_subset)
             case x if x>0: 
                 whos_who = []
@@ -558,13 +573,15 @@ def plot_digraph(ct_df, protein_markers, output_dir, output_filename_identifier,
                             whos_who.append(pot_subset)
                 list_temp_temp = list(set(col for col in temp_1 for col_s in whos_who for col_c in dicc_subsets[col_s].columns if dicc_subsets[elem[0]][col].equals(dicc_subsets[col_s][col_c])))
                 temp_new = [x for x in temp_1 if x not in list_temp_temp]
+                limit_dim_color = {k:0.2+0.05*k for k in range(len(temp_new))} if len(temp_new) <= 14 else {k:0.2+(0.7*k/len(temp_new)) for k in range(len(temp_new))}
+                0.2+len(temp_new)
                 match len(temp_new):
                     case x if x>1:
                         df_temp = dicc_subsets[elem[0]].rename(index={idx:val for idx,val in enumerate(protein_markers)})
-                        print(f"There are sub cell types that are not defined by user and belong to both {elem[0]} and {elem[1]}.\nThey are the following:")
+                        print(f"There are sub cell types that are not defined by user and belong to both {elem[0]} and {elem[1]}.")#\nThey are the following:")
                         
                         for sct_def in temp_new:
-                            print(df_temp[sct_def].to_dict())
+                            # print(df_temp[sct_def].to_dict())
                             if sct_def in cell_type_chart:
                                 if not nx.has_path(cell_type_chart,source=sct_def,target=elem[0]): 
                                     cell_type_chart.add_edges_from([(sct_def,elem[0])])
@@ -578,11 +595,11 @@ def plot_digraph(ct_df, protein_markers, output_dir, output_filename_identifier,
                                 cell_type_chart.add_edges_from([(sct_def,elem[1])])
                                 final_subsets[elem[0]].append(sct_def)
                                 final_subsets[elem[1]].append(sct_def)
-                            custom_colors[sct_def] = create_intersection_color(sct_def,[elem[0],elem[1]],custom_colors,0.2+0.05*temp_new.index(sct_def))
+                            custom_colors[sct_def] = create_intersection_color(sct_def,[elem[0],elem[1]],custom_colors,limit_dim_color[temp_new.index(sct_def)])
                     case x if x==1:
                         df_temp = dicc_subsets[elem[0]].rename(index={idx:val for idx,val in enumerate(protein_markers)})
-                        print(f"There is a sub cell type that are not defined by user and belongs to both {elem[0]} and {elem[1]}.\nIt is the following:")
-                        print(df_temp[temp_new[0]].to_dict())
+                        print(f"There is a sub cell type that is not defined by user and belongs to both {elem[0]} and {elem[1]}.")#\nIt is the following:")
+                        # print(df_temp[temp_new[0]].to_dict())
                         if temp_new[0] in cell_type_chart:
                             if not nx.has_path(cell_type_chart,source=temp_new[0],target=elem[0]): 
                                 cell_type_chart.add_edges_from([(temp_new[0],elem[0])])
@@ -607,7 +624,6 @@ def plot_digraph(ct_df, protein_markers, output_dir, output_filename_identifier,
                 if set([cell_type,ct]).issubset(set(possible_duplicates[ct_temp])):
                     final_subsets[ct_temp].remove(ct)
                     cell_type_chart.remove_edge(ct, ct_temp)
-    # print("final_subsets:\n",final_subsets) # debugging
     csv_path = output_dir / "results" / output_filename_identifier
     if not csv_path.exists(): csv_path.mkdir(parents=True, exist_ok=True)
     pd.DataFrame({k:[v] for k,v in final_subsets.items()},index=['Subsets']).T.to_csv(csv_path / "Cell type subsets.csv", index=True)
@@ -615,13 +631,18 @@ def plot_digraph(ct_df, protein_markers, output_dir, output_filename_identifier,
     # ct_final_subsets = pd.DataFrame(cell_types, index=protein_markers, dtype=object)
     ct_final_subsets = ct_df.copy()
     final_order = []
+    new_columns = {}
+    cols_ct_final_subsets = list(ct_final_subsets.columns)
     for k,val in final_subsets.items():
-        if len(val)>0:
+        keys_new_columns = list(new_columns.keys())
+        columns_to_check = cols_ct_final_subsets+keys_new_columns
+        if val:
             for ct in val:
-                if ct not in ct_final_subsets.columns:
-                    ct_final_subsets[ct]=dicc_subsets[k][ct].rename(index={idx:val for idx,val in enumerate(protein_markers)})
+                if ct not in columns_to_check:
+                    new_columns[ct]=dicc_subsets[k][ct].rename(index={idx:pmarker for idx,pmarker in enumerate(protein_markers)})
                     final_order.append(ct)
         final_order.append(k)
+    if new_columns: ct_final_subsets = pd.concat([ct_final_subsets,pd.DataFrame(new_columns)],axis=1)
     ct_final_subsets = ct_final_subsets[final_order]
     # ct_final_subsets = {col:ct_final_subsets[col].to_list() for col in ct_final_subsets.columns}
     ct_final_subsets = ct_final_subsets.to_dict()
@@ -638,7 +659,7 @@ def plot_digraph(ct_df, protein_markers, output_dir, output_filename_identifier,
     # pos = nx.spring_layout(cell_type_chart, seed=538610)  # This can be replaced with other layout strategies
     pos = {}
     zero_degree_ct = [cell_type for cell_type in ct_df.columns if cell_type_chart.degree[cell_type] == 0]
-    dicc_temp, max_N = move_bigger_groups(dicc_temp, zero_degree_ct, max_N, final_subsets)
+    if max_N != 0: dicc_temp, max_N = move_bigger_groups(dicc_temp, zero_degree_ct, max_N, final_subsets)
     max_per_group = max([len(N_pos) for N_pos in dicc_temp.values()])
     for i in reversed(range(max_N+1)):
         for j in reversed(range(len(dicc_temp[i]))):
@@ -703,14 +724,14 @@ def sets_and_subsets_cell_types(cell_type_dict, sub_cell_type_dict, protein_mark
     ct_df = pd.DataFrame(cell_type_dict, index=protein_markers, dtype=object)
     ct_df, ct_df_og = fill_n_order_df_by_total_none_values(ct_df, 'Protein Marker', dicc_temp)
     sct_dfs = {}
-    sct_dfs_og = {}
+    # sct_dfs_og = {}
     for sct, data in sub_cell_type_dict.items():
         full_index = protein_markers + [p for p in sub_protein_markers[sct] if p not in protein_markers]
         df = pd.DataFrame(data, index=full_index, dtype=object)
         for prot in protein_markers: df.loc[prot] = cell_type_dict[sct].get(prot, None)
         df, df_og = fill_n_order_df_by_total_none_values(df, 'Protein Marker', dicc_temp)
         sct_dfs[sct] = df
-        sct_dfs_og[sct] = df_og
+        # sct_dfs_og[sct] = df_og
 
     list_final_subsets = {}
     list_sub_cell_types = {}
@@ -718,7 +739,6 @@ def sets_and_subsets_cell_types(cell_type_dict, sub_cell_type_dict, protein_mark
     list_final_subsets["General"], list_sub_cell_types["General"], list_bigger_cell_types["General"], custom_colors = plot_digraph(ct_df, protein_markers, output_dir, "General", dicc_temp, custom_colors) 
     for sct, df in sct_dfs.items():
         list_final_subsets[sct], list_sub_cell_types[sct], list_bigger_cell_types[sct], custom_colors = plot_digraph(df, list(df.index), output_dir, sct, dicc_temp, custom_colors)
-    8888888888
     return list_final_subsets, list_sub_cell_types, list_bigger_cell_types, custom_colors
     # return final_subsets, ct_final_subsets, dicc_temp[max_N]
 
@@ -794,21 +814,36 @@ def labeling_cell_types(data_dicts, adata_dicts, cell_type_dict, sub_cell_type_d
 
     for (k_data, data), (k, adata) in zip(data_dicts.items(), adata_dicts.items()):
         list_folder_names = ['General']
-        adata.obs['clusters'] = data.apply(assign_cell_type, axis=1, args=(cell_type_dict,)).tolist()
+        new_obs_cols = {}
+        # clusters = data.apply(assign_cell_type, axis=1, args=(cell_type_dict,)).tolist()
+        clusters = assign_cell_types_vectorized(data, cell_type_dict, "General")
+        new_obs_cols['clusters'] = clusters
         # dict_vl = {}
-        for cell_type, _ in cell_type_dict.items():
-            adata.obs[f"only {cell_type}"] = [t if t==cell_type else "Other cells" for t in adata.obs['clusters']]
+        for cell_type in cell_type_dict.keys():
+            # new_obs_cols[f"only {cell_type}"] = [t if t==cell_type else "Other cells" for t in clusters]
+            new_obs_cols[f"only {cell_type}"] = clusters.where(clusters == cell_type, "Other cells")
         
             if cell_type in list_final_subsets.keys():
                 if cell_type in sub_cell_type_dict.keys():
                     list_folder_names.append(cell_type)
                     valid_labels = {cell_type} | get_all_children(cell_type, list_final_subsets)
                     # dict_vl[cell_type] = valid_labels
-                    adata.obs[f"Subtypes of {cell_type}"] = data.apply(assign_cell_type, axis=1, args=(list_cell_types[cell_type]|{cell_type:list_cell_types['General'][cell_type]},)).tolist()
-                    # print("\n valid_labels",valid_labels,'\n')
+                    # subtype_values = data.apply(assign_cell_type, axis=1, args=(list_cell_types[cell_type]|{cell_type:list_cell_types['General'][cell_type]},)).tolist()
+                    subtype_values = assign_cell_types_vectorized(data, list_cell_types[cell_type]|{cell_type:list_cell_types['General'][cell_type]},cell_type)
+                    subtype_col = f"Subtypes of {cell_type}"
+                    new_obs_cols[subtype_col] = subtype_values
                     for subcell_type in valid_labels:
                         if subcell_type==cell_type: continue
-                        adata.obs[f"only {subcell_type}"] = [t if t==cell_type else "Other cells" for t in adata.obs[f"Subtypes of {cell_type}"]]
+                        # new_obs_cols[f"only {subcell_type}"] = [t if t==subcell_type else "Other cells" for t in subtype_values]
+                        # new_obs_cols[f"only {subcell_type}"] = subtype_values.where(subtype_values == subcell_type, "Other cells")
+                        sct_temp = pd.Series("Other cells", index=subtype_values.index)
+                        sct_temp = sct_temp.mask(subtype_values.isin(valid_labels),f"Other {cell_type}")
+                        new_obs_cols[f"only {subcell_type}"] = sct_temp.mask(subtype_values==subcell_type,subtype_values)
+                    custom_colors[f"Other {cell_type}"] = custom_colors[cell_type]
+        # raise Exception (f"Debugging {k_data}:", print(adata.obs["clusters"].dtype), print(type(adata.obs["clusters"].iloc[0])), print(adata.obs["clusters"].head()), )
+        new_obs = pd.DataFrame(new_obs_cols)
+        new_obs.index = new_obs.index.map(str)
+        adata.obs = new_obs if adata.obs.empty else adata.obs.join(new_obs)
         # for cell_type in final_subsets:
         #     valid_labels = {cell_type} | get_all_children(cell_type, final_subsets)
         #     adata.obs[f"{cell_type}"] = [t if t in valid_labels else "Other cells" for t in adata.obs['clusters']]
@@ -870,14 +905,15 @@ def plotting_helper(custom_colors, overwrite_existing_files, dpi, size, plots_pa
         total_subcells = (adata.obs['clusters'] == folder_name).sum()
         title_name = f"Sample {k} - {folder_name} ({total_subcells} cells)"
     save_namefile = plots_path / f"Spatial - {title_name}.png"
-    
+
     if save_namefile.exists() and not overwrite_existing_files:
         print(f"File 'Spatial - {title_name}.png' already exists...")
         for cell_type, selected_color in custom_colors.items():
             if cell_type=='Other cells': continue
+            if cell_type.startswith('Other'): continue
             if cell_type not in adata.obs[universe_to_color].values: continue
             if (adata.obs[universe_to_color] == cell_type).sum()==0: continue
-            title_name2 = f"Sample {k} - {cell_type} ({adata.n_obs} cells)" if folder_name == 'General' else f"Sample {k} - {folder_name} - {cell_type} ({adata.n_obs} cells)"
+            title_name2 = f"Sample {k} - {cell_type} ({adata.n_obs} cells)" if folder_name == 'General' else f"Sample {k} - {folder_name} - {cell_type} ({total_subcells} cells)"
             save_namefile2 = plots_path / f"Spatial - {title_name2}.png"
             if save_namefile2.exists() and not overwrite_existing_files:
                 print(f"File 'Spatial - {title_name2}.png' already exists...")
@@ -886,7 +922,8 @@ def plotting_helper(custom_colors, overwrite_existing_files, dpi, size, plots_pa
             # adata.obs[f"Subtypes of {cell_type}"] # Sub universe
             color_spatial = f"only {cell_type}"
                 # cmap_gene = selected_color
-            own_palette_list = [selected_color,custom_colors['Other cells']] if cell_type<'Other cells' else [custom_colors['Other cells'],selected_color]
+            # own_palette_list = [selected_color,custom_colors['Other cells']] if cell_type<'Other cells' else [custom_colors['Other cells'],selected_color]
+            own_palette_list = [custom_colors[label] for label in sorted([cell_type, f"Other cells"])] if folder_name=='General' else [custom_colors[label] for label in sorted([cell_type, f"Other {folder_name}", f"Other cells"])]
             own_palette = ListedColormap(own_palette_list)
                 # cmap_gene = ListedColormap(cmap_gene)
                 
@@ -908,19 +945,22 @@ def plotting_helper(custom_colors, overwrite_existing_files, dpi, size, plots_pa
                         size=size,
                         ax=ax)
             ax.set_facecolor("black")
-            ax.set_aspect('equal')
-            fig.tight_layout()
+            ax.set_aspect('auto')
+            # ax.set_aspect('equal')
+            fig.subplots_adjust(right=0.8)
+            # fig.tight_layout()
             plt.savefig(save_namefile2, dpi=dpi)
-            plt.close()
-            print(f"File 'Spatial - {title_name2}.png' created!")
+            plt.close(fig)
+            # print(f"File 'Spatial - {title_name2}.png' created!")
+        # print(f"Spatial plots for the cell subtypes of each single cell types in {folder_name} has been created!")
         return
     color_spatial = universe_to_color
         # cmap_gene = None
     which_colors = []
     colors_temp = list(custom_colors.keys())
     colors_temp.sort()
-    custom_colors = {k:custom_colors[k] for k in colors_temp}
-    for cell_type,selected_color in custom_colors.items():
+    custom_colors_t = {k:custom_colors[k] for k in colors_temp}
+    for cell_type,selected_color in custom_colors_t.items():
         if (adata.obs[universe_to_color] == cell_type).sum()!=0: which_colors.append(selected_color)
     own_palette_list = (which_colors)
     own_palette = ListedColormap(own_palette_list)
@@ -943,25 +983,31 @@ def plotting_helper(custom_colors, overwrite_existing_files, dpi, size, plots_pa
                 size=size,
                 ax=ax)
     ax.set_facecolor("black")
-    ax.set_aspect('equal')
-    fig.tight_layout()
+    ax.set_aspect('auto')
+    # ax.set_aspect('equal')
+    fig.subplots_adjust(right=0.8)
+    # plt.legend(ncol=1,loc='center right',bbox_to_anchor=(0.5, -0.05))
+    # fig.tight_layout()
     plt.savefig(save_namefile, dpi=dpi)
-    plt.close()
-    print(f"File 'Spatial - {title_name}.png' created!")
+    plt.close(fig)
+    # print(f"File 'Spatial - {title_name}.png' created!")
+    # print(f"Spatial plots for the cell types in {folder_name} has been created!")
         
     for cell_type, selected_color in custom_colors.items():
         if cell_type=='Other cells': continue
+        if cell_type.startswith('Other'): continue
         if cell_type not in adata.obs[universe_to_color].values: continue
         if (adata.obs[universe_to_color] == cell_type).sum()==0: continue
             
-        title_name2 = f"Sample {k} - {cell_type} ({adata.n_obs} cells)"
+        title_name2 = f"Sample {k} - {cell_type} ({adata.n_obs} cells)" if folder_name == 'General' else f"Sample {k} - {folder_name} - {cell_type} ({total_subcells} cells)"
         save_namefile2 = plots_path / f"Spatial - {title_name2}.png"
         if save_namefile2.exists() and not overwrite_existing_files: 
             print(f"File 'Spatial - {title_name2}.png' already exists...")
             continue
         color_spatial = f"only {cell_type}"
             # cmap_gene = selected_color
-        own_palette_list = [selected_color,custom_colors['Other cells']] if cell_type<'Other cells' else [custom_colors['Other cells'],selected_color]
+        # own_palette_list = [selected_color,custom_colors['Other cells']] if cell_type<'Other cells' else [custom_colors['Other cells'],selected_color]
+        own_palette_list = [custom_colors[label] for label in sorted([cell_type, f"Other cells"])] if folder_name=='General' else [custom_colors[label] for label in sorted([cell_type, f"Other {folder_name}", f"Other cells"])]
         own_palette = ListedColormap(own_palette_list)
             # cmap_gene = ListedColormap(cmap_gene)
         fig, ax = plt.subplots()
@@ -982,11 +1028,14 @@ def plotting_helper(custom_colors, overwrite_existing_files, dpi, size, plots_pa
                     size=size,
                     ax=ax)
         ax.set_facecolor("black")
-        ax.set_aspect('equal')
-        fig.tight_layout()
+        ax.set_aspect('auto')
+        # ax.set_aspect('equal')
+        fig.subplots_adjust(right=0.8)
+        # fig.tight_layout()
         plt.savefig(save_namefile2, dpi=dpi)
-        plt.close()
-        print(f"File 'Spatial - {title_name2}.png' created!")
+        plt.close(fig)
+        # print(f"File 'Spatial - {title_name2}.png' created!")
+    # print(f"Spatial plots for the cell subtypes of each single cell types in {folder_name} has been created!")
 
 ## Plotting spacial data
 def plot_spatial(adata_dicts,custom_colors,output_dir,overwrite_existing_files=False,dpi=300,size=50):
@@ -1018,6 +1067,7 @@ def plot_spatial(adata_dicts,custom_colors,output_dir,overwrite_existing_files=F
             plots_path_folder = plots_path / folder_name
             plots_path_folder.mkdir(parents=True, exist_ok=True)
             plotting_helper(custom_colors, overwrite_existing_files, dpi, size, plots_path_folder, k, adata, folder_name)
+        print(f"All spatial plots for cell subtypes in Sample {k} have been created!")
         # raise Exception (f"NotFinishedFunctionError: Just testing. This is custom_colors: {custom_colors}")
 
 ## Calculating cell proportions and saving them in csv files
@@ -1041,11 +1091,11 @@ def calculate_cell_proportions(adata_dicts,custom_colors, output_dir, overwrite_
             if key not in custom_colors.keys(): custom_colors[key] = val
         for folder_name in adata.uns['folder_names']:
             if folder_name == 'General':
-                universe_to_count = 'clusters' 
+                universe_to_count = adata.obs['clusters'] 
                 total_subcells = adata.n_obs
                 title_name = f"Sample {k} ({adata.n_obs} cells)"
             else:
-                universe_to_count = f"Subtypes of {folder_name}"
+                universe_to_count = adata.obs[f"Subtypes of {folder_name}"][adata.obs[f"Subtypes of {folder_name}"]!="Other cells"]
                 total_subcells = (adata.obs['clusters'] == folder_name).sum()
                 title_name = f"Sample {k} - {folder_name} ({total_subcells} cells)"
             save_namefile = output_dir / "results" /  folder_name / f"Cell type proportions - {title_name}.csv"
@@ -1059,13 +1109,13 @@ def calculate_cell_proportions(adata_dicts,custom_colors, output_dir, overwrite_
                 break
             prop_dict = {}
             for cell_type,_ in custom_colors.items():
-                if cell_type not in adata.obs[universe_to_count].values: continue
-                sum_dict[cell_type]  = (adata.obs[universe_to_count] == cell_type).sum()
-                prop_dict[cell_type] = str(np.round(sum_dict[cell_type]/total_subcells*100,2))+"%"
+                if cell_type not in universe_to_count.values: continue
+                sum_dict[cell_type]  = (universe_to_count == cell_type).sum()
+                prop_dict[cell_type] = str(np.round(sum_dict[cell_type]/total_subcells*100,2))+"%" if total_subcells != 0 else "0%"
             
-            df = pd.DataFrame(data = {cell_type:[sum_dict[cell_type],prop_dict[cell_type]] for cell_type,_ in custom_colors.items() if cell_type in adata.obs[universe_to_count].values}, index = ["Total cells in cell type", "Percentage"])
+            df = pd.DataFrame(data = {cell_type:[sum_dict[cell_type],prop_dict[cell_type]] for cell_type,_ in custom_colors.items() if cell_type in universe_to_count.values}, index = ["Total cells in cell type", "Percentage"])
             df.to_csv(save_namefile, index=False)
-            print(f"File 'Cell type proportions - {title_name}.csv' created!")
+        print(f"All 'Cell type proportions' csv files for Sample {k} have been created!")
 
 
 

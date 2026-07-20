@@ -2,476 +2,968 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>SpPrAn config generator</title>
 <style>
-  body { font-family: Arial, sans-serif; margin: 20px; max-width: 900px; }
-  h1 { font-size: 1.6em; }
-  label { display:block; margin-top:12px; font-weight:600; }
-  input[type="text"], select, textarea { width:100%; padding:8px; margin-top:6px; box-sizing:border-box; }.row { display:flex; gap:10px; align-items:flex-end; }.row > * { flex:1; }
-  button { margin-top:10px; padding:8px 12px; }.chip { display:inline-block; padding:6px 8px; border-radius:12px; background:#f0f0f0; margin:6px 6px 0 0; }.list-item { border:1px solid #ddd; padding:8px; margin:8px 0; border-radius:6px; }.small { font-size:0.9em; color:#555; }
-  pre { background:#f6f8fa; padding:12px; overflow:auto; }
+  :root { color-scheme: light; --border: #d8dee4; --muted: #57606a; --panel: #f6f8fa; --danger: #b42318; }
+
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; margin: 20px auto; max-width: 980px; padding: 0 16px 40px; line-height: 1.4; }
+  h1 { font-size: 1.6rem; }
+  h3, h4 { margin-bottom: 6px; }
+  label { display: block; margin-top: 12px; font-weight: 600; }
+  input[type="text"], input[type="number"], select, textarea { width: 100%; padding: 8px; margin-top: 6px; border: 1px solid #8c959f; border-radius: 4px; background: white; }
+  input[type="file"] { margin-top: 8px; }
+  input[type="color"] { width: 48px; height: 34px; padding: 2px; border: 1px solid #8c959f; border-radius: 4px; background: white; }
+  button { margin-top: 10px; padding: 8px 12px; cursor: pointer; }
+  button.danger { color: var(--danger); }
+  hr.section-divider { border: 0; border-top: 8px solid #1c1b1b; border-radius: 5px; margin: 24px 0 18px; }.row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }.row > * { flex: 1 1 220px; }.fixed-button { flex: 0 0 150px; }.small { font-size: 0.9rem; color: var(--muted); }.list-item { border: 1px solid var(--border); padding: 12px; margin: 10px 0; border-radius: 7px; }.subtype-list-item { border-left: 4px solid var(--border); margin-left: 16px; background: #fcfcfc; }.item-header { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }.item-title { display: flex; align-items: center; gap: 8px; }.color-swatch { display: inline-block; width: 18px; height: 18px; border-radius: 3px; border: 1px solid rgba(0, 0, 0, 0.25); }.color-control { display: flex; gap: 8px; align-items: center; }.color-control label { margin: 0; }.marker-grid { margin-top: 12px; }.marker-row { display: grid; grid-template-columns: minmax(250px, 2fr) minmax(180px, 1fr); gap: 10px; align-items: center; padding: 6px 0; border-top: 1px solid #eef0f2; }.marker-row:first-child { border-top: 0; }.marker-row select { margin-top: 0; }.subtype-panel { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }.empty-state { color: var(--muted); font-size: 0.9rem; padding: 8px 0; }.status-box { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 10px; margin-top: 10px; }
+  pre { background: var(--panel); padding: 12px; overflow: auto; min-height: 120px; border: 1px solid var(--border); border-radius: 6px; }
+
+  @media (max-width: 700px) { .marker-row { grid-template-columns: 1fr; } .fixed-button { flex-basis: 100%; } .subtype-list-item { margin-left: 0; } }
 </style>
 </head>
 <body>
   <h1>Generate YAML config file for SpPrAn pipeline</h1>
-  <p>This form creates a config file for the SpPrAn pipeline. </p>
+  <p>This form creates a config file for the SpPrAn pipeline.</p>
   <p class="small">
-    Adjust the configurations to your needs filling the fileds. Then, download the config file.<br>
-    After created, you can edit it directly in a code editor or using the Jupyter Notebook "edit_config_file.ipynb".<br>
+    Adjust the configuration fields and download the resulting YAML file.
   </p>
 
   <form id="mainForm" onsubmit="return false;">
-    <label for="workspace">Workspace</label>
-    <p class="small">Add the pathnames to the directories and select the files' format type (tsv or csv).</p>
-    <!-- Input -->
-    <label class="small">Input directory (where the files are located):</label>
-    <input id="input_dir" type="text" placeholder="Enter a directory. For example: /Users/usrnm/Downloads/files_folder or C:\Users\usrnm\Downloads\files_folder" />
-    <!-- Output -->
-    <label class="small">Output directory (where the result files will be located):</label>
-    <input id="output_dir" type="text" placeholder="Enter a directory. For example: /Users/usrnm/Downloads/files_folder or C:\Users\usrnm\Downloads\files_folder" />
-    <!-- Filetype -->
-    <label class="small" for="filetype">What is the all input files' format type?:</label>
-    <select id="filetype">
-      <option value="csv">csv (comma-separated value) file</option>
-      <option value="tsv">tsv (tab-separated value) file</option>
-    </select>
-    <hr />
+    <hr class="section-divider" />
 
-    <!-- Protein marker -->
-    <label for="protein_markers">Protein markers</label>
-    <p class="small">Added protein markers should be named exactly as in the "Positivity" columns in the csv files.</p>
+    <h3>Workspace</h3>
+    <p class="small">Add the directory paths and choose the common input-file format.</p>
+
+    <label class="small" for="input_dir">Input directory</label>
+    <input id="input_dir" type="text" placeholder="For example: /Users/usrnm/Downloads/files_folder or C:\Users\usrnm\Downloads\files_folder" />
+
+    <label class="small" for="output_dir">Output directory</label>
+    <input id="output_dir" type="text" placeholder="For example: /Users/usrnm/Downloads/results_folder or C:\Users\usrnm\Downloads\results_folder" />
+
+    <label class="small" for="filetype">Input-file format</label>
+    <select id="filetype">
+      <option value="csv">csv (comma-separated values)</option>
+      <option value="tsv">tsv (tab-separated values)</option>
+    </select>
+
+    <hr class="section-divider" />
+
+    <h3>Protein markers</h3>
+    <p class="small">
+      Upload a representative TSV or CSV file. Positivity columns selected here define the major cell types. Once selected, a marker disappears from this dropdown. Positivity columns not selected here remain available for defining cell subtypes.
+    </p>
+
+    <label class="small" for="markerFile">Upload a TSV or CSV file</label>
+    <input type="file" id="markerFile" accept=".tsv,.csv,text/tab-separated-values,text/csv" />
+
     <div class="row">
-      <div>
-        <label class="small" for="newProteinMarker">Add a protein marker name</label>
-        <input id="newProteinMarker" type="text" placeholder="New protein marker name" />
-      </div>
-      <div style="flex:0 0 150px">
-        <button id="addProteinMarkerBtn">Add</button>
+      <div id="columnSelectContainer"></div>
+      <div class="fixed-button">
+        <button id="addProteinMarkerBtn" type="button" hidden>Add marker</button>
       </div>
     </div>
-    <div id="proteinMarkersList" aria-live="polite"></div>
-    <hr />
 
-    <!-- Cell types -->
-    <label for="cell_types">Cell types</label>
-    <p class="small">Name the cell types you need and then define them selecting a state for each protein marker: "Present", "Abscent", "Not applicable" </p>
+    <div id="markerPoolStatus" class="status-box small" hidden></div>
+    <div id="proteinMarkersList" aria-live="polite"></div>
+
+    <hr class="section-divider" />
+
+    <h3>Cell types</h3>
+    <p class="small">
+      Define each major cell type using the selected protein markers. A value of “Not applicable” becomes <code>null</code> in the YAML array.
+    </p>
+
     <div class="row">
       <div>
         <label class="small" for="newCellType">Add a cell type</label>
         <input id="newCellType" type="text" placeholder="New cell type" />
       </div>
-      <div style="flex:0 0 150px">
-        <button id="addCellTypeBtn">Add</button>
+      <div class="fixed-button">
+        <button id="addCellTypeBtn" type="button">Add cell type</button>
       </div>
     </div>
-    <div id="cellTypesList" aria-live="polite">
-    </div>
-    <hr />
-    
-    <label for="output_files">Output files</label>
-    <!-- Overwrite files -->
-    <p class="small">Each time the pipeline is run, new output files are generated, but they are not automatically replaced with existing files unless you decide it.</p>
-    <label class="small" for="overwrite_existing_files">Do you want to overwrite existing output files?</label>
+
+    <div id="cellTypesList" aria-live="polite"></div>
+
+    <hr class="section-divider" />
+
+    <h3>Output files</h3>
+    <p class="small">Choose whether existing pipeline outputs may be replaced.</p>
+
+    <label class="small" for="overwrite_existing_files">Overwrite existing output files?</label>
     <select id="overwrite_existing_files">
-      <option type="boolean" value=false>No, I want to keep my old output files and not to save the new ones</option>
-      <option type="boolean" value=true>Yes, I want to overwrite all output files</option>
+      <option value="false">No, keep the old files and do not save replacements</option>
+      <option value="true">Yes, overwrite existing output files</option>
     </select>
-    
-    <!-- Save anndata files -->
-    <p class="small">Anndata files are used for a faster pipeline rerun since they contains cleaned neccesary data for generate outputs.</p>
-    <label class="small" for="locally_save_anndata_files">Do you want to generate and save anndata files?</label>
+
+    <p class="small">AnnData files can make later pipeline runs faster because they preserve cleaned data.</p>
+    <label class="small" for="locally_save_anndata_files">Generate and save AnnData files?</label>
     <select id="locally_save_anndata_files">
-      <option type="boolean" value=true>Yes</option>
-      <option type="boolean" value=false>No</option>
+      <option value="true">Yes</option>
+      <option value="false">No</option>
     </select>
-    <hr />
 
-    <label for="spatial_plot_settings">Spatial plot settings</label>
-    <!-- Overwrite files -->
-    <label class="small" for="dpi">Dots per inch (DPI) for output plots:</label>
-    <input id="dpi" type="number" placeholder="300" />
-    
-    <!-- Save anndata files -->
-    <label class="small" for="scatter_point_size">Size of scatter points for output plots:</label>
-    <input id="scatter_point_size" type="number" placeholder="50" />
-    <hr />
+    <hr class="section-divider" />
 
-    <!-- Download and preview YAML file -->
-    <div style="margin-top:14px;">
-      <button id="downloadYaml">Download YAML</button>
-      <button id="previewYaml">Preview YAML</button>
+    <h3>Spatial plot settings</h3>
+    <label class="small" for="dpi">Dots per inch (DPI)</label>
+    <input id="dpi" type="number" min="1" placeholder="300" />
+
+    <label class="small" for="scatter_point_size">Scatter-point size</label>
+    <input id="scatter_point_size" type="number" min="0" step="any" placeholder="50" />
+
+    <hr class="section-divider" />
+
+    <div class="row">
+      <div class="fixed-button"><button id="downloadYaml" type="button">Download YAML</button></div>
+      <div class="fixed-button"><button id="previewYaml" type="button">Preview YAML</button></div>
     </div>
 
     <h3>YAML Preview</h3>
-    <pre id="yamlPreview" style="min-height:120px;">(click "Preview YAML")</pre>
+    <pre id="yamlPreview">(click “Preview YAML”)</pre>
   </form>
 
 <script>
-function toYAML(obj, indent = 0) {
-  const pad = '  '.repeat(indent);
-  const lines = [];
+'use strict';
 
-  function quoteIfNeeded(s) {
-    if (s === null) return 'null';
-    if (typeof s === 'number' || typeof s === 'boolean') return s;
-    if (/^[\d-]+$/.test(s) || s === '' || /[:#{}\[\],&*?]|^\s|^\-?\d|^true$|^false$/.test(s)) {
-      // escape double quotes and backslashes
-      return '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
-    }
-    return s;
+/* -------------------------------------------------------------------------- */
+/* Application state                                                          */
+/* -------------------------------------------------------------------------- */
+
+const state = {
+  allProteinColumns: [],
+  proteinMarkers: [],
+  cellTypes: []
+};
+
+function makeId() {
+  if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+    return window.crypto.randomUUID();
   }
-
-  if (Array.isArray(obj)) {
-    if (obj.length === 0) return '[]';
-    obj.forEach(item => {
-      if (typeof item === 'object' && item !== null) {
-        lines.push(pad + '- ' + (Object.keys(item).length ? '' : '{}'));
-        lines.push(toYAML(item, indent + 1));
-      } else {
-        // lines.push(pad + '- ' + quoteIfNeeded(String(item)));
-        lines.push(pad + '- ' + item);
-      }
-    });
-    return lines.join('\n');
-  }
-
-  if (typeof obj === 'object' && obj !== null) {
-    const keys = Object.keys(obj);
-    if (keys.length === 0) return '{}';
-    keys.forEach(key => {
-      const val = obj[key];
-      const safeKey = /^[A-Za-z0-9_/"\-]+$/.test(key) ? key : '"' + key.replace(/"/g, '\\"') + '"';
-      const s = String(val).startsWith('#') ? JSON.stringify(String(val)) : val;
-      if (typeof val === 'object' && val !== null) {
-        if (Array.isArray(val)) {
-          if (val.length === 0) {
-            lines.push(pad + safeKey + ': []');
-          } else {
-            lines.push(pad + safeKey + ':');
-            lines.push(toYAML(val, indent + 1));
-          }
-        } else {
-          // nested object
-          lines.push(pad + safeKey + ':');
-          lines.push(toYAML(val, indent + 1));
-        }
-      } else {
-        // lines.push(pad + safeKey + ': ' + quoteIfNeeded(String(val)));
-        //lines.push(pad + safeKey + ': ' + val);
-        lines.push(pad + safeKey + ': ' + s);
-      }
-    });
-    return lines.join('\n');
-  }
-
-  // return pad + quoteIfNeeded(String(obj));
-  return pad + obj;
+  return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-const protein_markers = document.getElementById('protein_markers');
-// const newOption = document.getElementById('newOption');
-const newProteinMarker = document.getElementById('newProteinMarker');
-const addProteinMarkerBtn = document.getElementById('addProteinMarkerBtn');
-const addOptionBtn = document.getElementById('addOptionBtn');
-const proteinMarkersList = document.getElementById('proteinMarkersList');
+function normalizeName(value) {
+  return String(value || '').trim();
+}
 
-let proteinMarkers = [];
+function sameName(a, b) {
+  return normalizeName(a).toLocaleLowerCase() === normalizeName(b).toLocaleLowerCase();
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getCellTypeById(cellTypeId) {
+  return state.cellTypes.find(cellType => cellType.id === cellTypeId) || null;
+}
+
+function getSubtypeById(cellType, subtypeId) {
+  return cellType.subtypes.find(subtype => subtype.id === subtypeId) || null;
+}
+
+function getSubtypeMarkerPool() {
+  const primaryMarkerSet = new Set(state.proteinMarkers);
+  return state.allProteinColumns.filter(marker => !primaryMarkerSet.has(marker));
+}
+
+function isNameUsed(name, excludedId = null) {
+  return state.cellTypes.some(cellType => {
+    if (cellType.id !== excludedId && sameName(cellType.name, name)) return true;
+    return cellType.subtypes.some(subtype => subtype.id !== excludedId && sameName(subtype.name, name));
+  });
+}
+
+/* Keep marker-dependent data valid whenever the uploaded columns or the set of
+   primary markers changes. */
+function syncStateWithMarkers() {
+  const allColumns = new Set(state.allProteinColumns);
+  state.proteinMarkers = state.proteinMarkers.filter(marker => allColumns.has(marker));
+
+  const primaryMarkers = new Set(state.proteinMarkers);
+  const subtypeMarkers = new Set(getSubtypeMarkerPool());
+
+  state.cellTypes.forEach(cellType => {
+    state.proteinMarkers.forEach(marker => {
+      if (!(marker in cellType.markerStates)) cellType.markerStates[marker] = -1;
+    });
+
+    Object.keys(cellType.markerStates).forEach(marker => {
+      if (!primaryMarkers.has(marker)) delete cellType.markerStates[marker];
+    });
+
+    cellType.subtypes.forEach(subtype => {
+      Object.keys(subtype.markerStates).forEach(marker => {
+        if (!subtypeMarkers.has(marker)) delete subtype.markerStates[marker];
+      });
+    });
+  });
+}
+
+/* -------------------------------------------------------------------------- */
+/* Protein-marker file and dropdown                                            */
+/* -------------------------------------------------------------------------- */
+
+const markerFileInput = document.getElementById('markerFile');
+const columnSelectContainer = document.getElementById('columnSelectContainer');
+const addProteinMarkerBtn = document.getElementById('addProteinMarkerBtn');
+const proteinMarkersList = document.getElementById('proteinMarkersList');
+const markerPoolStatus = document.getElementById('markerPoolStatus');
+
+markerFileInput.addEventListener('change', handleMarkerFileUpload);
+addProteinMarkerBtn.addEventListener('click', addSelectedProteinMarker);
+
+async function handleMarkerFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  try {
+    const fileContent = await file.text();
+    const columnNames = getDelimitedColumnNames(fileContent, file.name);
+    const positivityColumns = columnNames.filter(isProteinMarkerColumn);
+
+    if (positivityColumns.length === 0) {
+      throw new Error('No columns beginning with “Positivity - ” were found.');
+    }
+
+    state.allProteinColumns = [...new Set(positivityColumns)];
+    syncStateWithMarkers();
+    renderAll();
+  } catch (error) {
+    console.error(error);
+    state.allProteinColumns = [];
+    state.proteinMarkers = [];
+    syncStateWithMarkers();
+    renderAll();
+    alert(`Unable to read the marker file: ${error.message}`);
+  }
+}
+
+function getDelimitedColumnNames(fileContent, fileName) {
+  const cleanedContent = String(fileContent).replace(/^\uFEFF/, '');
+  const headerRow = cleanedContent.split(/\r?\n/).find(line => line.trim() !== '');
+  if (!headerRow) return [];
+
+  const lowerName = String(fileName || '').toLowerCase();
+  const delimiter = lowerName.endsWith('.csv') && !headerRow.includes('\t') ? ',' : '\t';
+
+  return headerRow
+    .split(delimiter)
+    .map(columnName => columnName.trim().replace(/^"|"$/g, ''))
+    .filter(Boolean);
+}
+
+function isProteinMarkerColumn(columnName) {
+  const lower = columnName.toLocaleLowerCase();
+  return lower.startsWith('positivity - ') && !lower.includes('coordinate') && !lower.includes('DAPI');
+}
+
+function addSelectedProteinMarker() {
+  const select = document.getElementById('columnSelect');
+  const marker = select ? select.value : '';
+  if (!marker) {
+    alert('Select a protein marker first.');
+    return;
+  }
+
+  if (!state.proteinMarkers.includes(marker)) {
+    state.proteinMarkers.push(marker);
+  }
+
+  syncStateWithMarkers();
+  renderAll();
+}
+
+function removeProteinMarker(marker) {
+  state.proteinMarkers = state.proteinMarkers.filter(item => item !== marker);
+  syncStateWithMarkers();
+  renderAll();
+}
+
+function renderProteinMarkerSelect() {
+  columnSelectContainer.replaceChildren();
+
+  if (state.allProteinColumns.length === 0) {
+    addProteinMarkerBtn.hidden = true;
+    return;
+  }
+
+  const availableMarkers = state.allProteinColumns.filter(
+    marker => !state.proteinMarkers.includes(marker)
+  );
+
+  const label = document.createElement('label');
+  label.className = 'small';
+  label.htmlFor = 'columnSelect';
+  label.textContent = 'Select a marker for major cell-type definitions';
+
+  const select = document.createElement('select');
+  select.id = 'columnSelect';
+  select.name = 'column';
+
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = availableMarkers.length
+    ? 'Select a protein marker'
+    : 'All positivity columns have been selected';
+  placeholder.disabled = true;
+  placeholder.selected = true;
+  select.appendChild(placeholder);
+
+  availableMarkers.forEach(marker => {
+    const option = document.createElement('option');
+    option.value = marker;
+    option.textContent = marker;
+    select.appendChild(option);
+  });
+
+  select.disabled = availableMarkers.length === 0;
+  columnSelectContainer.append(label, select);
+  addProteinMarkerBtn.hidden = false;
+  addProteinMarkerBtn.disabled = availableMarkers.length === 0;
+}
 
 function renderProteinMarkers() {
-  proteinMarkersList.innerHTML = '';
-  if (proteinMarkers.length === 0) {
-    proteinMarkersList.innerHTML = '<div class="small"><br>No protein markers added yet.</div>';
+  proteinMarkersList.replaceChildren();
+
+  if (state.proteinMarkers.length === 0) {
+    proteinMarkersList.innerHTML = '<div class="empty-state">No primary protein markers added yet.</div>';
+  } else {
+    state.proteinMarkers.forEach(marker => {
+      const item = document.createElement('div');
+      item.className = 'list-item';
+
+      const markerText = document.createElement('div');
+      markerText.textContent = marker;
+
+      const removeButton = document.createElement('button');
+      removeButton.type = 'button';
+      removeButton.className = 'danger';
+      removeButton.textContent = 'Remove';
+      removeButton.addEventListener('click', () => removeProteinMarker(marker));
+
+      item.append(markerText, removeButton);
+      proteinMarkersList.appendChild(item);
+    });
+  }
+
+  if (state.allProteinColumns.length === 0) {
+    markerPoolStatus.hidden = true;
+    markerPoolStatus.textContent = '';
     return;
   }
-  proteinMarkers.forEach((b, idx) => {
-    const div = document.createElement('div');
-    div.className = 'list-item';
-    div.innerHTML = escapeHtml(b.name) + '<div style="margin-top:8px;"><button data-idx="' + idx + '">Remove</button></div>';
-    proteinMarkersList.appendChild(div);
-  });
-  Array.from(proteinMarkersList.querySelectorAll('button[data-idx]')).forEach(btn => {
-    btn.addEventListener('click', function(ev){
-      const i = Number(this.getAttribute('data-idx'));
-      proteinMarkers.splice(i,1);
-      renderProteinMarkers();
-      syncCellTypesWithProteinMarkers();
-      renderCellTypes();
-    });
-  });
+
+  const subtypePool = getSubtypeMarkerPool();
+  markerPoolStatus.hidden = false;
+  markerPoolStatus.textContent =
+    `${state.proteinMarkers.length} marker(s) selected for major cell types; ` +
+    `${subtypePool.length} marker(s) remain available for cell subtypes.`;
 }
 
-function normalizeProteinMarkerInput(raw) {
-  let s = (raw || '').trim();
-  if (!s) return '';
-  s = s.replace(/^Positivity\s*-\s*/i, '').trim();
-  return 'Positivity - ' + s;
-}
+/* -------------------------------------------------------------------------- */
+/* Cell types                                                                  */
+/* -------------------------------------------------------------------------- */
 
-function markerExists(markerName) {
-  const needle = markerName.trim().toLowerCase();
-  return proteinMarkers.some(m => (m.name || '').trim().toLowerCase() === needle);
-}
+const newCellTypeInput = document.getElementById('newCellType');
+const addCellTypeBtn = document.getElementById('addCellTypeBtn');
+const cellTypesList = document.getElementById('cellTypesList');
 
-addProteinMarkerBtn.addEventListener('click', function(ev){
-  ev.preventDefault();
-  const canonical = normalizeProteinMarkerInput(newProteinMarker.value);
-  if (!canonical) { alert('Protein marker name required'); return; }
-  if (markerExists(canonical)) { alert('Protein marker name already added!'); newProteinMarker.value = ''; return; }
-  proteinMarkers.push({ name: canonical });
-  newProteinMarker.value = '';
-  renderProteinMarkers();
-  syncCellTypesWithProteinMarkers();
-  renderCellTypes();
+addCellTypeBtn.addEventListener('click', addCellType);
+newCellTypeInput.addEventListener('keydown', event => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    addCellType();
+  }
 });
 
-let cellTypes = [];
+function addCellType() {
+  const name = normalizeName(newCellTypeInput.value);
+  if (!name) {
+    alert('Cell type name is required.');
+    return;
+  }
+  if (isNameUsed(name)) {
+    alert('Cell type and subtype names must be unique because they are also used as YAML keys and color keys.');
+    return;
+  }
+
+  const markerStates = {};
+  state.proteinMarkers.forEach(marker => { markerStates[marker] = -1; });
+
+  state.cellTypes.push({
+    id: makeId(),
+    name,
+    color: '#00aaff',
+    markerStates,
+    showSubtypes: false,
+    subtypes: []
+  });
+
+  newCellTypeInput.value = '';
+  renderCellTypes();
+}
+
+function removeCellType(cellTypeId) {
+  state.cellTypes = state.cellTypes.filter(cellType => cellType.id !== cellTypeId);
+  renderCellTypes();
+}
 
 function renderCellTypes() {
-  cellTypesList.innerHTML = '';
+  cellTypesList.replaceChildren();
 
-  if (cellTypes.length === 0) {
-    cellTypesList.innerHTML = '<div class="small">No types added yet.</div>';
+  if (state.cellTypes.length === 0) {
+    cellTypesList.innerHTML = '<div class="empty-state">No cell types added yet.</div>';
     return;
   }
 
-  cellTypes.forEach((t, idx) => {
-    const block = document.createElement('div');
-    // const colorBox = '<span style="display:inline-block;width:16px;height:16px;vertical-align:middle;margin-right:8px;border-radius:3px;background:' + t.color + ';"></span>';
-    block.className = 'list-item';
+  state.cellTypes.forEach(cellType => {
+    cellTypesList.appendChild(createCellTypeCard(cellType));
+  });
+}
 
-    block.innerHTML = `
-      <div class="row" style="align-items:center; justify-content:space-between;">
-        <div>
-          <strong>${escapeHtml(t.name)}</strong>
-          <span class="color-swatch"
-            style="display:inline-block;width:16px;height:16px;vertical-align:middle;margin-left:8px;border-radius:3px;background:${t.color};">
-          </span>
-        </div>
+function createCellTypeCard(cellType) {
+  const card = document.createElement('section');
+  card.className = 'list-item';
+  card.dataset.cellTypeId = cellType.id;
 
-        <div style="display:flex; gap:10px; align-items:center;">
-          <label class="small" style="margin:0;">Change color</label>
-          <input type="color" value="${t.color}" data-color-idx="${idx}" title="Choose color" />
-        </div>
-      </div>
-      <div style="margin-top:6px">
-        <button data-remove="${idx}">Remove</button>
-      </div>
-      <div class="subcategory-block"></div>
-    `;
+  const header = document.createElement('div');
+  header.className = 'item-header';
 
-    const subDiv = block.querySelector('.subcategory-block');
+  const title = document.createElement('div');
+  title.className = 'item-title';
+  const strong = document.createElement('strong');
+  strong.textContent = cellType.name;
+  const swatch = document.createElement('span');
+  swatch.className = 'color-swatch';
+  swatch.style.backgroundColor = cellType.color;
+  title.append(strong, swatch);
 
-    Object.keys(t.subcategory_presence).forEach(sc => {
+  const colorControl = createColorControl(cellType.color, newColor => {
+    cellType.color = newColor;
+    swatch.style.backgroundColor = newColor;
+  });
+
+  header.append(title, colorControl);
+
+  const buttons = document.createElement('div');
+  const removeButton = document.createElement('button');
+  removeButton.type = 'button';
+  removeButton.className = 'danger';
+  removeButton.textContent = 'Remove cell type';
+  removeButton.addEventListener('click', () => removeCellType(cellType.id));
+  buttons.appendChild(removeButton);
+
+  const markerGrid = document.createElement('div');
+  markerGrid.className = 'marker-grid';
+
+  if (state.proteinMarkers.length === 0) {
+    markerGrid.innerHTML = '<div class="empty-state">Add primary protein markers to define this cell type.</div>';
+  } else {
+    state.proteinMarkers.forEach(marker => {
+      markerGrid.appendChild(createMarkerStateRow(
+        marker,
+        cellType.markerStates[marker],
+        value => { cellType.markerStates[marker] = value; }
+      ));
+    });
+  }
+
+  const subtypeToggleLabel = document.createElement('label');
+  subtypeToggleLabel.className = 'small';
+  subtypeToggleLabel.style.fontWeight = 'normal';
+
+  const subtypeToggle = document.createElement('input');
+  subtypeToggle.type = 'checkbox';
+  subtypeToggle.checked = cellType.showSubtypes;
+  subtypeToggle.style.marginRight = '7px';
+  subtypeToggle.addEventListener('change', () => {
+    cellType.showSubtypes = subtypeToggle.checked;
+    renderCellTypes();
+  });
+
+  subtypeToggleLabel.append(
+    subtypeToggle,
+    document.createTextNode(`Add cell subtypes for ${cellType.name}`)
+  );
+
+  card.append(header, buttons, markerGrid, subtypeToggleLabel);
+
+  if (cellType.showSubtypes) {
+    card.appendChild(createSubtypePanel(cellType));
+  }
+
+  return card;
+}
+
+function createColorControl(initialColor, onColorInput) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'color-control';
+
+  const label = document.createElement('label');
+  label.className = 'small';
+  label.textContent = 'Change color';
+
+  const input = document.createElement('input');
+  input.type = 'color';
+  input.value = initialColor;
+  input.title = 'Choose color';
+
+  /* Crucially, this does not re-render the card. Re-rendering during an input
+     event destroys the native color picker and makes it close immediately. */
+  input.addEventListener('input', () => onColorInput(input.value));
+
+  wrapper.append(label, input);
+  return wrapper;
+}
+
+function createMarkerStateRow(marker, currentValue, onChange) {
+  const row = document.createElement('div');
+  row.className = 'marker-row';
+
+  const markerName = document.createElement('div');
+  markerName.textContent = marker;
+
+  const select = document.createElement('select');
+  [
+    { value: '1', label: 'Present' },
+    { value: '0', label: 'Absent' },
+    { value: '-1', label: 'Not applicable' }
+  ].forEach(item => {
+    const option = document.createElement('option');
+    option.value = item.value;
+    option.textContent = item.label;
+    select.appendChild(option);
+  });
+
+  select.value = String(currentValue ?? -1);
+  select.addEventListener('change', () => onChange(Number(select.value)));
+
+  row.append(markerName, select);
+  return row;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Cell subtypes                                                               */
+/* -------------------------------------------------------------------------- */
+
+function createSubtypePanel(cellType) {
+  const panel = document.createElement('div');
+  panel.className = 'subtype-panel';
+
+  const heading = document.createElement('h4');
+  heading.textContent = `Cell subtypes of ${cellType.name}`;
+
+  const explanation = document.createElement('p');
+  explanation.className = 'small';
+  explanation.textContent =
+    'Subtype definitions use positivity columns that were not selected for the major cell-type arrays.';
+
+  const addRow = document.createElement('div');
+  addRow.className = 'row';
+
+  const inputWrapper = document.createElement('div');
+  const inputLabel = document.createElement('label');
+  inputLabel.className = 'small';
+  inputLabel.textContent = 'Add a cell subtype';
+  const subtypeNameInput = document.createElement('input');
+  subtypeNameInput.type = 'text';
+  subtypeNameInput.placeholder = 'New cell subtype';
+  inputWrapper.append(inputLabel, subtypeNameInput);
+
+  const buttonWrapper = document.createElement('div');
+  buttonWrapper.className = 'fixed-button';
+  const addButton = document.createElement('button');
+  addButton.type = 'button';
+  addButton.textContent = 'Add subtype';
+
+  const addSubtype = () => {
+    const name = normalizeName(subtypeNameInput.value);
+    if (!name) {
+      alert('Cell subtype name is required.');
+      return;
+    }
+    if (isNameUsed(name)) {
+      alert('Cell type and subtype names must be unique because they are also used as YAML keys and color keys.');
+      return;
+    }
+
+    cellType.subtypes.push({
+      id: makeId(),
+      name,
+      color: '#00aaff',
+      markerStates: {}
+    });
+
+    subtypeNameInput.value = '';
+    renderCellTypes();
+  };
+
+  addButton.addEventListener('click', addSubtype);
+  subtypeNameInput.addEventListener('keydown', event => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      addSubtype();
+    }
+  });
+
+  buttonWrapper.appendChild(addButton);
+  addRow.append(inputWrapper, buttonWrapper);
+
+  const subtypeList = document.createElement('div');
+  if (cellType.subtypes.length === 0) {
+    subtypeList.innerHTML = '<div class="empty-state">No subtypes added for this cell type.</div>';
+  } else {
+    cellType.subtypes.forEach(subtype => {
+      subtypeList.appendChild(createSubtypeCard(cellType, subtype));
+    });
+  }
+
+  panel.append(heading, explanation, addRow, subtypeList);
+  return panel;
+}
+
+function createSubtypeCard(cellType, subtype) {
+  const card = document.createElement('section');
+  card.className = 'list-item subtype-list-item';
+  card.dataset.subtypeId = subtype.id;
+
+  const header = document.createElement('div');
+  header.className = 'item-header';
+
+  const title = document.createElement('div');
+  title.className = 'item-title';
+  const strong = document.createElement('strong');
+  strong.textContent = subtype.name;
+  const swatch = document.createElement('span');
+  swatch.className = 'color-swatch';
+  swatch.style.backgroundColor = subtype.color;
+  title.append(strong, swatch);
+
+  const colorControl = createColorControl(subtype.color, newColor => {
+    subtype.color = newColor;
+    swatch.style.backgroundColor = newColor;
+  });
+
+  header.append(title, colorControl);
+
+  const removeButton = document.createElement('button');
+  removeButton.type = 'button';
+  removeButton.className = 'danger';
+  removeButton.textContent = 'Remove subtype';
+  removeButton.addEventListener('click', () => {
+    cellType.subtypes = cellType.subtypes.filter(item => item.id !== subtype.id);
+    renderCellTypes();
+  });
+
+  const markerAdder = createSubtypeMarkerAdder(subtype);
+
+  const markerGrid = document.createElement('div');
+  markerGrid.className = 'marker-grid';
+  const selectedMarkers = Object.keys(subtype.markerStates);
+
+  if (selectedMarkers.length === 0) {
+    markerGrid.innerHTML = '<div class="empty-state">No subtype protein markers selected yet.</div>';
+  } else {
+    selectedMarkers.forEach(marker => {
       const row = document.createElement('div');
-      row.className = 'row';
+      row.className = 'marker-row';
 
-      row.innerHTML = `
-        <div>${escapeHtml(sc)}</div>
-        <div>
-          <select>
-            <option value="1">Present</option>
-            <option value="0">Abscent</option>
-            <option value="-1">Not applicable</option>
-          </select>
-        </div>
-      `;
+      const name = document.createElement('div');
+      name.textContent = marker;
 
-      const sel = row.querySelector('select');
-      sel.value = String(t.subcategory_presence[sc]);
+      const controls = document.createElement('div');
+      controls.className = 'row';
+      controls.style.alignItems = 'center';
 
-      sel.addEventListener('change', () => {
-        t.subcategory_presence[sc] = Number(sel.value);
+      const stateSelect = document.createElement('select');
+      [
+        { value: '1', label: 'Present' },
+        { value: '0', label: 'Absent' },
+        { value: '-1', label: 'Not applicable' }
+      ].forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.value;
+        option.textContent = item.label;
+        stateSelect.appendChild(option);
+      });
+      stateSelect.value = String(subtype.markerStates[marker]);
+      stateSelect.addEventListener('change', () => {
+        subtype.markerStates[marker] = Number(stateSelect.value);
       });
 
-      subDiv.appendChild(row);
-    });
+      const removeMarkerButton = document.createElement('button');
+      removeMarkerButton.type = 'button';
+      removeMarkerButton.className = 'danger';
+      removeMarkerButton.textContent = 'Remove marker';
+      removeMarkerButton.style.marginTop = '0';
+      removeMarkerButton.addEventListener('click', () => {
+        delete subtype.markerStates[marker];
+        renderCellTypes();
+      });
 
-    cellTypesList.appendChild(block);
-    cellTypesList.querySelectorAll('input[type="color"][data-color-idx]').forEach(inp => {
-    inp.addEventListener('input', function () {
-      const i = Number(this.getAttribute('data-color-idx'));
-      cellTypes[i].color = this.value;
-      renderCellTypes();
+      controls.append(stateSelect, removeMarkerButton);
+      row.append(name, controls);
+      markerGrid.appendChild(row);
     });
-});
+  }
 
+  card.append(header, removeButton, markerAdder, markerGrid);
+  return card;
+}
+
+function createSubtypeMarkerAdder(subtype) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'row';
+  wrapper.style.marginTop = '10px';
+
+  const selectWrapper = document.createElement('div');
+  const label = document.createElement('label');
+  label.className = 'small';
+  label.textContent = 'Add a remaining protein marker';
+
+  const select = document.createElement('select');
+  const availableMarkers = getSubtypeMarkerPool().filter(
+    marker => !(marker in subtype.markerStates)
+  );
+
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.disabled = true;
+  placeholder.selected = true;
+  placeholder.textContent = availableMarkers.length
+    ? 'Select a subtype marker'
+    : 'No remaining markers are available';
+  select.appendChild(placeholder);
+
+  availableMarkers.forEach(marker => {
+    const option = document.createElement('option');
+    option.value = marker;
+    option.textContent = marker;
+    select.appendChild(option);
   });
-  cellTypesList.querySelectorAll('button[data-remove]').forEach(btn => {
-    btn.addEventListener('click', function () {
-      const i = Number(this.getAttribute('data-remove'));
-      cellTypes.splice(i, 1);
-      renderCellTypes();
-    });
+  select.disabled = availableMarkers.length === 0;
+
+  selectWrapper.append(label, select);
+
+  const buttonWrapper = document.createElement('div');
+  buttonWrapper.className = 'fixed-button';
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.textContent = 'Add marker';
+  button.disabled = availableMarkers.length === 0;
+  button.addEventListener('click', () => {
+    if (!select.value) {
+      alert('Select a subtype protein marker first.');
+      return;
+    }
+    subtype.markerStates[select.value] = 1;
+    renderCellTypes();
   });
+
+  buttonWrapper.appendChild(button);
+  wrapper.append(selectWrapper, buttonWrapper);
+  return wrapper;
 }
 
-function createEmptySubcategoryMap() {
-  const opts = Array.from(proteinMarkers)
-  .map(o => o.name)
-  .filter(v => v);
-  
-  const map = {};
-  opts.forEach(o => map[o] = -1);
-  return map;
-}
+/* -------------------------------------------------------------------------- */
+/* YAML                                                                        */
+/* -------------------------------------------------------------------------- */
 
-addCellTypeBtn.addEventListener('click', function(ev){
-  ev.preventDefault();
-  const name = newCellType.value && newCellType.value.trim();
-  const color = '#00aaff';
-  if (!name) { alert('Cell type name required'); return; }
-  cellTypes.push({ name: name, subcategory_presence: createEmptySubcategoryMap(), color: color});
-  newCellType.value = '';
-  renderCellTypes();
-});
-
-renderCellTypes();
-
-function syncTypesWithSubcategories() {
-  const opts = Array.from(subcategory.options)
-    .map(o => o.value)
-    .filter(v => v);
-
-  cellTypes.forEach(t => {
-    opts.forEach(o => {
-      if (!(o in t.subcategory_presence)) {
-        t.subcategory_presence[o] = -1;
-      }
-    });
-    Object.keys(t.subcategory_presence).forEach(o => {
-      if (!opts.includes(o)) delete t.subcategory_presence[o];
-    });
-  });
-}
-
-function syncCellTypesWithProteinMarkers() {
-  const keys = proteinMarkers.map(m => m.name).filter(Boolean);
-
-  cellTypes.forEach(t => {
-    keys.forEach(k => {
-      if (!(k in t.subcategory_presence)) t.subcategory_presence[k] = -1;
-    });
-    Object.keys(t.subcategory_presence).forEach(k => {
-      if (!keys.includes(k)) delete t.subcategory_presence[k];
-    });
-  });
-}
-
-function escapeHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-
-/* YAML generator */
 const previewBtn = document.getElementById('previewYaml');
 const downloadBtn = document.getElementById('downloadYaml');
 const yamlPreview = document.getElementById('yamlPreview');
 
+previewBtn.addEventListener('click', () => {
+  yamlPreview.textContent = toYAML(collectFormData());
+});
+
+downloadBtn.addEventListener('click', () => {
+  const data = collectFormData();
+  if (!validateRequiredFields(data)) return;
+
+  const yaml = `${toYAML(data)}\n`;
+  const blob = new Blob([yaml], { type: 'text/yaml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = 'config.yaml';
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+});
+
 function getNum(id, fallback) {
-  const el = document.getElementById(id);
-  const raw = (el && el.value != null) ? String(el.value).trim() : '';
-  if (raw === '') return fallback;
-  const n = Number(raw);
-  return Number.isFinite(n) ? n : fallback;
+  const value = normalizeName(document.getElementById(id)?.value);
+  if (value === '') return fallback;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
 }
 
 function getBool(id, fallback = false) {
-  const el = document.getElementById(id);
-  if (!el) return fallback;
-  if (el.type === 'checkbox') return !!el.checked;
-  const v = String(el.value).trim().toLowerCase();
-  if (['true', '1', 'yes', 'y', 'on'].includes(v)) return true;
-  if (['false', '0', 'no', 'n', 'off'].includes(v)) return false;
-  return fallback;
+  const element = document.getElementById(id);
+  if (!element) return fallback;
+  return String(element.value).toLocaleLowerCase() === 'true';
 }
 
-function presenceToYamlValue(v) {
-  if (v === -1) return null;
-  if (v === 1) return 1;
-  if (v === 0) return 0;
+function presenceToYamlValue(value) {
+  if (value === 1) return 1;
+  if (value === 0) return 0;
   return null;
 }
 
 function buildCellTypesMap() {
-  const markerOrder = proteinMarkers.map(m => m.name);
-  return cellTypes.reduce((acc, c) => {
-    acc[c.name] = markerOrder.map(markerName => {
-      const v = c.subcategory_presence?.[markerName];
-      return presenceToYamlValue(v);
+  const result = {};
+  state.cellTypes.forEach(cellType => {
+    result[cellType.name] = state.proteinMarkers.map(marker =>
+      presenceToYamlValue(cellType.markerStates[marker])
+    );
+  });
+  return result;
+}
+
+function buildCellSubTypesMap() {
+  const result = {};
+
+  state.cellTypes.forEach(cellType => {
+    if (cellType.subtypes.length === 0) return;
+
+    result[cellType.name] = {};
+    cellType.subtypes.forEach(subtype => {
+      result[cellType.name][subtype.name] = {};
+      Object.entries(subtype.markerStates).forEach(([marker, value]) => {
+        result[cellType.name][subtype.name][marker] = presenceToYamlValue(value);
+      });
     });
-    return acc;
-  }, {});
+  });
+
+  return result;
 }
 
-function validateRequiredFields(data) {
-  const errors = [];
-
-  const inDir = (data.workspace?.input_dir || '').trim();
-  const outDir = (data.workspace?.output_dir || '').trim();
-
-  if (!inDir) errors.push('input_dir must not be empty');
-  if (!outDir) errors.push('output_dir must not be empty');
-
-  if (errors.length > 0) {
-    alert('Cannot download:\n- ' + errors.join('\n- '));
-    return false;
-  }
-  return true;
+function buildCustomColorsMap() {
+  const result = {};
+  state.cellTypes.forEach(cellType => {
+    result[cellType.name] = cellType.color;
+  });
+  result['Other cells'] = '#a3a3a3';
+  state.cellTypes.forEach(cellType => {
+    cellType.subtypes.forEach(subtype => {
+      result[subtype.name] = subtype.color;
+    });
+  });
+  return result;
 }
-
 
 function collectFormData() {
   return {
     workspace: {
       input_dir: document.getElementById('input_dir').value || '',
       output_dir: document.getElementById('output_dir').value || '',
-      filetype: document.getElementById('filetype').value || csv,
+      filetype: document.getElementById('filetype').value || 'csv'
     },
-    protein_markers: proteinMarkers.map(b => (b.name)) || '',
+    protein_markers: [...state.proteinMarkers],
     cell_types: buildCellTypesMap(),
-    custom_colors: {...cellTypes.reduce((acc, c) => { acc[c.name] = c.color; return acc; }, {}), "Other cells": "#a3a3a3"},
-    overwrite_existing_files: getBool('overwrite_existing_files', true),
+    sub_cell_types: buildCellSubTypesMap(),
+    custom_colors: buildCustomColorsMap(),
+    overwrite_existing_files: getBool('overwrite_existing_files', false),
     locally_save_anndata_files: getBool('locally_save_anndata_files', true),
-    spatial_plot:{
+    spatial_plot: {
       dpi: getNum('dpi', 300),
-      scatter_point_size: getNum('scatter_point_size', 50),
-    },
+      scatter_point_size: getNum('scatter_point_size', 50)
+    }
   };
 }
 
-previewBtn.addEventListener('click', function(ev){
-  ev.preventDefault();
-  const data = collectFormData();
-  const yaml = toYAML(data);
-  yamlPreview.textContent = yaml;
-});
+function validateRequiredFields(data) {
+  const errors = [];
 
-downloadBtn.addEventListener('click', function(ev){
-  ev.preventDefault();
+  if (!normalizeName(data.workspace.input_dir)) errors.push('input_dir must not be empty');
+  if (!normalizeName(data.workspace.output_dir)) errors.push('output_dir must not be empty');
+  if (data.protein_markers.length === 0) errors.push('at least one primary protein marker is required');
+  if (Object.keys(data.cell_types).length === 0) errors.push('at least one cell type is required');
 
-  const data = collectFormData();
+  if (errors.length > 0) {
+    alert(`Cannot download:\n- ${errors.join('\n- ')}`);
+    return false;
+  }
+  return true;
+}
 
-  if (!validateRequiredFields(data)) return;
+function toYAML(value, indent = 0) {
+  const pad = '  '.repeat(indent);
 
-  const yaml = toYAML(data);
-  const blob = new Blob([yaml], { type: 'text/yaml;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
+  if (Array.isArray(value)) {
+    if (value.length === 0) return `${pad}[]`;
+    return value.map(item => {
+      if (item !== null && typeof item === 'object') {
+        return `${pad}-\n${toYAML(item, indent + 1)}`;
+      }
+      return `${pad}- ${yamlScalar(item)}`;
+    }).join('\n');
+  }
 
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'config.yaml';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-});
+  if (value !== null && typeof value === 'object') {
+    const entries = Object.entries(value);
+    if (entries.length === 0) return `${pad}{}`;
 
+    return entries.map(([key, item]) => {
+      const yamlKey = yamlKeyScalar(key);
+      if (item !== null && typeof item === 'object') {
+        const isEmpty = Object.keys(item).length === 0;
+        if (isEmpty) {
+          return `${pad}${yamlKey}: ${Array.isArray(item) ? '[]' : '{}'}`;
+        }
+        return `${pad}${yamlKey}:\n${toYAML(item, indent + 1)}`;
+      }
+      return `${pad}${yamlKey}: ${yamlScalar(item)}`;
+    }).join('\n');
+  }
 
-renderProteinMarkers();
-renderCellTypes();
+  return `${pad}${yamlScalar(value)}`;
+}
 
+function yamlKeyScalar(value) {
+  const stringValue = String(value);
+  return /^[A-Za-z_][A-Za-z0-9_-]*$/.test(stringValue)
+    ? stringValue
+    : JSON.stringify(stringValue);
+}
+
+function yamlScalar(value) {
+  if (value === null) return 'null';
+  if (typeof value === 'boolean' || typeof value === 'number') return String(value);
+
+  const stringValue = String(value);
+  const isReserved = /^(?:null|true|false|yes|no|on|off|~)$/i.test(stringValue);
+  const hasUnsafeSyntax =
+    stringValue === '' ||
+    /^[-?:,\[\]{}#&*!|>'"%@`]/.test(stringValue) ||
+    /:\s|\s#/.test(stringValue) ||
+    /^\s|\s$/.test(stringValue) ||
+    isReserved;
+
+  return hasUnsafeSyntax ? JSON.stringify(stringValue) : stringValue;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Rendering                                                                   */
+/* -------------------------------------------------------------------------- */
+
+function renderAll() {
+  renderProteinMarkerSelect();
+  renderProteinMarkers();
+  renderCellTypes();
+}
+
+renderAll();
 </script>
-
 </body>
 </html>
-

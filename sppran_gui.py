@@ -24,6 +24,7 @@ import threading
 import traceback
 import tkinter as tk
 from tkinter import Tk, Button, Label, filedialog, messagebox, scrolledtext
+import webbrowser
 from spatial_proteomics.core import main_gui
 
 class QueueWriter:
@@ -57,7 +58,11 @@ class SpPrAnGUI:
 
     def build_main_frame(self):
         Label(self.main_frame, text="SpPrAn: Spatial Proteomics Analysis", font=("Helvetica", 18, "bold")).pack(pady=20)        
-        Button(self.main_frame, text="Choose config YAML file", command=self.choose_config_file, width=25).pack(pady=10)
+        
+        button_frame = tk.Frame(self.main_frame)
+        button_frame.pack(pady=10)
+        Button(button_frame, text="Choose a config YAML file", command=self.choose_config_file, width=25).pack(side=tk.LEFT,padx=10)
+        Button(button_frame, text="Create a new config YAML file", command=self.open_config_file_editor, width=25).pack(side=tk.LEFT,padx=10)
 
         self.config_label = Label(self.main_frame, text="No config file selected", wraplength=600)
         self.config_label.pack(pady=10)
@@ -92,8 +97,14 @@ class SpPrAnGUI:
             content = file.read()
         self.text_area.delete(1.0, tk.END)
         self.text_area.insert(tk.END, content)
+        self.text_area.configure(state='disabled')
         self.root.config_path = config_file_path
         self.run_button.config(state=tk.NORMAL)
+
+    def open_config_file_editor(self):
+        self.current_dir = os.path.dirname(os.path.abspath(__file__))
+        self.html_path = os.path.join(self.current_dir, "create_config_file.html")
+        webbrowser.open(f"file://{self.html_path}")
 
     def run_pipeline(self):
         """Runs the SpPrAn analysis pipeline using the selected config file."""
