@@ -26,6 +26,7 @@ import tkinter as tk
 from tkinter import Tk, Button, Label, filedialog, messagebox, scrolledtext
 import webbrowser
 from spatial_proteomics.core import main_gui
+import yaml
 
 class QueueWriter:
     """A file-like object that writes to a queue."""
@@ -37,6 +38,12 @@ class QueueWriter:
 
     def flush(self):
         pass
+
+class WrappingLabel(tk.Label):
+    '''a type of Label that automatically adjusts the wrap to the size'''
+    def __init__(self, master=None, **kwargs):
+        tk.Label.__init__(self, master, **kwargs)
+        self.bind('<Configure>', lambda e: self.config(wraplength=self.winfo_width()))
 
 class SpPrAnGUI:
     def __init__(self, root):
@@ -61,11 +68,20 @@ class SpPrAnGUI:
         
         button_frame = tk.Frame(self.main_frame)
         button_frame.pack(pady=10)
-        Button(button_frame, text="Choose a config YAML file", command=self.choose_config_file, width=25).pack(side=tk.LEFT,padx=10)
-        Button(button_frame, text="Create a new config YAML file", command=self.open_config_file_editor, width=25).pack(side=tk.LEFT,padx=10)
-
+        Button(button_frame, text="Choose a config YAML file", command=self.choose_config_file, width=20).pack(side=tk.LEFT,padx=10)
+        Button(button_frame, text="Create a new or edit an existing config YAML file", command=self.open_config_file_editor, width=35).pack(side=tk.LEFT,padx=10)
         self.config_label = Label(self.main_frame, text="No config file selected", wraplength=600)
         self.config_label.pack(pady=10)
+
+        button_frame_2 = tk.Frame(self.main_frame)
+        button_frame_2.pack(pady=10)
+        self.input_button = Button(button_frame_2, text="Select an input directory", command=lambda: self.select_folder("input_dir"), width=20, state=tk.DISABLED)
+        self.input_button.pack(side=tk.LEFT,padx=10)
+        self.output_button = Button(button_frame_2, text="Select an output directory", command=lambda: self.select_folder("output_dir"), width=20, state=tk.DISABLED)
+        self.output_button.pack(side=tk.LEFT,padx=10)
+        self.config_label_2 = WrappingLabel(self.main_frame, text="")
+        self.config_label_2.pack(pady=10, expand=True, fill=tk.X)
+
         self.text_area = scrolledtext.ScrolledText(self.main_frame, wrap=tk.WORD, height=22, width=85, font=("Courier", 10))
         self.text_area.pack(padx=5, pady=5, expand=True, fill=tk.BOTH)
         self.run_button = Button(self.main_frame, text="Run analysis", command=self.run_pipeline, width=25, state=tk.DISABLED)
@@ -92,7 +108,7 @@ class SpPrAnGUI:
             title="Select config YAML file",
             filetypes=[("YAML files", ("*.yaml","*.yml"))]
         )
-        self.config_label.config(text=config_file_path)
+        self.config_label.config(text=f"config file = {config_file_path}")
         with open(config_file_path, "r", encoding="utf-8", errors="replace") as file:
             content = file.read()
         self.text_area.delete(1.0, tk.END)
@@ -100,11 +116,36 @@ class SpPrAnGUI:
         self.text_area.configure(state='disabled')
         self.root.config_path = config_file_path
         self.run_button.config(state=tk.NORMAL)
+        self.input_button.config(state=tk.NORMAL)
+        self.output_button.config(state=tk.NORMAL)
+        with open(config_file_path) as f:
+            cfg = yaml.safe_load(f)
+        self.config_label_2.config(text=f"input_dir = {cfg["workspace"]['input_dir']}\n\noutput_dir = {cfg["workspace"]['output_dir']}")
+
+    def select_folder(self, dir_type):
+        if not getattr(self.root, 'config_path', None):
+            messagebox.showerror("Missing config file", "Please select a config YAML file.")
+            return None
+        folder = filedialog.askdirectory()
+        with open(self.root.config_path) as f:
+            cfg = yaml.safe_load(f)
+        if folder != "": cfg["workspace"][dir_type] = folder
+        with open(self.root.config_path, "w") as f:
+            yaml.safe_dump(cfg, f)
+        with open(self.root.config_path, "r", encoding="utf-8", errors="replace") as file:
+            content = file.read()
+        self.text_area.configure(state='normal')
+        self.text_area.delete(1.0, tk.END)
+        self.text_area.insert(tk.END, content)
+        self.text_area.configure(state='disabled')
+        self.config_label_2.config(text=f"input_dir = {cfg["workspace"]['input_dir']}\noutput_dir = {cfg["workspace"]['output_dir']}")
+        return folder
 
     def open_config_file_editor(self):
-        self.current_dir = os.path.dirname(os.path.abspath(__file__))
-        self.html_path = os.path.join(self.current_dir, "create_config_file.html")
-        webbrowser.open(f"file://{self.html_path}")
+        if getattr(sys, 'frozen', False): self.base_path = Path(sys._MEIPASS)
+        else: self.base_path = Path(__file__).parent
+        self.html_path = self.base_path / "create_config_file.html"
+        webbrowser.open(self.html_path.as_uri())
 
     def run_pipeline(self):
         """Runs the SpPrAn analysis pipeline using the selected config file."""

@@ -32,6 +32,7 @@ from scipy.stats import mannwhitneyu
 
 from itertools import combinations, product
 import networkx as nx
+from collections import OrderedDict
 
 # Functions
 
@@ -384,7 +385,8 @@ def expand_subsets(col,df):
             list_to_df.append([c[aux] for c in combos])
             aux+=1
         else: list_to_df.append([val]*2**n)
-    return pd.DataFrame(list_to_df, columns=[f"{col}_{''.join(map(str, c))}" for c in combos])
+    # return pd.DataFrame(list_to_df, columns=[f"{col}_{''.join(map(str, c))}" for c in combos])
+    return pd.DataFrame(list_to_df, columns=[f"{col}_{c}" for c in range(len(combos))])
 
 def move_bigger_groups(dic, zero_degree_items, target, final_subsets):
     """
@@ -532,7 +534,7 @@ def plot_digraph(ct_df, protein_markers, output_dir, output_filename_identifier,
     """
     combinations_list = [list(c) for c in combinations(ct_df.columns, 2)]
     dicc_subsets = {col:expand_subsets(col, ct_df) for col in ct_df.columns}
-    
+
     dicc_temp = {}
     max_N = max([k for k in order_dicc.keys()])
     for total_N, cell_types in order_dicc.items():
@@ -548,6 +550,7 @@ def plot_digraph(ct_df, protein_markers, output_dir, output_filename_identifier,
     for cell_type in ct_df.columns: cell_type_chart.add_node(cell_type) 
     
     final_subsets = {cell_type:[] for cell_type in ct_df.columns}
+    final_subsets_mirror = {cell_type:[] for cell_type in ct_df.columns}
     for elem in combinations_list:
         temp_0 = list(dicc_subsets[elem[0]].columns)
         temp_1 = [col for col in dicc_subsets[elem[0]].columns for col_c in dicc_subsets[elem[1]].columns if dicc_subsets[elem[0]][col].equals(dicc_subsets[elem[1]][col_c])]
@@ -577,43 +580,57 @@ def plot_digraph(ct_df, protein_markers, output_dir, output_filename_identifier,
                 0.2+len(temp_new)
                 match len(temp_new):
                     case x if x>1:
-                        df_temp = dicc_subsets[elem[0]].rename(index={idx:val for idx,val in enumerate(protein_markers)})
+                        # df_temp = dicc_subsets[elem[0]].rename(index={idx:val for idx,val in enumerate(protein_markers)})
                         print(f"There are sub cell types that are not defined by user and belong to both {elem[0]} and {elem[1]}.")#\nThey are the following:")
                         
-                        for sct_def in temp_new:
+                        for num_to_add,sct_def in enumerate(temp_new):
                             # print(df_temp[sct_def].to_dict())
                             if sct_def in cell_type_chart:
                                 if not nx.has_path(cell_type_chart,source=sct_def,target=elem[0]): 
                                     cell_type_chart.add_edges_from([(sct_def,elem[0])])
                                     final_subsets[elem[0]].append(sct_def)
+                                    name_to_add = f"Rare {elem[0]} & {elem[1]}_{num_to_add+1}"
+                                    final_subsets_mirror[elem[0]].append((sct_def,name_to_add))
                                 if not nx.has_path(cell_type_chart,source=sct_def,target=elem[1]): 
                                     cell_type_chart.add_edges_from([(sct_def,elem[1])])
                                     final_subsets[elem[1]].append(sct_def)
+                                    name_to_add = f"Rare {elem[0]} & {elem[1]}_{num_to_add+1}"
+                                    final_subsets_mirror[elem[1]].append((sct_def,name_to_add))
                             else: 
                                 cell_type_chart.add_node(sct_def) # Adding the node to the graph if it doesn't exist # debugging
                                 cell_type_chart.add_edges_from([(sct_def,elem[0])])
                                 cell_type_chart.add_edges_from([(sct_def,elem[1])])
                                 final_subsets[elem[0]].append(sct_def)
                                 final_subsets[elem[1]].append(sct_def)
-                            custom_colors[sct_def] = create_intersection_color(sct_def,[elem[0],elem[1]],custom_colors,limit_dim_color[temp_new.index(sct_def)])
+                                name_to_add = f"Rare {elem[0]} & {elem[1]}_{num_to_add+1}"
+                                final_subsets_mirror[elem[0]].append((sct_def,name_to_add))
+                                final_subsets_mirror[elem[1]].append((sct_def,name_to_add))
+                            custom_colors[f"Rare {elem[0]} & {elem[1]}_{num_to_add+1}"] = create_intersection_color(f"Rare {elem[0]} & {elem[1]}_{num_to_add+1}",[elem[0],elem[1]],custom_colors,limit_dim_color[temp_new.index(sct_def)])
                     case x if x==1:
-                        df_temp = dicc_subsets[elem[0]].rename(index={idx:val for idx,val in enumerate(protein_markers)})
+                        # df_temp = dicc_subsets[elem[0]].rename(index={idx:val for idx,val in enumerate(protein_markers)})
                         print(f"There is a sub cell type that is not defined by user and belongs to both {elem[0]} and {elem[1]}.")#\nIt is the following:")
                         # print(df_temp[temp_new[0]].to_dict())
                         if temp_new[0] in cell_type_chart:
                             if not nx.has_path(cell_type_chart,source=temp_new[0],target=elem[0]): 
                                 cell_type_chart.add_edges_from([(temp_new[0],elem[0])])
                                 final_subsets[elem[0]].append(temp_new[0])
+                                name_to_add = f"Rare {elem[0]} & {elem[1]}_1"
+                                final_subsets_mirror[elem[0]].append((temp_new[0],name_to_add))
                             if not nx.has_path(cell_type_chart,source=temp_new[0],target=elem[1]): 
                                 cell_type_chart.add_edges_from([(temp_new[0],elem[1])])
                                 final_subsets[elem[1]].append(temp_new[0])
+                                name_to_add = f"Rare {elem[0]} & {elem[1]}_1"
+                                final_subsets_mirror[elem[1]].append((temp_new[0],name_to_add))
                         else:
                             cell_type_chart.add_node(temp_new[0]) # Adding the node to the graph if it doesn't exist # debugging  
                             cell_type_chart.add_edges_from([(temp_new[0],elem[0])])
                             cell_type_chart.add_edges_from([(temp_new[0],elem[1])])
                             final_subsets[elem[0]].append(temp_new[0])
                             final_subsets[elem[1]].append(temp_new[0])
-                        custom_colors[temp_new[0]] = create_intersection_color(temp_new[0],[elem[0],elem[1]],custom_colors)
+                            name_to_add = f"Rare {elem[0]} & {elem[1]}_1"
+                            final_subsets_mirror[elem[0]].append((temp_new[0],name_to_add))
+                            final_subsets_mirror[elem[1]].append((temp_new[0],name_to_add))
+                        custom_colors[f"Rare {elem[0]} & {elem[1]}_1"] = create_intersection_color(f"Rare {elem[0]} & {elem[1]}_1",[elem[0],elem[1]],custom_colors)
                     case _: pass
             case _: pass
     
@@ -626,21 +643,41 @@ def plot_digraph(ct_df, protein_markers, output_dir, output_filename_identifier,
                     cell_type_chart.remove_edge(ct, ct_temp)
     csv_path = output_dir / "results" / output_filename_identifier
     if not csv_path.exists(): csv_path.mkdir(parents=True, exist_ok=True)
-    pd.DataFrame({k:[v] for k,v in final_subsets.items()},index=['Subsets']).T.to_csv(csv_path / "Cell type subsets.csv", index=True)
+    temu_dicc = {cell_type:[] for cell_type in final_subsets.keys()}
+    for cell_type, list_val in final_subsets.items():
+        for elem_prime in list_val:
+            # bandera = 0
+            for elem_to_check in final_subsets_mirror[cell_type]:
+                if elem_prime == elem_to_check[0]:
+                    temu_dicc[cell_type].append(elem_to_check[1])
+                    # bandera+=1
+            # if bandera==0:
+            #     print("who's elem_prime?",elem_prime)
+    pd.DataFrame({k:[v] for k,v in temu_dicc.items()},index=['Subsets']).T.to_csv(csv_path / "Cell type subsets.csv", index=True)
     
     # ct_final_subsets = pd.DataFrame(cell_types, index=protein_markers, dtype=object)
     ct_final_subsets = ct_df.copy()
     final_order = []
     new_columns = {}
+    past_keys = []
     cols_ct_final_subsets = list(ct_final_subsets.columns)
     for k,val in final_subsets.items():
         keys_new_columns = list(new_columns.keys())
         columns_to_check = cols_ct_final_subsets+keys_new_columns
         if val:
             for ct in val:
-                if ct not in columns_to_check:
-                    new_columns[ct]=dicc_subsets[k][ct].rename(index={idx:pmarker for idx,pmarker in enumerate(protein_markers)})
-                    final_order.append(ct)
+                if ct not in columns_to_check and ct not in past_keys:
+                    for elem_to_check in final_subsets_mirror[k]:
+                        if ct == elem_to_check[0]:
+                            # print("debug: ct",ct)
+                            # print("debug: elem_to_check",elem_to_check)
+                            # print("debug: k",k)
+                            past_keys.append(ct)
+                            new_columns[elem_to_check[1]]=dicc_subsets[k][ct].rename(index={idx:pmarker for idx,pmarker in enumerate(protein_markers)})
+                            final_order.append(elem_to_check[1])
+                    # raise Exception(f"test: who's ct? {ct}")
+                    # new_columns[ct]=dicc_subsets[k][ct].rename(index={idx:pmarker for idx,pmarker in enumerate(protein_markers)})
+                    # final_order.append(ct)
         final_order.append(k)
     if new_columns: ct_final_subsets = pd.concat([ct_final_subsets,pd.DataFrame(new_columns)],axis=1)
     ct_final_subsets = ct_final_subsets[final_order]
@@ -655,7 +692,7 @@ def plot_digraph(ct_df, protein_markers, output_dir, output_filename_identifier,
     df_df_temp.to_csv(csv_path / "All cell type definitions.csv", index=True)
     
     # plt.figure(figsize=(6,6),dpi=300)
-    # cell_type_chart = cell_type_chart.subgraph(list(ct_df.columns)).copy() # This line avoids to plot not-defined cell types
+    cell_type_chart = cell_type_chart.subgraph(list(ct_df.columns)).copy() # This line avoids to plot not-defined cell types
     # pos = nx.spring_layout(cell_type_chart, seed=538610)  # This can be replaced with other layout strategies
     pos = {}
     zero_degree_ct = [cell_type for cell_type in ct_df.columns if cell_type_chart.degree[cell_type] == 0]
@@ -679,7 +716,243 @@ def plot_digraph(ct_df, protein_markers, output_dir, output_filename_identifier,
     if not plots_path.exists(): plots_path.mkdir(parents=True, exist_ok=True)
     plt.savefig(plots_path / "Cell types hierarchy.png")
     plt.close()
-    return final_subsets, ct_final_subsets, dicc_temp[max_N], custom_colors
+    return temu_dicc, ct_final_subsets, dicc_temp[max_N], custom_colors
+
+def plot_cell_hierarchy(
+        graph: nx.DiGraph,
+        custom_colors,
+        save_path,
+        *,
+        figsize: tuple[float, float] | None = None,
+        show_marker_rules: bool = True,
+        rules_on_edges: bool = False,
+        horizontal_spacing: float = 3.0,
+        vertical_spacing: float = 2.2,
+        title: str = "Cell phenotype hierarchy",
+        dpi: int = 300,
+    ):
+    """
+    Plot a cell hierarchy whose arrows point from child to parent.
+
+    By default, marker rules are placed inside each node. Set
+    rules_on_edges=True to place subtype-defining rules on the edges instead.
+    """
+
+    def forest_layout(
+            graph: nx.DiGraph,
+            *,
+            horizontal_spacing: float = 3.0,
+            vertical_spacing: float = 2.2,
+            root_gap: float = 1.5,
+        ) -> dict[str, tuple[float, float]]:
+        """Place every parent above the horizontal center of its descendants."""
+
+        parent_to_child = graph.reverse(copy=False)
+        roots = graph.graph.get("root_order", [node for node in graph if graph.out_degree(node) == 0])
+
+        positions: dict[str, tuple[float, float]] = {}
+        cursor = 0.0
+
+        def place_subtree(node: str) -> float:
+            nonlocal cursor
+            children = list(parent_to_child.successors(node))
+            if children:
+                child_x = [place_subtree(child) for child in children]
+                x_position = sum(child_x) / len(child_x)
+            else:
+                x_position = cursor
+                cursor += horizontal_spacing
+            level = graph.nodes[node]["level"]
+            positions[node] = (x_position, level * vertical_spacing)
+            return x_position
+
+        for index, root in enumerate(roots):
+            place_subtree(root)
+            if index < len(roots) - 1:
+                cursor += root_gap * horizontal_spacing
+
+        return positions
+
+    def wrap_rule_text(rule_text: str, max_items_per_line: int = 2) -> str:
+        """Wrap semicolon-separated marker rules across multiple lines."""
+        if not rule_text:
+            return ""
+
+        items = [item.strip() for item in rule_text.split(";") if item.strip()]
+        lines = [
+            "\n".join(items[index : index + max_items_per_line])
+            for index in range(0, len(items), max_items_per_line)
+        ]
+        return "\n".join(lines)
+
+    def short_marker_name(marker: str) -> str:
+        """Convert a long positivity-column name into a compact marker name."""
+        name = str(marker).strip()
+        name = name.replace("Positivity - ", "").replace("* (MV - CYTO)"," (Cytoplasm)").replace("* (MV - NUC)"," (Nucleus)").replace("* (MV Cell)"," (Cell)")
+        name = name.replace("(Cytoplasm)","").replace(" (Nucleus)","").replace("(Cell)","")
+        return name
+
+    def format_marker_rules(
+            rules,
+            *,
+            separator: str = "; ",
+            omit_null: bool = True,
+        ) -> str:
+        """Format marker states as compact labels."""
+
+        labels: list[str] = []
+        for marker, value in rules.items():
+            if value is None and omit_null:
+                continue
+            marker_name = short_marker_name(marker)
+            if value in (1, True): state = "+"
+            elif value in (0, False): state = "−"
+            elif value is None: state = "any"
+            else: state = f"={value}"
+            labels.append(f"{marker_name}{state}")
+        return separator.join(labels)
+
+    def contrasting_text_color(background: str) -> str:
+        """Select black or white text according to node-background luminance."""
+        try: red, green, blue = to_rgb(background)
+        except ValueError: return "black"
+        luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue
+        return "black" if luminance > 0.55 else "white"
+    
+    positions = forest_layout(graph, horizontal_spacing=horizontal_spacing, vertical_spacing=vertical_spacing,)
+    custom_colors = graph.graph.get("custom_colors", {})
+    parent_to_child = graph.reverse(copy=False)
+    leaves = [node for node in graph if parent_to_child.out_degree(node) == 0]
+    max_depth = max(abs(attributes["level"]) for _, attributes in graph.nodes(data=True))
+    if figsize is None: figsize = (max(16.0, 1.8 * len(leaves)), max(7.0, 2.6 * (max_depth + 1)),)
+
+    fig, ax = plt.subplots(figsize=figsize)
+    nx.draw_networkx_edges(
+        graph,
+        positions,
+        ax=ax,
+        arrows=True,
+        arrowstyle="-|>",
+        arrowsize=20,
+        width=1.4,
+        edge_color="#666666",
+        node_size=8500,
+        min_source_margin=18,
+        min_target_margin=18,
+    )
+
+    if show_marker_rules and rules_on_edges:
+        edge_labels = {(child, parent): wrap_rule_text(format_marker_rules(attributes.get("rules", {})), max_items_per_line=1) for child, parent, attributes in graph.edges(data=True)}
+        edge_labels = {edge: label for edge, label in edge_labels.items() if label}
+        nx.draw_networkx_edge_labels(
+            graph,
+            positions,
+            edge_labels=edge_labels,
+            ax=ax,
+            rotate=False,
+            font_size=7.5,
+            label_pos=0.52,
+            bbox={
+                "boxstyle": "round,pad=0.15",
+                "facecolor": "white",
+                "edgecolor": "none",
+                "alpha": 0.9,
+            },
+        )
+
+    for node, (x_position, y_position) in positions.items():
+        attributes = graph.nodes[node]
+        node_color = custom_colors.get(node, "#D9E8F5")
+        is_root = attributes.get("kind") == "cell_type"
+
+        node_label = str(node)
+        if show_marker_rules and not rules_on_edges:
+            rule_text = wrap_rule_text(format_marker_rules(attributes.get("rules", {})), max_items_per_line=2)
+            if rule_text: node_label = f"{node_label}\n{rule_text}"
+        ax.text(
+            x_position,
+            y_position,
+            node_label,
+            ha="center",
+            va="center",
+            fontsize=8.5,
+            fontweight="bold" if is_root else "normal",
+            color=contrasting_text_color(node_color),
+            linespacing=1.25,
+            bbox={
+                "boxstyle": "round,pad=0.45",
+                "facecolor": node_color,
+                "edgecolor": "black",
+                "linewidth": 2.0 if is_root else 1.0,
+            },
+            zorder=3,
+        )
+
+    levels = sorted({attributes["level"] for _, attributes in graph.nodes(data=True)}, reverse=True)
+    ax.set_yticks([level * vertical_spacing for level in levels])
+    ax.set_yticklabels(["Level 0: cell type" if level == 0 else f"Level {level}: subtype generation {abs(level)}" for level in levels])
+    ax.set_ylabel("Phenotype hierarchy")
+    ax.set_title(title, fontsize=15, pad=20)
+    ax.grid(axis="y", linestyle=":", alpha=0.35)
+    ax.tick_params(axis="x", bottom=False, labelbottom=False)
+    ax.margins(x=0.03, y=0.12)
+    ax.set_axisbelow(True)
+    for spine in ax.spines.values(): spine.set_visible(False)
+    fig.tight_layout()
+    if save_path is not None:
+        if not save_path.exists(): save_path.mkdir(parents=True, exist_ok=True)
+        fig.savefig(save_path / "Cell phenotype hierarchy.png", dpi=dpi, bbox_inches="tight")
+
+def build_cell_hierarchy_graph(protein_markers, cell_types, cell_sub_types,custom_colors):
+    """
+    Build a directed cell-phenotype hierarchy from the configuration data.
+    """
+
+    graph = nx.DiGraph()
+    graph.graph["custom_colors"] = custom_colors
+    graph.graph["protein_markers"] = protein_markers
+    graph.graph["root_order"] = list(cell_types.keys())
+
+    # The cell-type vectors correspond positionally to protein_markers.
+    for cell_type, signature in cell_types.items(): graph.add_node(cell_type, kind="cell_type", rules=signature)
+
+    # Each top-level key is a parent, and every nested key is its child.
+    for parent, children in cell_sub_types.items():
+        if parent not in graph: graph.add_node(parent, kind="subtype", rules={})
+        for child, rules in children.items():
+            rules = {} if rules is None else rules
+            if child not in graph:
+                graph.add_node(child, kind="subtype", rules=dict(rules))
+            else:
+                # A subtype may already exist because it was previously added
+                # as the parent of another subtype generation.
+                graph.nodes[child]["kind"] = graph.nodes[child].get("kind", "subtype")
+                graph.nodes[child]["rules"] = dict(rules)
+            graph.add_edge(child, parent, rules=dict(rules))
+
+    if not nx.is_directed_acyclic_graph(graph):
+        cycle = nx.find_cycle(graph)
+        raise ValueError(f"The hierarchy contains a cycle: {cycle}")
+
+    roots = list(cell_types.keys())
+
+    # Reverse only for traversal: parent -> children.
+    parent_to_child = graph.reverse(copy=False)
+    levels: dict[str, int] = {}
+
+    for root in roots:
+        distances = nx.single_source_shortest_path_length(parent_to_child, root)
+        for node, distance in distances.items():
+            proposed_level = -distance
+            levels[node] = proposed_level
+
+    nx.set_node_attributes(graph, levels, "level")
+    return graph
+
+def plot_general_cell_hierarchy(protein_markers, cell_types, cell_sub_types, custom_colors, save_path):
+    graph = build_cell_hierarchy_graph(protein_markers, cell_types, cell_sub_types, custom_colors)
+    plot_cell_hierarchy(graph, custom_colors, save_path)
+
     
 def sets_and_subsets_cell_types(cell_type_dict, sub_cell_type_dict, protein_markers, output_dir, custom_colors):
     """
@@ -726,9 +999,29 @@ def sets_and_subsets_cell_types(cell_type_dict, sub_cell_type_dict, protein_mark
     sct_dfs = {}
     # sct_dfs_og = {}
     for sct, data in sub_cell_type_dict.items():
-        full_index = protein_markers + [p for p in sub_protein_markers[sct] if p not in protein_markers]
-        df = pd.DataFrame(data, index=full_index, dtype=object)
-        for prot in protein_markers: df.loc[prot] = cell_type_dict[sct].get(prot, None)
+        if sct in cell_type_dict.keys():
+            full_index = protein_markers + [p for p in sub_protein_markers[sct] if p not in protein_markers]
+            df = pd.DataFrame(data, index=full_index, dtype=object)
+            for prot in protein_markers: df.loc[prot] = cell_type_dict[sct].get(prot, None)
+        else:
+            whole_protein_markers = {}
+            hold_temp = [sct]
+            while len(hold_temp)>0:
+                for key in hold_temp:
+                    if key in cell_type_dict.keys():
+                        whole_protein_markers.update(cell_type_dict[key])
+                        hold_temp.remove(key)
+                        break
+                    for k in sub_cell_type_dict.keys():
+                        if k==key: continue
+                        if key in sub_cell_type_dict[k].keys():
+                            hold_temp.append(k)
+                            whole_protein_markers.update(sub_cell_type_dict[k][key])
+                    hold_temp.remove(key)
+            full_pm = list(set(whole_protein_markers.keys()))
+            full_index = full_pm + [p for p in sub_protein_markers[sct] if p not in full_pm]
+            df = pd.DataFrame(data, index=full_index, dtype=object)
+            for prot in full_pm: df.loc[prot] = whole_protein_markers.get(prot, None)
         df, df_og = fill_n_order_df_by_total_none_values(df, 'Protein Marker', dicc_temp)
         sct_dfs[sct] = df
         # sct_dfs_og[sct] = df_og
@@ -736,6 +1029,8 @@ def sets_and_subsets_cell_types(cell_type_dict, sub_cell_type_dict, protein_mark
     list_final_subsets = {}
     list_sub_cell_types = {}
     list_bigger_cell_types = {}
+    plot_general_cell_hierarchy(protein_markers,cell_type_dict,sub_cell_type_dict,custom_colors,save_path = output_dir / "plots" )
+    # raise Exception ("clJust need to see the new plot")
     list_final_subsets["General"], list_sub_cell_types["General"], list_bigger_cell_types["General"], custom_colors = plot_digraph(ct_df, protein_markers, output_dir, "General", dicc_temp, custom_colors) 
     for sct, df in sct_dfs.items():
         list_final_subsets[sct], list_sub_cell_types[sct], list_bigger_cell_types[sct], custom_colors = plot_digraph(df, list(df.index), output_dir, sct, dicc_temp, custom_colors)
@@ -821,25 +1116,51 @@ def labeling_cell_types(data_dicts, adata_dicts, cell_type_dict, sub_cell_type_d
         # dict_vl = {}
         for cell_type in cell_type_dict.keys():
             # new_obs_cols[f"only {cell_type}"] = [t if t==cell_type else "Other cells" for t in clusters]
-            new_obs_cols[f"only {cell_type}"] = clusters.where(clusters == cell_type, "Other cells")
+            new_obs_cols[f"Only {cell_type}"] = clusters.where(clusters == cell_type, "Other cells")
         
-            if cell_type in list_final_subsets.keys():
-                if cell_type in sub_cell_type_dict.keys():
-                    list_folder_names.append(cell_type)
-                    valid_labels = {cell_type} | get_all_children(cell_type, list_final_subsets)
-                    # dict_vl[cell_type] = valid_labels
-                    # subtype_values = data.apply(assign_cell_type, axis=1, args=(list_cell_types[cell_type]|{cell_type:list_cell_types['General'][cell_type]},)).tolist()
-                    subtype_values = assign_cell_types_vectorized(data, list_cell_types[cell_type]|{cell_type:list_cell_types['General'][cell_type]},cell_type)
-                    subtype_col = f"Subtypes of {cell_type}"
-                    new_obs_cols[subtype_col] = subtype_values
-                    for subcell_type in valid_labels:
-                        if subcell_type==cell_type: continue
-                        # new_obs_cols[f"only {subcell_type}"] = [t if t==subcell_type else "Other cells" for t in subtype_values]
-                        # new_obs_cols[f"only {subcell_type}"] = subtype_values.where(subtype_values == subcell_type, "Other cells")
-                        sct_temp = pd.Series("Other cells", index=subtype_values.index)
-                        sct_temp = sct_temp.mask(subtype_values.isin(valid_labels),f"Other {cell_type}")
-                        new_obs_cols[f"only {subcell_type}"] = sct_temp.mask(subtype_values==subcell_type,subtype_values)
-                    custom_colors[f"Other {cell_type}"] = custom_colors[cell_type]
+            # if cell_type in list_final_subsets.keys():
+            if cell_type in sub_cell_type_dict.keys():
+                list_folder_names.append(cell_type)
+                valid_labels = {cell_type} | get_all_children(cell_type, list_final_subsets)
+                # dict_vl[cell_type] = valid_labels
+                # subtype_values = data.apply(assign_cell_type, axis=1, args=(list_cell_types[cell_type]|{cell_type:list_cell_types['General'][cell_type]},)).tolist()
+                subtype_values = assign_cell_types_vectorized(data, list_cell_types[cell_type]|{cell_type:list_cell_types['General'][cell_type]},cell_type)
+                subtype_col = f"Subtypes of {cell_type}"
+                new_obs_cols[subtype_col] = subtype_values
+                for subcell_type in valid_labels:
+                    if subcell_type==cell_type: continue
+                    # new_obs_cols[f"only {subcell_type}"] = [t if t==subcell_type else "Other cells" for t in subtype_values]
+                    # new_obs_cols[f"only {subcell_type}"] = subtype_values.where(subtype_values == subcell_type, "Other cells")
+                    sct_temp = pd.Series("Other cells", index=subtype_values.index)
+                    sct_temp = sct_temp.mask(subtype_values.isin(valid_labels),f"Other {cell_type}")
+                    new_obs_cols[f"only {subcell_type}"] = sct_temp.mask(subtype_values==subcell_type,subtype_values)
+                custom_colors[f"Other {cell_type}"] = custom_colors[cell_type]
+        for cell_type in sub_cell_type_dict.keys():
+            if cell_type not in cell_type_dict.keys():
+                ct_check = ""
+                for ct_og in cell_type_dict.keys():
+                    # if cell_type in new_obs_cols[f"Subtypes of {ct_og}"].values: 
+                    if new_obs_cols[f"Subtypes of {ct_og}"].isin([cell_type]).any():
+                        ct_check = f"Subtypes of {ct_og}"
+                        break
+                if ct_check == "": break
+                list_folder_names.append(cell_type)
+                valid_labels = {cell_type} | get_all_children(cell_type, list_final_subsets)
+                key_to_look = ""
+                for key1,value1 in list_cell_types.items():
+                    for key2 in value1.keys():
+                        if key2==cell_type:
+                            key_to_look = key1
+                            break
+                subtype_values = assign_cell_types_vectorized(data, list_cell_types[cell_type]|{cell_type:list_cell_types[key_to_look][cell_type]},cell_type)
+                new_obs_cols[f"Subtypes of {cell_type}"] = subtype_values
+                new_obs_cols[f"Only {cell_type}"] = subtype_values.where(subtype_values == "Other cells", cell_type)
+                for subcell_type in valid_labels:
+                    if subcell_type==cell_type: continue
+                    sct_temp = pd.Series("Other cells", index=subtype_values.index)
+                    sct_temp = sct_temp.mask(subtype_values.isin(valid_labels),f"Other {cell_type}")
+                    new_obs_cols[f"{cell_type} - only {subcell_type}"] = sct_temp.mask(subtype_values==subcell_type,subtype_values)
+                custom_colors[f"Other {cell_type}"] = custom_colors[cell_type]
         # raise Exception (f"Debugging {k_data}:", print(adata.obs["clusters"].dtype), print(type(adata.obs["clusters"].iloc[0])), print(adata.obs["clusters"].head()), )
         new_obs = pd.DataFrame(new_obs_cols)
         new_obs.index = new_obs.index.map(str)
@@ -914,16 +1235,20 @@ def plotting_helper(custom_colors, overwrite_existing_files, dpi, size, plots_pa
             if cell_type not in adata.obs[universe_to_color].values: continue
             if (adata.obs[universe_to_color] == cell_type).sum()==0: continue
             title_name2 = f"Sample {k} - {cell_type} ({adata.n_obs} cells)" if folder_name == 'General' else f"Sample {k} - {folder_name} - {cell_type} ({total_subcells} cells)"
-            save_namefile2 = plots_path / f"Spatial - {title_name2}.png"
+            check_path = plots_path / f"Other {folder_name} plots"
+            check_path.mkdir(parents=True, exist_ok=True)
+            save_namefile2 = check_path /  f"Spatial - {title_name2}.png"
             if save_namefile2.exists() and not overwrite_existing_files:
                 print(f"File 'Spatial - {title_name2}.png' already exists...")
                 continue
             # adata.obs[f"only {cell_type}"]
             # adata.obs[f"Subtypes of {cell_type}"] # Sub universe
-            color_spatial = f"only {cell_type}"
+            color_spatial = f"Only {cell_type}" if cell_type == folder_name or folder_name == 'General' else f"only {cell_type}"
+            color_to_check = f"{folder_name} - only {cell_type}"
+            color_spatial = color_to_check if adata.obs.columns.isin([color_to_check]).any() else color_spatial
                 # cmap_gene = selected_color
             # own_palette_list = [selected_color,custom_colors['Other cells']] if cell_type<'Other cells' else [custom_colors['Other cells'],selected_color]
-            own_palette_list = [custom_colors[label] for label in sorted([cell_type, f"Other cells"])] if folder_name=='General' else [custom_colors[label] for label in sorted([cell_type, f"Other {folder_name}", f"Other cells"])]
+            own_palette_list = [custom_colors[label] for label in sorted([cell_type, f"Other cells"])] if folder_name=='General' or (folder_name!='General' and not any(adata.obs[color_spatial]==f"Other {folder_name}")) else [custom_colors[label] for label in sorted([cell_type, f"Other {folder_name}", f"Other cells"])]
             own_palette = ListedColormap(own_palette_list)
                 # cmap_gene = ListedColormap(cmap_gene)
                 
@@ -1000,14 +1325,18 @@ def plotting_helper(custom_colors, overwrite_existing_files, dpi, size, plots_pa
         if (adata.obs[universe_to_color] == cell_type).sum()==0: continue
             
         title_name2 = f"Sample {k} - {cell_type} ({adata.n_obs} cells)" if folder_name == 'General' else f"Sample {k} - {folder_name} - {cell_type} ({total_subcells} cells)"
-        save_namefile2 = plots_path / f"Spatial - {title_name2}.png"
+        check_path = plots_path / f"Other {folder_name} plots"
+        check_path.mkdir(parents=True, exist_ok=True)
+        save_namefile2 = check_path / f"Spatial - {title_name2}.png"
         if save_namefile2.exists() and not overwrite_existing_files: 
             print(f"File 'Spatial - {title_name2}.png' already exists...")
             continue
-        color_spatial = f"only {cell_type}"
+        color_spatial = f"Only {cell_type}" if cell_type == folder_name or folder_name == 'General' else f"only {cell_type}"
+        color_to_check = f"{folder_name} - only {cell_type}"
+        color_spatial = color_to_check if adata.obs.columns.isin([color_to_check]).any() else color_spatial
             # cmap_gene = selected_color
         # own_palette_list = [selected_color,custom_colors['Other cells']] if cell_type<'Other cells' else [custom_colors['Other cells'],selected_color]
-        own_palette_list = [custom_colors[label] for label in sorted([cell_type, f"Other cells"])] if folder_name=='General' else [custom_colors[label] for label in sorted([cell_type, f"Other {folder_name}", f"Other cells"])]
+        own_palette_list = [custom_colors[label] for label in sorted([cell_type, f"Other cells"])] if folder_name=='General' or (folder_name!='General' and not any(adata.obs[color_spatial]==f"Other {folder_name}")) else [custom_colors[label] for label in sorted([cell_type, f"Other {folder_name}", f"Other cells"])]
         own_palette = ListedColormap(own_palette_list)
             # cmap_gene = ListedColormap(cmap_gene)
         fig, ax = plt.subplots()

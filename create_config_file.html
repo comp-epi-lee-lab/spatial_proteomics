@@ -19,6 +19,7 @@
   button.danger { color: var(--danger); }
   hr.section-divider { border: 0; border-top: 8px solid #1c1b1b; border-radius: 5px; margin: 24px 0 18px; }.row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }.row > * { flex: 1 1 220px; }.fixed-button { flex: 0 0 150px; }.small { font-size: 0.9rem; color: var(--muted); }.list-item { border: 1px solid var(--border); padding: 12px; margin: 10px 0; border-radius: 7px; }.subtype-list-item { border-left: 4px solid var(--border); margin-left: 16px; background: #fcfcfc; }.item-header { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }.item-title { display: flex; align-items: center; gap: 8px; }.color-swatch { display: inline-block; width: 18px; height: 18px; border-radius: 3px; border: 1px solid rgba(0, 0, 0, 0.25); }.color-control { display: flex; gap: 8px; align-items: center; }.color-control label { margin: 0; }.marker-grid { margin-top: 12px; }.marker-row { display: grid; grid-template-columns: minmax(250px, 2fr) minmax(180px, 1fr); gap: 10px; align-items: center; padding: 6px 0; border-top: 1px solid #eef0f2; }.marker-row:first-child { border-top: 0; }.marker-row select { margin-top: 0; }.subtype-panel { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }.empty-state { color: var(--muted); font-size: 0.9rem; padding: 8px 0; }.status-box { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 10px; margin-top: 10px; }
   pre { background: var(--panel); padding: 12px; overflow: auto; min-height: 120px; border: 1px solid var(--border); border-radius: 6px; }
+  .multiline-status { white-space: pre-wrap; }
 
   @media (max-width: 700px) { .marker-row { grid-template-columns: 1fr; } .fixed-button { flex-basis: 100%; } .subtype-list-item { margin-left: 0; } }
 </style>
@@ -33,14 +34,20 @@
   <form id="mainForm" onsubmit="return false;">
     <hr class="section-divider" />
 
+    <h3>Edit an existing configuration</h3>
+    <p class="small">
+      Upload a previously downloaded YAML file to restore its saved settings in this form. Missing supported keys use safe defaults. The YAML cannot contain TSV/CSV columns that were never selected, so upload the representative data file again when you need to restore additional unused markers.
+    </p>
+    <label class="small" for="yamlFile">Upload a YAML configuration</label>
+    <input type="file" id="yamlFile" accept=".yaml,.yml,text/yaml,application/x-yaml" />
+    <div id="yamlImportStatus" class="status-box small multiline-status" hidden aria-live="polite"></div>
+
+    <hr class="section-divider" />
+
     <h3>Workspace</h3>
-    <p class="small">Add the directory paths and choose the common input-file format.</p>
-
-    <label class="small" for="input_dir">Input directory</label>
-    <input id="input_dir" type="text" placeholder="For example: /Users/usrnm/Downloads/files_folder or C:\Users\usrnm\Downloads\files_folder" />
-
-    <label class="small" for="output_dir">Output directory</label>
-    <input id="output_dir" type="text" placeholder="For example: /Users/usrnm/Downloads/results_folder or C:\Users\usrnm\Downloads\results_folder" />
+    <p class="small">
+      Choose the common input-file format. The input and output directory values remain empty in this YAML file and are assigned later by Python.
+    </p>
 
     <label class="small" for="filetype">Input-file format</label>
     <select id="filetype">
@@ -52,18 +59,13 @@
 
     <h3>Protein markers</h3>
     <p class="small">
-      Upload a representative TSV or CSV file. Positivity columns selected here define the major cell types. Once selected, a marker disappears from this dropdown. Positivity columns not selected here remain available for defining cell subtypes.
+      Upload a representative TSV or CSV file. Select one or more positivity columns to define the major cell types. Once selected, markers disappear from this selector. Positivity columns not selected here remain available for defining cell subtypes.
     </p>
 
     <label class="small" for="markerFile">Upload a TSV or CSV file</label>
     <input type="file" id="markerFile" accept=".tsv,.csv,text/tab-separated-values,text/csv" />
 
-    <div class="row">
-      <div id="columnSelectContainer"></div>
-      <div class="fixed-button">
-        <button id="addProteinMarkerBtn" type="button" hidden>Add marker</button>
-      </div>
-    </div>
+    <div id="columnSelectContainer"></div>
 
     <div id="markerPoolStatus" class="status-box small" hidden></div>
     <div id="proteinMarkersList" aria-live="polite"></div>
@@ -86,6 +88,13 @@
     </div>
 
     <div id="cellTypesList" aria-live="polite"></div>
+
+    <div class="status-box">
+      <div class="color-control">
+        <label class="small" for="otherCellsColor">Other cells color</label>
+        <input id="otherCellsColor" type="color" value="#a3a3a3" title="Choose the color for unclassified cells" />
+      </div>
+    </div>
 
     <hr class="section-divider" />
 
@@ -135,7 +144,10 @@
 const state = {
   allProteinColumns: [],
   proteinMarkers: [],
-  cellTypes: []
+  allProteinRawColumns: {},
+  allProteinRawColumnsReverse: {},
+  cellTypes: [],
+  otherCellsColor: '#a3a3a3'
 };
 
 function makeId() {
@@ -153,59 +165,758 @@ function sameName(a, b) {
   return normalizeName(a).toLocaleLowerCase() === normalizeName(b).toLocaleLowerCase();
 }
 
-function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+function markerKeyToCleaned(markerKey) {
+  return state.allProteinRawColumns[markerKey] || markerKey;
 }
 
-function getCellTypeById(cellTypeId) {
-  return state.cellTypes.find(cellType => cellType.id === cellTypeId) || null;
-}
+/* Return only markers not already used by the major cell-type definitions or
+   by any node in the current subtype's ancestor chain. Sibling branches remain
+   independent and may reuse the same marker. */
+function getSubtypeMarkerPool(ancestorChain = []) {
+  const usedMarkers = new Set(
+    state.proteinMarkers.map(markerKeyToCleaned).filter(Boolean)
+  );
 
-function getSubtypeById(cellType, subtypeId) {
-  return cellType.subtypes.find(subtype => subtype.id === subtypeId) || null;
-}
+  ancestorChain.forEach(node => {
+    Object.keys(node?.markerStates || {}).forEach(markerKey => {
+      usedMarkers.add(markerKeyToCleaned(markerKey));
+    });
+  });
 
-function getSubtypeMarkerPool() {
-  const primaryMarkerSet = new Set(state.proteinMarkers);
-  return state.allProteinColumns.filter(marker => !primaryMarkerSet.has(marker));
+  return state.allProteinColumns.filter(marker => !usedMarkers.has(marker));
 }
 
 function isNameUsed(name, excludedId = null) {
-  return state.cellTypes.some(cellType => {
-    if (cellType.id !== excludedId && sameName(cellType.name, name)) return true;
-    return cellType.subtypes.some(subtype => subtype.id !== excludedId && sameName(subtype.name, name));
-  });
+  function nodeMatches(node) {
+    return node.id !== excludedId && sameName(node.name, name);
+  }
+
+  function subtreeContains(nodes) {
+    return nodes.some(node =>
+      nodeMatches(node) || subtreeContains(node.subtypes || [])
+    );
+  }
+
+  return state.cellTypes.some(cellType =>
+    nodeMatches(cellType) || subtreeContains(cellType.subtypes || [])
+  );
 }
 
 /* Keep marker-dependent data valid whenever the uploaded columns or the set of
-   primary markers changes. */
+   primary markers changes. This is recursive because subtypes can be nested. */
 function syncStateWithMarkers() {
   const allColumns = new Set(state.allProteinColumns);
-  state.proteinMarkers = state.proteinMarkers.filter(marker => allColumns.has(marker));
 
-  const primaryMarkers = new Set(state.proteinMarkers);
-  const subtypeMarkers = new Set(getSubtypeMarkerPool());
+  state.proteinMarkers = state.proteinMarkers.filter(rawMarker =>
+    allColumns.has(markerKeyToCleaned(rawMarker))
+  );
+
+  const primaryRawMarkers = new Set(state.proteinMarkers);
+  const primaryCleanedMarkers = new Set(
+    state.proteinMarkers.map(markerKeyToCleaned).filter(Boolean)
+  );
+
+  function syncSubtypeTree(nodes, ancestorMarkers) {
+    nodes.forEach(node => {
+      if (!node.markerStates) node.markerStates = {};
+      if (!Array.isArray(node.subtypes)) node.subtypes = [];
+
+      Object.keys(node.markerStates).forEach(markerKey => {
+        const cleanedMarker = markerKeyToCleaned(markerKey);
+        if (!allColumns.has(cleanedMarker) || ancestorMarkers.has(cleanedMarker)) {
+          delete node.markerStates[markerKey];
+        }
+      });
+
+      const markersForChildren = new Set(ancestorMarkers);
+      Object.keys(node.markerStates).forEach(markerKey => {
+        markersForChildren.add(markerKeyToCleaned(markerKey));
+      });
+
+      syncSubtypeTree(node.subtypes, markersForChildren);
+    });
+  }
 
   state.cellTypes.forEach(cellType => {
-    state.proteinMarkers.forEach(marker => {
-      if (!(marker in cellType.markerStates)) cellType.markerStates[marker] = -1;
+    if (!cellType.markerStates) cellType.markerStates = {};
+    if (!Array.isArray(cellType.subtypes)) cellType.subtypes = [];
+
+    state.proteinMarkers.forEach(rawMarker => {
+      if (!(rawMarker in cellType.markerStates)) {
+        cellType.markerStates[rawMarker] = -1;
+      }
     });
 
-    Object.keys(cellType.markerStates).forEach(marker => {
-      if (!primaryMarkers.has(marker)) delete cellType.markerStates[marker];
+    Object.keys(cellType.markerStates).forEach(rawMarker => {
+      if (!primaryRawMarkers.has(rawMarker)) {
+        delete cellType.markerStates[rawMarker];
+      }
     });
 
-    cellType.subtypes.forEach(subtype => {
-      Object.keys(subtype.markerStates).forEach(marker => {
-        if (!subtypeMarkers.has(marker)) delete subtype.markerStates[marker];
-      });
+    syncSubtypeTree(cellType.subtypes, new Set(primaryCleanedMarkers));
+  });
+}
+
+
+/* -------------------------------------------------------------------------- */
+/* Existing YAML import                                                        */
+/* -------------------------------------------------------------------------- */
+
+const yamlFileInput = document.getElementById('yamlFile');
+const yamlImportStatus = document.getElementById('yamlImportStatus');
+const otherCellsColorInput = document.getElementById('otherCellsColor');
+
+yamlFileInput.addEventListener('change', handleYamlFileUpload);
+otherCellsColorInput.addEventListener('input', () => {
+  state.otherCellsColor = otherCellsColorInput.value;
+});
+
+async function handleYamlFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  try {
+    const yamlText = await file.text();
+    const parsedConfig = parseConfigYaml(yamlText);
+    const { importedState, formValues, warnings } = buildImportedConfiguration(parsedConfig);
+
+    state.allProteinColumns = importedState.allProteinColumns;
+    state.proteinMarkers = importedState.proteinMarkers;
+    state.allProteinRawColumns = importedState.allProteinRawColumns;
+    state.allProteinRawColumnsReverse = importedState.allProteinRawColumnsReverse;
+    state.cellTypes = importedState.cellTypes;
+    state.otherCellsColor = importedState.otherCellsColor;
+
+    document.getElementById('filetype').value = formValues.filetype;
+    document.getElementById('overwrite_existing_files').value = String(formValues.overwriteExistingFiles);
+    document.getElementById('locally_save_anndata_files').value = String(formValues.locallySaveAnndataFiles);
+    document.getElementById('dpi').value = String(formValues.dpi);
+    document.getElementById('scatter_point_size').value = String(formValues.scatterPointSize);
+    markerFileInput.value = '';
+
+    syncStateWithMarkers();
+    renderAll();
+    yamlPreview.textContent = toYAML(collectFormData());
+
+    const summary = [
+      `Loaded ${file.name}.`,
+      `${state.proteinMarkers.length} primary marker(s), ${state.cellTypes.length} cell type(s), and ${countSubtypeNodes(state.cellTypes)} subtype(s) were restored.`,
+      'Unused TSV/CSV columns are not stored in YAML; upload the representative data file again to recover those columns.'
+    ];
+    if (warnings.length > 0) {
+      summary.push('', `Warnings (${warnings.length}):`, ...warnings.map(item => `- ${item}`));
+    }
+    showYamlImportStatus(summary.join('\n'), false);
+  } catch (error) {
+    console.error(error);
+    showYamlImportStatus(`Could not load ${file.name}: ${error.message}`, true);
+    alert(`Unable to read the YAML file:\n${error.message}`);
+  }
+}
+
+function showYamlImportStatus(message, isError) {
+  yamlImportStatus.hidden = false;
+  yamlImportStatus.textContent = message;
+  yamlImportStatus.style.borderColor = isError ? '#b42318' : '';
+  yamlImportStatus.style.color = isError ? '#b42318' : '';
+}
+
+function countSubtypeNodes(cellTypes) {
+  function count(nodes) {
+    return nodes.reduce((total, node) => total + 1 + count(node.subtypes || []), 0);
+  }
+  return cellTypes.reduce((total, cellType) => total + count(cellType.subtypes || []), 0);
+}
+
+/* This parser intentionally supports the standard block-style YAML produced by
+   this page: mappings, scalar lists, quoted/unquoted strings, booleans, nulls,
+   numbers, and simple inline []/{} collections. It reports unsupported YAML
+   constructs instead of silently misreading them. */
+function parseConfigYaml(yamlText) {
+  const lines = [];
+  const rawLines = String(yamlText || '').replace(/^\uFEFF/, '').split(/\r?\n/);
+
+  rawLines.forEach((rawLine, index) => {
+    const indentation = rawLine.match(/^[ \t]*/)?.[0] || '';
+    if (indentation.includes('\t')) {
+      throw new Error(`Tabs are not supported for indentation (line ${index + 1}).`);
+    }
+
+    const withoutComment = stripYamlComment(rawLine).replace(/\s+$/, '');
+    const trimmed = withoutComment.trim();
+    if (!trimmed || trimmed === '---' || trimmed === '...') return;
+
+    const indent = withoutComment.length - withoutComment.trimStart().length;
+    lines.push({ indent, content: withoutComment.slice(indent), lineNumber: index + 1 });
+  });
+
+  if (lines.length === 0) return {};
+
+  const [value, nextIndex] = parseYamlBlock(lines, 0, lines[0].indent);
+  if (nextIndex !== lines.length) {
+    throw new Error(`Unexpected YAML content near line ${lines[nextIndex].lineNumber}.`);
+  }
+  return value;
+}
+
+function stripYamlComment(line) {
+  let quote = null;
+  let escaped = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+
+    if (quote === '"') {
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === '"') {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (quote === "'") {
+      if (char === "'" && line[index + 1] === "'") {
+        index += 1;
+      } else if (char === "'") {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (char === '"' || char === "'") {
+      quote = char;
+      continue;
+    }
+
+    if (char === '#' && (index === 0 || /\s/.test(line[index - 1]))) {
+      return line.slice(0, index);
+    }
+  }
+  return line;
+}
+
+function parseYamlBlock(lines, startIndex, indent) {
+  const first = lines[startIndex];
+  if (!first || first.indent !== indent) {
+    throw new Error(`Invalid indentation near line ${first?.lineNumber || 'end of file'}.`);
+  }
+
+  if (first.content === '-' || first.content.startsWith('- ')) {
+    return parseYamlSequence(lines, startIndex, indent);
+  }
+  return parseYamlMapping(lines, startIndex, indent);
+}
+
+function parseYamlSequence(lines, startIndex, indent) {
+  const result = [];
+  let index = startIndex;
+
+  while (index < lines.length) {
+    const line = lines[index];
+    if (line.indent < indent) break;
+    if (line.indent > indent) {
+      throw new Error(`Unexpected indentation at line ${line.lineNumber}.`);
+    }
+    if (!(line.content === '-' || line.content.startsWith('- '))) break;
+
+    const itemText = line.content.slice(1).trim();
+    index += 1;
+
+    if (itemText === '') {
+      if (index < lines.length && lines[index].indent > indent) {
+        const [child, nextIndex] = parseYamlBlock(lines, index, lines[index].indent);
+        result.push(child);
+        index = nextIndex;
+      } else {
+        result.push(null);
+      }
+    } else {
+      result.push(parseYamlScalar(itemText, line.lineNumber));
+    }
+  }
+
+  return [result, index];
+}
+
+function parseYamlMapping(lines, startIndex, indent) {
+  const result = {};
+  let index = startIndex;
+
+  while (index < lines.length) {
+    const line = lines[index];
+    if (line.indent < indent) break;
+    if (line.indent > indent) {
+      throw new Error(`Unexpected indentation at line ${line.lineNumber}.`);
+    }
+    if (line.content === '-' || line.content.startsWith('- ')) break;
+
+    const colonIndex = findYamlKeyColon(line.content);
+    if (colonIndex < 0) {
+      throw new Error(`Expected a key followed by ':' at line ${line.lineNumber}.`);
+    }
+
+    const keyText = line.content.slice(0, colonIndex).trim();
+    if (!keyText) throw new Error(`Empty YAML key at line ${line.lineNumber}.`);
+    const key = String(parseYamlKey(keyText, line.lineNumber));
+    const valueText = line.content.slice(colonIndex + 1).trim();
+    index += 1;
+
+    if (valueText !== '') {
+      result[key] = parseYamlScalar(valueText, line.lineNumber);
+      continue;
+    }
+
+    if (index < lines.length && lines[index].indent > indent) {
+      const [child, nextIndex] = parseYamlBlock(lines, index, lines[index].indent);
+      result[key] = child;
+      index = nextIndex;
+    } else {
+      result[key] = null;
+    }
+  }
+
+  return [result, index];
+}
+
+function findYamlKeyColon(text) {
+  let quote = null;
+  let escaped = false;
+  let bracketDepth = 0;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+
+    if (quote === '"') {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === '"') quote = null;
+      continue;
+    }
+
+    if (quote === "'") {
+      if (char === "'" && text[index + 1] === "'") index += 1;
+      else if (char === "'") quote = null;
+      continue;
+    }
+
+    if (char === '"' || char === "'") {
+      quote = char;
+    } else if (char === '[' || char === '{') {
+      bracketDepth += 1;
+    } else if (char === ']' || char === '}') {
+      bracketDepth -= 1;
+    } else if (char === ':' && bracketDepth === 0) {
+      return index;
+    }
+  }
+  return -1;
+}
+
+function parseYamlKey(text, lineNumber) {
+  const value = parseYamlScalar(text, lineNumber);
+  if (value !== null && typeof value === 'object') {
+    throw new Error(`Complex YAML keys are not supported (line ${lineNumber}).`);
+  }
+  return value;
+}
+
+function parseYamlScalar(text, lineNumber) {
+  const value = text.trim();
+  if (value === '') return '';
+
+  if (value.startsWith('"')) {
+    try {
+      return JSON.parse(value);
+    } catch {
+      throw new Error(`Invalid double-quoted string at line ${lineNumber}.`);
+    }
+  }
+
+  if (value.startsWith("'")) {
+    if (!value.endsWith("'") || value.length < 2) {
+      throw new Error(`Invalid single-quoted string at line ${lineNumber}.`);
+    }
+    return value.slice(1, -1).replace(/''/g, "'");
+  }
+
+  if (value === '[]') return [];
+  if (value === '{}') return {};
+  if (value.startsWith('[') && value.endsWith(']')) {
+    return splitYamlFlow(value.slice(1, -1)).map(part => parseYamlScalar(part, lineNumber));
+  }
+  if (value.startsWith('{') && value.endsWith('}')) {
+    const object = {};
+    splitYamlFlow(value.slice(1, -1)).forEach(entry => {
+      const colonIndex = findYamlKeyColon(entry);
+      if (colonIndex < 0) throw new Error(`Invalid inline mapping at line ${lineNumber}.`);
+      const key = String(parseYamlKey(entry.slice(0, colonIndex).trim(), lineNumber));
+      object[key] = parseYamlScalar(entry.slice(colonIndex + 1).trim(), lineNumber);
+    });
+    return object;
+  }
+
+  if (/^(?:null|~)$/i.test(value)) return null;
+  if (/^(?:true|yes|on)$/i.test(value)) return true;
+  if (/^(?:false|no|off)$/i.test(value)) return false;
+  if (/^[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?$/i.test(value)) return Number(value);
+
+  if (/^[&*!]|^<<\s*:|^[>|]/.test(value)) {
+    throw new Error(`Unsupported YAML feature at line ${lineNumber}.`);
+  }
+
+  return value;
+}
+
+function splitYamlFlow(text) {
+  const parts = [];
+  let current = '';
+  let quote = null;
+  let escaped = false;
+  let depth = 0;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+
+    if (quote === '"') {
+      current += char;
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === '"') quote = null;
+      continue;
+    }
+
+    if (quote === "'") {
+      current += char;
+      if (char === "'" && text[index + 1] === "'") {
+        current += text[index + 1];
+        index += 1;
+      } else if (char === "'") {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (char === '"' || char === "'") {
+      quote = char;
+      current += char;
+    } else if (char === '[' || char === '{') {
+      depth += 1;
+      current += char;
+    } else if (char === ']' || char === '}') {
+      depth -= 1;
+      current += char;
+    } else if (char === ',' && depth === 0) {
+      if (current.trim()) parts.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+
+  if (current.trim()) parts.push(current.trim());
+  return parts;
+}
+
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function buildImportedConfiguration(config) {
+  if (!isPlainObject(config)) {
+    throw new Error('The YAML root must be a mapping/object.');
+  }
+
+  const warnings = [];
+  const knownTopLevelKeys = new Set([
+    'workspace', 'protein_markers', 'cell_types', 'sub_cell_types',
+    'custom_colors', 'overwrite_existing_files',
+    'locally_save_anndata_files', 'spatial_plot'
+  ]);
+  Object.keys(config).forEach(key => {
+    if (!knownTopLevelKeys.has(key)) warnings.push(`Unsupported top-level key "${key}" was ignored.`);
+  });
+
+  const workspace = isPlainObject(config.workspace) ? config.workspace : {};
+  if (config.workspace !== undefined && !isPlainObject(config.workspace)) {
+    warnings.push('workspace was not a mapping; workspace defaults were used.');
+  }
+  const filetype = ['csv', 'tsv'].includes(String(workspace.filetype || '').toLowerCase())
+    ? String(workspace.filetype).toLowerCase()
+    : 'csv';
+  if (workspace.filetype !== undefined && !['csv', 'tsv'].includes(String(workspace.filetype).toLowerCase())) {
+    warnings.push(`Unsupported workspace.filetype "${workspace.filetype}"; csv was used.`);
+  }
+
+  let primaryMarkers = [];
+  if (config.protein_markers === undefined) {
+    warnings.push('protein_markers is missing; an empty primary-marker list was used.');
+  } else if (!Array.isArray(config.protein_markers)) {
+    warnings.push('protein_markers was not a list; an empty primary-marker list was used.');
+  } else {
+    primaryMarkers = config.protein_markers
+      .map(item => normalizeName(item))
+      .filter(Boolean);
+    primaryMarkers = [...new Set(primaryMarkers)];
+  }
+
+  const subtypeMap = isPlainObject(config.sub_cell_types) ? config.sub_cell_types : {};
+  if (config.sub_cell_types !== undefined && !isPlainObject(config.sub_cell_types)) {
+    warnings.push('sub_cell_types was not a mapping; no subtypes were restored.');
+  }
+
+  const rawMarkerSet = new Set(primaryMarkers);
+  Object.entries(subtypeMap).forEach(([parentName, children]) => {
+    if (!isPlainObject(children)) {
+      warnings.push(`sub_cell_types.${parentName} was not a mapping and was ignored.`);
+      return;
+    }
+    Object.entries(children).forEach(([childName, markerDefinition]) => {
+      if (!isPlainObject(markerDefinition)) {
+        warnings.push(`Marker definition for subtype "${childName}" was not a mapping and was treated as empty.`);
+        return;
+      }
+      Object.keys(markerDefinition).forEach(rawMarker => rawMarkerSet.add(rawMarker));
     });
   });
+
+  const allProteinRawColumns = {};
+  const allProteinRawColumnsReverse = {};
+  const allProteinColumns = [];
+
+  rawMarkerSet.forEach(rawMarker => {
+    let cleanedMarker = cleanProteinMarkerColumn(rawMarker);
+    if (!cleanedMarker) cleanedMarker = rawMarker;
+    if (allProteinRawColumnsReverse[cleanedMarker] && allProteinRawColumnsReverse[cleanedMarker] !== rawMarker) {
+      warnings.push(`Two marker keys resolved to "${cleanedMarker}"; the raw name "${rawMarker}" is displayed to keep them distinct.`);
+      cleanedMarker = rawMarker;
+    }
+    allProteinRawColumns[rawMarker] = cleanedMarker;
+    allProteinRawColumnsReverse[cleanedMarker] = rawMarker;
+    allProteinColumns.push(cleanedMarker);
+  });
+
+  const colors = isPlainObject(config.custom_colors) ? config.custom_colors : {};
+  if (config.custom_colors !== undefined && !isPlainObject(config.custom_colors)) {
+    warnings.push('custom_colors was not a mapping; default colors were used.');
+  }
+
+  const cellTypeDefinitions = isPlainObject(config.cell_types) ? config.cell_types : {};
+  if (config.cell_types === undefined) {
+    warnings.push('cell_types is missing; cell-type roots were inferred from sub_cell_types when possible.');
+  } else if (!isPlainObject(config.cell_types)) {
+    warnings.push('cell_types was not a mapping; cell-type roots were inferred from sub_cell_types when possible.');
+  }
+
+  const usedNames = new Set();
+  const visitedParentKeys = new Set();
+  const childParentMap = new Map();
+
+  Object.entries(subtypeMap).forEach(([parentName, children]) => {
+    if (!isPlainObject(children)) return;
+    Object.keys(children).forEach(childName => {
+      if (!childParentMap.has(childName)) childParentMap.set(childName, []);
+      childParentMap.get(childName).push(parentName);
+    });
+  });
+
+  childParentMap.forEach((parents, childName) => {
+    if (parents.length > 1) {
+      warnings.push(`Subtype "${childName}" appears under multiple parents (${parents.join(', ')}); only its first occurrence can be represented safely.`);
+    }
+  });
+
+  function importedPresence(value, context) {
+    if (value === 1 || value === true || value === '1') return 1;
+    if (value === 0 || value === false || value === '0') return 0;
+    if (value === null || value === undefined || value === -1 || value === '-1') return -1;
+    warnings.push(`${context} had unsupported value "${String(value)}"; Not applicable was used.`);
+    return -1;
+  }
+
+  function importedColor(name, fallback = '#00aaff') {
+    const value = colors[name];
+    if (value === undefined) return fallback;
+    const normalized = String(value).trim();
+    if (/^#[0-9a-f]{6}$/i.test(normalized)) return normalized.toLowerCase();
+    if (/^#[0-9a-f]{3}$/i.test(normalized)) {
+      return `#${normalized.slice(1).split('').map(char => char + char).join('')}`.toLowerCase();
+    }
+    warnings.push(`Color for "${name}" was not a six-digit hexadecimal color; ${fallback} was used.`);
+    return fallback;
+  }
+
+  function makeCellTypeMarkerStates(definition, cellTypeName) {
+    const markerStates = {};
+    if (Array.isArray(definition)) {
+      primaryMarkers.forEach((rawMarker, markerIndex) => {
+        markerStates[rawMarker] = importedPresence(
+          definition[markerIndex],
+          `cell_types.${cellTypeName}[${markerIndex}]`
+        );
+      });
+      if (definition.length > primaryMarkers.length) {
+        warnings.push(`cell_types.${cellTypeName} has more values than protein_markers; extra values were ignored.`);
+      }
+      return markerStates;
+    }
+
+    if (isPlainObject(definition)) {
+      primaryMarkers.forEach(rawMarker => {
+        const cleanedMarker = allProteinRawColumns[rawMarker] || rawMarker;
+        const value = Object.prototype.hasOwnProperty.call(definition, rawMarker)
+          ? definition[rawMarker]
+          : definition[cleanedMarker];
+        markerStates[rawMarker] = importedPresence(value, `cell_types.${cellTypeName}.${rawMarker}`);
+      });
+      return markerStates;
+    }
+
+    if (definition !== undefined && definition !== null) {
+      warnings.push(`cell_types.${cellTypeName} was not a list or mapping; all marker states were set to Not applicable.`);
+    }
+    primaryMarkers.forEach(rawMarker => { markerStates[rawMarker] = -1; });
+    return markerStates;
+  }
+
+  function makeSubtypeMarkerStates(definition, subtypeName) {
+    const markerStates = {};
+    if (!isPlainObject(definition)) return markerStates;
+    Object.entries(definition).forEach(([rawMarker, value]) => {
+      const cleanedMarker = allProteinRawColumns[rawMarker] || cleanProteinMarkerColumn(rawMarker) || rawMarker;
+      markerStates[cleanedMarker] = importedPresence(value, `sub_cell_types.${subtypeName}.${rawMarker}`);
+    });
+    return markerStates;
+  }
+
+  function buildSubtypeChildren(parentName, pathNames = new Set()) {
+    const children = subtypeMap[parentName];
+    if (!isPlainObject(children)) return [];
+    visitedParentKeys.add(parentName);
+
+    const nodes = [];
+    Object.entries(children).forEach(([childName, markerDefinition]) => {
+      const normalizedName = normalizeName(childName);
+      if (!normalizedName) {
+        warnings.push(`An empty subtype name under "${parentName}" was ignored.`);
+        return;
+      }
+      if (pathNames.has(normalizedName)) {
+        warnings.push(`Cycle detected at subtype "${normalizedName}"; the cyclic branch was ignored.`);
+        return;
+      }
+      if (usedNames.has(normalizedName)) {
+        warnings.push(`Duplicate cell type/subtype name "${normalizedName}" was ignored because YAML color and subtype keys require unique names.`);
+        return;
+      }
+
+      usedNames.add(normalizedName);
+      const nextPath = new Set(pathNames);
+      nextPath.add(normalizedName);
+      const subtypes = buildSubtypeChildren(normalizedName, nextPath);
+      nodes.push({
+        id: makeId(),
+        name: normalizedName,
+        color: importedColor(normalizedName),
+        markerStates: makeSubtypeMarkerStates(markerDefinition, normalizedName),
+        subtypes,
+        showSubtypes: subtypes.length > 0
+      });
+    });
+    return nodes;
+  }
+
+  const cellTypes = [];
+
+  function addRootCellType(name, definition, inferred = false) {
+    const normalizedName = normalizeName(name);
+    if (!normalizedName || usedNames.has(normalizedName)) return;
+    usedNames.add(normalizedName);
+    const subtypes = buildSubtypeChildren(normalizedName, new Set([normalizedName]));
+    cellTypes.push({
+      id: makeId(),
+      name: normalizedName,
+      color: importedColor(normalizedName),
+      markerStates: makeCellTypeMarkerStates(definition, normalizedName),
+      showSubtypes: subtypes.length > 0,
+      subtypes
+    });
+    if (inferred) warnings.push(`Cell type "${normalizedName}" was inferred from sub_cell_types because it was absent from cell_types.`);
+  }
+
+  Object.entries(cellTypeDefinitions).forEach(([name, definition]) => {
+    addRootCellType(name, definition, false);
+  });
+
+  const childNames = new Set(childParentMap.keys());
+  Object.keys(subtypeMap).forEach(parentName => {
+    if (!usedNames.has(parentName) && !childNames.has(parentName)) {
+      addRootCellType(parentName, undefined, true);
+    }
+  });
+
+  Object.keys(subtypeMap).forEach(parentName => {
+    if (!visitedParentKeys.has(parentName) && !usedNames.has(parentName)) {
+      addRootCellType(parentName, undefined, true);
+    }
+  });
+
+  const recognizedColorNames = new Set(['Other cells']);
+  cellTypes.forEach(cellType => {
+    recognizedColorNames.add(cellType.name);
+    (function collectNames(nodes) {
+      nodes.forEach(node => {
+        recognizedColorNames.add(node.name);
+        collectNames(node.subtypes || []);
+      });
+    })(cellType.subtypes || []);
+  });
+  Object.keys(colors).forEach(name => {
+    if (!recognizedColorNames.has(name)) warnings.push(`custom_colors entry "${name}" does not match a restored cell type or subtype and was ignored.`);
+  });
+
+  function importedBoolean(value, fallback, key) {
+    if (value === undefined) return fallback;
+    if (typeof value === 'boolean') return value;
+    if (['true', '1', 'yes', 'on'].includes(String(value).toLowerCase())) return true;
+    if (['false', '0', 'no', 'off'].includes(String(value).toLowerCase())) return false;
+    warnings.push(`${key} was not Boolean; ${fallback} was used.`);
+    return fallback;
+  }
+
+  function importedNumber(value, fallback, key, minimum) {
+    if (value === undefined || value === null || value === '') return fallback;
+    const number = Number(value);
+    if (Number.isFinite(number) && number >= minimum) return number;
+    warnings.push(`${key} was not a valid number; ${fallback} was used.`);
+    return fallback;
+  }
+
+  const spatialPlot = isPlainObject(config.spatial_plot) ? config.spatial_plot : {};
+  if (config.spatial_plot !== undefined && !isPlainObject(config.spatial_plot)) {
+    warnings.push('spatial_plot was not a mapping; spatial-plot defaults were used.');
+  }
+
+  return {
+    importedState: {
+      allProteinColumns,
+      proteinMarkers: primaryMarkers,
+      allProteinRawColumns,
+      allProteinRawColumnsReverse,
+      cellTypes,
+      otherCellsColor: importedColor('Other cells', '#a3a3a3')
+    },
+    formValues: {
+      filetype,
+      overwriteExistingFiles: importedBoolean(config.overwrite_existing_files, false, 'overwrite_existing_files'),
+      locallySaveAnndataFiles: importedBoolean(config.locally_save_anndata_files, true, 'locally_save_anndata_files'),
+      dpi: importedNumber(spatialPlot.dpi, 300, 'spatial_plot.dpi', 1),
+      scatterPointSize: importedNumber(spatialPlot.scatter_point_size, 50, 'spatial_plot.scatter_point_size', 0)
+    },
+    warnings
+  };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -214,12 +925,19 @@ function syncStateWithMarkers() {
 
 const markerFileInput = document.getElementById('markerFile');
 const columnSelectContainer = document.getElementById('columnSelectContainer');
-const addProteinMarkerBtn = document.getElementById('addProteinMarkerBtn');
 const proteinMarkersList = document.getElementById('proteinMarkersList');
 const markerPoolStatus = document.getElementById('markerPoolStatus');
 
 markerFileInput.addEventListener('change', handleMarkerFileUpload);
-addProteinMarkerBtn.addEventListener('click', addSelectedProteinMarker);
+
+function cleanProteinMarkerColumn(columnName) {
+  return columnName
+    .replace(/^Positivity -\s*/i, '')
+    .replace(/\*\s*\(MV - NUC\)/i, ' (Nucleus)')
+    .replace(/\*\s*\(MV - CYTO\)/i, ' (Cytoplasm)')
+    .replace(/\*\s*\(MV Cell\)/i, ' (Cell)')
+    .trim();
+}
 
 async function handleMarkerFileUpload(event) {
   const file = event.target.files[0];
@@ -228,19 +946,26 @@ async function handleMarkerFileUpload(event) {
   try {
     const fileContent = await file.text();
     const columnNames = getDelimitedColumnNames(fileContent, file.name);
-    const positivityColumns = columnNames.filter(isProteinMarkerColumn);
+    const positivityColumns = columnNames.filter(isProteinMarkerColumn).map(cleanProteinMarkerColumn);
+    const positivityRawColumns = columnNames.filter(isProteinMarkerColumn).map(raw => ({value: raw, label: cleanProteinMarkerColumn(raw),}));
+    const lookup = Object.fromEntries(positivityRawColumns.map(item => [item.value, item.label]));
+    const reverseLookup = Object.fromEntries(positivityRawColumns.map(item => [item.label, item.value]));
 
-    if (positivityColumns.length === 0) {
-      throw new Error('No columns beginning with “Positivity - ” were found.');
+    if (positivityRawColumns.map(item => item.value).length === 0) {
+      throw new Error('No columns beginning with "Positivity - " were found.');
     }
 
     state.allProteinColumns = [...new Set(positivityColumns)];
+    state.allProteinRawColumns = lookup;
+    state.allProteinRawColumnsReverse = reverseLookup;
     syncStateWithMarkers();
     renderAll();
   } catch (error) {
     console.error(error);
     state.allProteinColumns = [];
     state.proteinMarkers = [];
+    state.allProteinRawColumns = {};
+    state.allProteinRawColumnsReverse = {};
     syncStateWithMarkers();
     renderAll();
     alert(`Unable to read the marker file: ${error.message}`);
@@ -263,23 +988,7 @@ function getDelimitedColumnNames(fileContent, fileName) {
 
 function isProteinMarkerColumn(columnName) {
   const lower = columnName.toLocaleLowerCase();
-  return lower.startsWith('positivity - ') && !lower.includes('coordinate') && !lower.includes('DAPI');
-}
-
-function addSelectedProteinMarker() {
-  const select = document.getElementById('columnSelect');
-  const marker = select ? select.value : '';
-  if (!marker) {
-    alert('Select a protein marker first.');
-    return;
-  }
-
-  if (!state.proteinMarkers.includes(marker)) {
-    state.proteinMarkers.push(marker);
-  }
-
-  syncStateWithMarkers();
-  renderAll();
+  return lower.startsWith('positivity - ') && !lower.includes('coordinate') && !lower.includes('dapi');
 }
 
 function removeProteinMarker(marker) {
@@ -292,43 +1001,39 @@ function renderProteinMarkerSelect() {
   columnSelectContainer.replaceChildren();
 
   if (state.allProteinColumns.length === 0) {
-    addProteinMarkerBtn.hidden = true;
     return;
   }
 
-  const availableMarkers = state.allProteinColumns.filter(
-    marker => !state.proteinMarkers.includes(marker)
-  );
-
-  const label = document.createElement('label');
-  label.className = 'small';
-  label.htmlFor = 'columnSelect';
-  label.textContent = 'Select a marker for major cell-type definitions';
-
-  const select = document.createElement('select');
-  select.id = 'columnSelect';
-  select.name = 'column';
-
-  const placeholder = document.createElement('option');
-  placeholder.value = '';
-  placeholder.textContent = availableMarkers.length
-    ? 'Select a protein marker'
-    : 'All positivity columns have been selected';
-  placeholder.disabled = true;
-  placeholder.selected = true;
-  select.appendChild(placeholder);
-
-  availableMarkers.forEach(marker => {
-    const option = document.createElement('option');
-    option.value = marker;
-    option.textContent = marker;
-    select.appendChild(option);
+  const availableMarkers = state.allProteinColumns.filter(cleanedMarker => {
+    const rawMarker = state.allProteinRawColumnsReverse[cleanedMarker];
+    return !state.proteinMarkers.includes(rawMarker);
   });
 
-  select.disabled = availableMarkers.length === 0;
-  columnSelectContainer.append(label, select);
-  addProteinMarkerBtn.hidden = false;
-  addProteinMarkerBtn.disabled = availableMarkers.length === 0;
+  if (availableMarkers.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.textContent = 'All positivity columns have been selected for major cell-type definitions.';
+    columnSelectContainer.appendChild(empty);
+    return;
+  }
+
+  columnSelectContainer.appendChild(createMultiSelectMarkerGrid(
+    availableMarkers,
+    selectedMarkers => {
+      selectedMarkers.forEach(cleanedMarker => {
+        const rawMarker = state.allProteinRawColumnsReverse[cleanedMarker];
+        if (rawMarker && !state.proteinMarkers.includes(rawMarker)) {
+          state.proteinMarkers.push(rawMarker);
+        }
+      });
+      syncStateWithMarkers();
+      renderAll();
+    },
+    {
+      labelText: 'Select protein markers for major cell-type definitions:',
+      addButtonText: 'Add selected protein markers'
+    }
+  ));
 }
 
 function renderProteinMarkers() {
@@ -337,18 +1042,19 @@ function renderProteinMarkers() {
   if (state.proteinMarkers.length === 0) {
     proteinMarkersList.innerHTML = '<div class="empty-state">No primary protein markers added yet.</div>';
   } else {
-    state.proteinMarkers.forEach(marker => {
+    state.proteinMarkers.forEach(rawMarker => {
+      const cleanedMarker = state.allProteinRawColumns[rawMarker];
       const item = document.createElement('div');
       item.className = 'list-item';
 
       const markerText = document.createElement('div');
-      markerText.textContent = marker;
+      markerText.textContent = cleanedMarker || rawMarker;
 
       const removeButton = document.createElement('button');
       removeButton.type = 'button';
       removeButton.className = 'danger';
       removeButton.textContent = 'Remove';
-      removeButton.addEventListener('click', () => removeProteinMarker(marker));
+      removeButton.addEventListener('click', () => removeProteinMarker(rawMarker));
 
       item.append(markerText, removeButton);
       proteinMarkersList.appendChild(item);
@@ -429,6 +1135,106 @@ function renderCellTypes() {
   });
 }
 
+function createMultiSelectMarkerGrid(markers, onSelectMarkers, options = {}) {
+  const container = document.createElement('div');
+  container.style.marginBottom = '12px';
+
+  const label = document.createElement('label');
+  label.className = 'small';
+  label.style.display = 'block';
+  label.textContent = options.labelText || 'Select multiple markers:';
+  container.appendChild(label);
+
+  if (markers.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.textContent = options.emptyText || 'No markers are available.';
+    container.appendChild(empty);
+    return container;
+  }
+
+  const grid = document.createElement('div');
+  grid.style.display = 'grid';
+  grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(180px, 1fr))';
+  grid.style.gap = '8px';
+  grid.style.marginTop = '8px';
+  grid.style.marginBottom = '10px';
+
+  const selectedMarkers = new Set();
+
+  const buttonRow = document.createElement('div');
+  buttonRow.style.display = 'flex';
+  buttonRow.style.gap = '8px';
+
+  const addButton = document.createElement('button');
+  addButton.type = 'button';
+  addButton.textContent = options.addButtonText || 'Add selected markers';
+  addButton.disabled = true;
+
+  const updateSelectionControls = () => {
+    addButton.disabled = selectedMarkers.size === 0;
+  };
+
+  markers.forEach(marker => {
+    const checkboxContainer = document.createElement('div');
+    checkboxContainer.style.display = 'flex';
+    checkboxContainer.style.alignItems = 'center';
+    checkboxContainer.style.padding = '6px';
+    checkboxContainer.style.border = '1px solid #d8dee4';
+    checkboxContainer.style.borderRadius = '4px';
+    checkboxContainer.style.userSelect = 'none';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = makeId();
+    checkbox.style.marginRight = '6px';
+    checkbox.style.cursor = 'pointer';
+
+    const markerLabel = document.createElement('label');
+    markerLabel.htmlFor = checkbox.id;
+    markerLabel.textContent = marker;
+    markerLabel.style.cursor = 'pointer';
+    markerLabel.style.fontSize = '0.85rem';
+    markerLabel.style.margin = '0';
+
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) {
+        selectedMarkers.add(marker);
+        checkboxContainer.style.backgroundColor = '#f0f0f0';
+      } else {
+        selectedMarkers.delete(marker);
+        checkboxContainer.style.backgroundColor = 'transparent';
+      }
+      updateSelectionControls();
+    });
+
+    checkboxContainer.append(checkbox, markerLabel);
+    grid.appendChild(checkboxContainer);
+  });
+
+  addButton.addEventListener('click', () => {
+    if (selectedMarkers.size === 0) return;
+    onSelectMarkers(Array.from(selectedMarkers));
+  });
+
+  const clearButton = document.createElement('button');
+  clearButton.type = 'button';
+  clearButton.textContent = 'Clear selection';
+  clearButton.addEventListener('click', () => {
+    selectedMarkers.clear();
+    grid.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+      checkbox.checked = false;
+      checkbox.parentElement.style.backgroundColor = 'transparent';
+    });
+    updateSelectionControls();
+  });
+
+  buttonRow.append(addButton, clearButton);
+  container.append(grid, buttonRow);
+
+  return container;
+}
+
 function createCellTypeCard(cellType) {
   const card = document.createElement('section');
   card.className = 'list-item';
@@ -497,7 +1303,7 @@ function createCellTypeCard(cellType) {
   card.append(header, buttons, markerGrid, subtypeToggleLabel);
 
   if (cellType.showSubtypes) {
-    card.appendChild(createSubtypePanel(cellType));
+    card.appendChild(createSubtypePanel(cellType, 0, [cellType]));
   }
 
   return card;
@@ -524,12 +1330,12 @@ function createColorControl(initialColor, onColorInput) {
   return wrapper;
 }
 
-function createMarkerStateRow(marker, currentValue, onChange) {
+function createMarkerStateRow(rawMarker, currentValue, onChange) {
   const row = document.createElement('div');
   row.className = 'marker-row';
 
   const markerName = document.createElement('div');
-  markerName.textContent = marker;
+  markerName.textContent = state.allProteinRawColumns[rawMarker] || rawMarker;
 
   const select = document.createElement('select');
   [
@@ -554,17 +1360,17 @@ function createMarkerStateRow(marker, currentValue, onChange) {
 /* Cell subtypes                                                               */
 /* -------------------------------------------------------------------------- */
 
-function createSubtypePanel(cellType) {
+function createSubtypePanel(parentNode, depth = 0, ancestorChain = [parentNode]) {
   const panel = document.createElement('div');
   panel.className = 'subtype-panel';
 
   const heading = document.createElement('h4');
-  heading.textContent = `Cell subtypes of ${cellType.name}`;
+  heading.textContent = `Subtypes of ${parentNode.name}`;
 
   const explanation = document.createElement('p');
   explanation.className = 'small';
   explanation.textContent =
-    'Subtype definitions use positivity columns that were not selected for the major cell-type arrays.';
+    'Define nested subtypes using positivity columns that were not selected for parent definitions.';
 
   const addRow = document.createElement('div');
   addRow.className = 'row';
@@ -572,10 +1378,10 @@ function createSubtypePanel(cellType) {
   const inputWrapper = document.createElement('div');
   const inputLabel = document.createElement('label');
   inputLabel.className = 'small';
-  inputLabel.textContent = 'Add a cell subtype';
+  inputLabel.textContent = 'Add a subtype';
   const subtypeNameInput = document.createElement('input');
   subtypeNameInput.type = 'text';
-  subtypeNameInput.placeholder = 'New cell subtype';
+  subtypeNameInput.placeholder = 'New subtype name';
   inputWrapper.append(inputLabel, subtypeNameInput);
 
   const buttonWrapper = document.createElement('div');
@@ -587,19 +1393,21 @@ function createSubtypePanel(cellType) {
   const addSubtype = () => {
     const name = normalizeName(subtypeNameInput.value);
     if (!name) {
-      alert('Cell subtype name is required.');
+      alert('Subtype name is required.');
       return;
     }
     if (isNameUsed(name)) {
-      alert('Cell type and subtype names must be unique because they are also used as YAML keys and color keys.');
+      alert('Subtype names must be unique because they are used as YAML keys and color keys.');
       return;
     }
 
-    cellType.subtypes.push({
+    parentNode.subtypes.push({
       id: makeId(),
       name,
       color: '#00aaff',
-      markerStates: {}
+      markerStates: {},
+      subtypes: [],
+      showSubtypes: false
     });
 
     subtypeNameInput.value = '';
@@ -618,11 +1426,11 @@ function createSubtypePanel(cellType) {
   addRow.append(inputWrapper, buttonWrapper);
 
   const subtypeList = document.createElement('div');
-  if (cellType.subtypes.length === 0) {
-    subtypeList.innerHTML = '<div class="empty-state">No subtypes added for this cell type.</div>';
+  if (parentNode.subtypes.length === 0) {
+    subtypeList.innerHTML = '<div class="empty-state">No subtypes added.</div>';
   } else {
-    cellType.subtypes.forEach(subtype => {
-      subtypeList.appendChild(createSubtypeCard(cellType, subtype));
+    parentNode.subtypes.forEach(subtype => {
+      subtypeList.appendChild(createSubtypeCard(parentNode, subtype, depth, ancestorChain));
     });
   }
 
@@ -630,10 +1438,12 @@ function createSubtypePanel(cellType) {
   return panel;
 }
 
-function createSubtypeCard(cellType, subtype) {
+function createSubtypeCard(parentNode, subtype, depth = 0, ancestorChain = []) {
   const card = document.createElement('section');
   card.className = 'list-item subtype-list-item';
   card.dataset.subtypeId = subtype.id;
+  // Add indentation for nested subtypes
+  card.style.marginLeft = (depth * 16) + 'px';
 
   const header = document.createElement('div');
   header.className = 'item-header';
@@ -659,11 +1469,13 @@ function createSubtypeCard(cellType, subtype) {
   removeButton.className = 'danger';
   removeButton.textContent = 'Remove subtype';
   removeButton.addEventListener('click', () => {
-    cellType.subtypes = cellType.subtypes.filter(item => item.id !== subtype.id);
+    if (parentNode.subtypes) {
+      parentNode.subtypes = parentNode.subtypes.filter(item => item.id !== subtype.id);
+    }
     renderCellTypes();
   });
 
-  const markerAdder = createSubtypeMarkerAdder(subtype);
+  const markerAdder = createSubtypeMarkerAdder(subtype, ancestorChain);
 
   const markerGrid = document.createElement('div');
   markerGrid.className = 'marker-grid';
@@ -716,60 +1528,76 @@ function createSubtypeCard(cellType, subtype) {
   }
 
   card.append(header, removeButton, markerAdder, markerGrid);
+   
+  // Add nested subtypes section if this subtype has children or if toggled
+  if (!subtype.subtypes) {
+    subtype.subtypes = [];
+    subtype.showSubtypes = false;
+  }
+   
+  // Add checkbox to toggle/show nested subtypes form
+  const nestedToggleRow = document.createElement('div');
+  nestedToggleRow.style.marginTop = '12px';
+  nestedToggleRow.style.paddingTop = '12px';
+  nestedToggleRow.style.borderTop = '1px solid #eef0f2';
+   
+  const checkboxLabel = document.createElement('label');
+  checkboxLabel.className = 'small';
+  checkboxLabel.style.display = 'flex';
+  checkboxLabel.style.alignItems = 'center';
+  checkboxLabel.style.fontWeight = 'normal';
+  checkboxLabel.style.margin = '0';
+   
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.checked = subtype.showSubtypes;
+  checkbox.style.marginRight = '8px';
+  checkbox.addEventListener('change', () => {
+    subtype.showSubtypes = checkbox.checked;
+    renderCellTypes();
+  });
+   
+  checkboxLabel.append(checkbox, `Add cell subtypes for ${subtype.name}`);
+  nestedToggleRow.appendChild(checkboxLabel);
+  card.appendChild(nestedToggleRow);
+   
+  // Show nested subtypes form if checked
+  if (subtype.showSubtypes) {
+    const nestedPanel = createSubtypePanel(
+      subtype,
+      depth + 1,
+      [...ancestorChain, subtype]
+    );
+    card.appendChild(nestedPanel);
+  }
+
   return card;
 }
 
-function createSubtypeMarkerAdder(subtype) {
+function createSubtypeMarkerAdder(subtype, ancestorChain) {
   const wrapper = document.createElement('div');
-  wrapper.className = 'row';
   wrapper.style.marginTop = '10px';
 
-  const selectWrapper = document.createElement('div');
-  const label = document.createElement('label');
-  label.className = 'small';
-  label.textContent = 'Add a remaining protein marker';
-
-  const select = document.createElement('select');
-  const availableMarkers = getSubtypeMarkerPool().filter(
+  const availableMarkers = getSubtypeMarkerPool(ancestorChain).filter(
     marker => !(marker in subtype.markerStates)
   );
 
-  const placeholder = document.createElement('option');
-  placeholder.value = '';
-  placeholder.disabled = true;
-  placeholder.selected = true;
-  placeholder.textContent = availableMarkers.length
-    ? 'Select a subtype marker'
-    : 'No remaining markers are available';
-  select.appendChild(placeholder);
-
-  availableMarkers.forEach(marker => {
-    const option = document.createElement('option');
-    option.value = marker;
-    option.textContent = marker;
-    select.appendChild(option);
-  });
-  select.disabled = availableMarkers.length === 0;
-
-  selectWrapper.append(label, select);
-
-  const buttonWrapper = document.createElement('div');
-  buttonWrapper.className = 'fixed-button';
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.textContent = 'Add marker';
-  button.disabled = availableMarkers.length === 0;
-  button.addEventListener('click', () => {
-    if (!select.value) {
-      alert('Select a subtype protein marker first.');
-      return;
+  wrapper.appendChild(createMultiSelectMarkerGrid(
+    availableMarkers,
+    selectedMarkers => {
+      selectedMarkers.forEach(marker => {
+        subtype.markerStates[marker] = 1;
+      });
+      syncStateWithMarkers();
+      renderCellTypes();
+    },
+    {
+      labelText: `Select protein markers for ${subtype.name}:`,
+      addButtonText: 'Add selected subtype markers',
+      emptyText: 'No markers remain after excluding this subtype’s ancestor markers.'
     }
-    subtype.markerStates[select.value] = 1;
-    renderCellTypes();
-  });
+  ));
 
-  buttonWrapper.appendChild(button);
-  wrapper.append(selectWrapper, buttonWrapper);
   return wrapper;
 }
 
@@ -832,17 +1660,40 @@ function buildCellTypesMap() {
 
 function buildCellSubTypesMap() {
   const result = {};
-
-  state.cellTypes.forEach(cellType => {
-    if (cellType.subtypes.length === 0) return;
-
-    result[cellType.name] = {};
-    cellType.subtypes.forEach(subtype => {
-      result[cellType.name][subtype.name] = {};
-      Object.entries(subtype.markerStates).forEach(([marker, value]) => {
-        result[cellType.name][subtype.name][marker] = presenceToYamlValue(value);
-      });
+  
+  /* Recursively flatten the subtype tree: each node with children becomes a top-level key */
+  function flattenSubtypes(nodesList, parentName = null) {
+    nodesList.forEach(node => {
+      if (node.subtypes && node.subtypes.length > 0) {
+        // This node has children, so it becomes a key in sub_cell_types
+        result[node.name] = {};
+        node.subtypes.forEach(child => {
+          result[node.name][child.name] = {};
+          Object.entries(child.markerStates).forEach(([cleanedMarker, value]) => {
+            const rawMarker = state.allProteinRawColumnsReverse[cleanedMarker] || cleanedMarker;
+            result[node.name][child.name][rawMarker] = presenceToYamlValue(value);
+          });
+        });
+        // Recursively process this node's subtypes
+        flattenSubtypes(node.subtypes);
+      }
     });
+  }
+  
+  // Process subtypes from all cell types
+  state.cellTypes.forEach(cellType => {
+    if (cellType.subtypes && cellType.subtypes.length > 0) {
+      result[cellType.name] = {};
+      cellType.subtypes.forEach(subtype => {
+        result[cellType.name][subtype.name] = {};
+        Object.entries(subtype.markerStates).forEach(([cleanedMarker, value]) => {
+          const rawMarker = state.allProteinRawColumnsReverse[cleanedMarker] || cleanedMarker;
+          result[cellType.name][subtype.name][rawMarker] = presenceToYamlValue(value);
+        });
+      });
+      // Recursively flatten nested subtypes
+      flattenSubtypes(cellType.subtypes);
+    }
   });
 
   return result;
@@ -853,20 +1704,32 @@ function buildCustomColorsMap() {
   state.cellTypes.forEach(cellType => {
     result[cellType.name] = cellType.color;
   });
-  result['Other cells'] = '#a3a3a3';
-  state.cellTypes.forEach(cellType => {
-    cellType.subtypes.forEach(subtype => {
+  result['Other cells'] = state.otherCellsColor || '#a3a3a3';
+  
+  /* Recursively collect colors from all subtype levels */
+  function collectSubtypeColors(subtypes) {
+    subtypes.forEach(subtype => {
       result[subtype.name] = subtype.color;
+      if (subtype.subtypes && subtype.subtypes.length > 0) {
+        collectSubtypeColors(subtype.subtypes);
+      }
     });
+  }
+  
+  state.cellTypes.forEach(cellType => {
+    if (cellType.subtypes && cellType.subtypes.length > 0) {
+      collectSubtypeColors(cellType.subtypes);
+    }
   });
+  
   return result;
 }
 
 function collectFormData() {
   return {
     workspace: {
-      input_dir: document.getElementById('input_dir').value || '',
-      output_dir: document.getElementById('output_dir').value || '',
+      input_dir: '',
+      output_dir: '',
       filetype: document.getElementById('filetype').value || 'csv'
     },
     protein_markers: [...state.proteinMarkers],
@@ -885,8 +1748,6 @@ function collectFormData() {
 function validateRequiredFields(data) {
   const errors = [];
 
-  if (!normalizeName(data.workspace.input_dir)) errors.push('input_dir must not be empty');
-  if (!normalizeName(data.workspace.output_dir)) errors.push('output_dir must not be empty');
   if (data.protein_markers.length === 0) errors.push('at least one primary protein marker is required');
   if (Object.keys(data.cell_types).length === 0) errors.push('at least one cell type is required');
 
@@ -961,6 +1822,7 @@ function renderAll() {
   renderProteinMarkerSelect();
   renderProteinMarkers();
   renderCellTypes();
+  otherCellsColorInput.value = state.otherCellsColor || '#a3a3a3';
 }
 
 renderAll();
