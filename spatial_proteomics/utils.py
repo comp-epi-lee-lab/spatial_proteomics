@@ -175,8 +175,23 @@ def cleaned_data(file_names, output_dir, filetype='tsv'):
                 (data.columns.isin(['cellID']))|
                 ((data.columns.str.contains("MV - NUC - "))&(~data.columns.str.contains("Type")))
             ]
+            columns_cyto = data.columns[                                                                                        # keep columns with protein intensity in the cytoplasm
+                (data.columns.isin(['cellID']))|
+                ((data.columns.str.contains("MV - CYTO - "))&(~data.columns.str.contains("Type")))
+            ]
+            columns_cell = data.columns[                                                                                        # keep columns with protein intensity in the cell
+                (data.columns.isin(['cellID']))|
+                ((data.columns.str.contains("MV Cell - "))&(~data.columns.str.contains("Type")))
+            ]
+            intensities_columns = [new_col_check
+                for column_check in pos_cols
+                for val_check,where_check in {'CYTO':columns_cyto,'NUC':columns_nuc,'Cell':columns_cell}.items()
+                if val_check in column_check
+                for new_col_check in where_check
+                if column_check.replace("DAPI", "DAPI,").replace("Positivity - ",",").replace("*","*,").split(",")[1] in new_col_check
+            ]
             columns_pos = data.columns[data.columns.isin(['cellID', 'X-coordinate', 'Y-coordinate'])]                          # keep spatial columns
-            data_temp = data[columns_nuc].iloc[:,1:]
+            data_temp = data[intensities_columns].iloc[:,1:]
             adata = AnnData(                                                                                                   # generate AnnData file to include spatial data
                 data_temp.set_index((str(x) for x in data_temp.index)),
                 obsm={
