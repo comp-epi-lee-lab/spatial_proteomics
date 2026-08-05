@@ -45,6 +45,10 @@ class WrappingLabel(tk.Label):
         tk.Label.__init__(self, master, **kwargs)
         self.bind('<Configure>', lambda e: self.config(wraplength=self.winfo_width()))
 
+class CustomDumper(yaml.Dumper):
+    def increase_indent(self, flow=False, indentless=False):
+        return super(CustomDumper, self).increase_indent(flow, False)
+
 class SpPrAnGUI:
     def __init__(self, root):
         self.root = root
@@ -131,7 +135,7 @@ class SpPrAnGUI:
             cfg = yaml.safe_load(f)
         if folder != "": cfg["workspace"][dir_type] = folder
         with open(self.root.config_path, "w") as f:
-            yaml.safe_dump(cfg, f)
+            yaml.dump(cfg, f, Dumper=CustomDumper)
         with open(self.root.config_path, "r", encoding="utf-8", errors="replace") as file:
             content = file.read()
         self.text_area.configure(state='normal')

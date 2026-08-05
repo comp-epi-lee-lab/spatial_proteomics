@@ -1155,7 +1155,7 @@ def labeling_cell_types(data_dicts, adata_dicts, cell_type_dict, sub_cell_type_d
                 ct_check = ""
                 for ct_og in cell_type_dict.keys():
                     # if cell_type in new_obs_cols[f"Subtypes of {ct_og}"].values: 
-                    if new_obs_cols[f"Subtypes of {ct_og}"].isin([cell_type]).any():
+                    if ct_og in sub_cell_type_dict.keys() and new_obs_cols[f"Subtypes of {ct_og}"].isin([cell_type]).any():
                         ct_check = f"Subtypes of {ct_og}"
                         break
                 if ct_check == "": break
@@ -1168,7 +1168,8 @@ def labeling_cell_types(data_dicts, adata_dicts, cell_type_dict, sub_cell_type_d
                             key_to_look = key1
                             break
                 subtype_values = assign_cell_types_vectorized(data, list_cell_types[cell_type]|{cell_type:list_cell_types[key_to_look][cell_type]},cell_type)
-                new_obs_cols[f"Subtypes of {cell_type}"] = subtype_values
+                temp_for_only = new_obs_cols[f"only {cell_type}"].mask(new_obs_cols[f"only {cell_type}"].ne(cell_type), "Other cells")
+                new_obs_cols[f"Subtypes of {cell_type}"] = subtype_values.mask(temp_for_only.eq("Other cells"), "Other cells")
                 new_obs_cols[f"Only {cell_type}"] = subtype_values.where(subtype_values == "Other cells", cell_type)
                 for subcell_type in valid_labels:
                     if subcell_type==cell_type: continue
@@ -1238,7 +1239,14 @@ def plotting_helper(custom_colors, overwrite_existing_files, dpi, size, plots_pa
         title_name = f"Sample {k} ({adata.n_obs} cells)"
     else:
         universe_to_color = f"Subtypes of {folder_name}"
-        total_subcells = (adata.obs['clusters'] == folder_name).sum()
+        if folder_name in adata.obs['clusters'].unique():
+            total_subcells = (adata.obs['clusters'] == folder_name).sum()
+        else:
+            total_subcells = 'x'
+            for idx in adata.obs.columns[adata.obs.columns.str.contains("Subtypes of")].unique():
+                if folder_name in adata.obs[idx].unique():
+                    total_subcells = (adata.obs[idx] == folder_name).sum()
+                    break
         title_name = f"Sample {k} - {folder_name} ({total_subcells} cells)"
     save_namefile = plots_path / f"Spatial - {title_name}.png"
 
@@ -1440,7 +1448,15 @@ def calculate_cell_proportions(adata_dicts,custom_colors, output_dir, overwrite_
                 title_name = f"Sample {k} ({adata.n_obs} cells)"
             else:
                 universe_to_count = adata.obs[f"Subtypes of {folder_name}"][adata.obs[f"Subtypes of {folder_name}"]!="Other cells"]
-                total_subcells = (adata.obs['clusters'] == folder_name).sum()
+                if folder_name in adata.obs['clusters'].unique():
+                    total_subcells = (adata.obs['clusters'] == folder_name).sum()
+                else:
+                    total_subcells = 'x'
+                    for idx in adata.obs.columns[adata.obs.columns.str.contains("Subtypes of")].unique():
+                        if folder_name in adata.obs[idx].unique():
+                            total_subcells = (adata.obs[idx] == folder_name).sum()
+                            break
+                    if total_subcells == 'x': continue
                 title_name = f"Sample {k} - {folder_name} ({total_subcells} cells)"
             save_namefile = output_dir / "results" /  folder_name / f"Cell type proportions - {title_name}.csv"
             if save_namefile.exists() and not overwrite_existing_files: 
