@@ -1,4 +1,5 @@
 from spatial_proteomics.utils import *
+from spatial_proteomics.cell_proportions import *
 import argparse
 import sys
 
@@ -12,19 +13,23 @@ def sppran_steps(config):
         Path to the YAML configuration file.
     """
     adata_dicts = create_or_load_anndata(config)
-    plot_spatial(
-        adata_dicts              = adata_dicts,
-        custom_colors            = config['custom_colors'],
-        output_dir               = config['workspace']['output_dir'],
-        dpi                      = config['spatial_plot']['dpi'],
-        size                     = config['spatial_plot']['scatter_point_size'],
-        overwrite_existing_files = config['overwrite_existing_files']
-    )
+    if config['spatial_plot']['plot_options'] != 'none':
+        plot_spatial(
+            adata_dicts              = adata_dicts,
+            custom_colors            = config['custom_colors'],
+            output_dir               = config['workspace']['output_dir'],
+            plot_options             = config['spatial_plot']['plot_options'],
+            custom_plot              = config['spatial_plot']['custom_plot'],
+            dpi                      = config['spatial_plot']['dpi'],
+            size                     = config['spatial_plot']['scatter_point_size'],
+            overwrite_existing_files = config['overwrite_existing_files']
+        )
     calculate_cell_proportions(
         adata_dicts              = adata_dicts,
         custom_colors            = config['custom_colors'],
         output_dir               = config['workspace']['output_dir'],
-        overwrite_existing_files = config['overwrite_existing_files']
+        overwrite_existing_files = config['overwrite_existing_files'],
+        sub_cell_types           = config['sub_cell_types'] if 'sub_cell_types' in config.keys() else {}
     )
 
 def spatial_proteomics_pipeline(config_path):
@@ -59,18 +64,16 @@ def main():
     Applies Spatial Proteomics Analaysis (SpPrAn) pipeline from Command Line (CLI).
     """
     args = parse_args()
-    try: config = load_config(args.config)
+    try: 
+        config = load_config(args.config)
+        sppran_steps(config)
     except Exception as e:
         print(f"[ERROR] {e}", file=sys.stderr)
         sys.exit(1)
-    sppran_steps(config)
 
 def main_gui(config_path):
     """
     Applies Spatial Proteomics Analaysis (SpPrAn) pipeline from GUI.
     """
-    try: config = load_config(config_path)
-    except Exception as e:
-        print(f"[ERROR] {e}", file=sys.stderr)
-        sys.exit(1)
+    config = load_config(config_path)
     sppran_steps(config)

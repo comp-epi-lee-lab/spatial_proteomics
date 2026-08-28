@@ -24,15 +24,10 @@ with warnings.catch_warnings(): # Filtering harmless warnings
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
 from matplotlib.colors import ListedColormap, to_rgb, to_hex
-import seaborn as sns
-
-from scipy.stats import ttest_ind
-from statsmodels.stats.multitest import multipletests
-from scipy.stats import mannwhitneyu
 
 from itertools import combinations, product
 import networkx as nx
-from collections import OrderedDict
+from collections import defaultdict, deque
 
 # Functions
 
@@ -52,13 +47,15 @@ def load_config(config_path):
         Parsed configuration dictionary.
     """
     config_path = Path(config_path)
-    if not config_path.exists(): raise FileNotFoundError(f"Config file not found: {config_path}")
+    if not config_path.exists(): raise FileNotFoundError(f"Configuration file not found in {config_path}")
     with open(config_path, "r") as file:
         try: config = yaml.safe_load(file)
-        except yaml.YAMLError as e: raise ValueError(f"YAML parsing error in {config_path}") from e
+        except yaml.YAMLError as e: raise ValueError(f"There's an error in parsing the YAML configuration file in {config_path}. Review the configuration file thhoroughly before attempting to run the script again.") from e
     if not config: raise ValueError("Config file is empty")
     config['workspace']['input_dir'] = Path(config['workspace']['input_dir'])
     config['workspace']['output_dir'] = Path(config['workspace']['output_dir'])
+    if not Path(config['workspace']['input_dir']).exists(): raise FileNotFoundError(f"Input directory '{config['workspace']['input_dir']}' either doesn't exist or is misspelled.")
+    if not Path(config['workspace']['output_dir']).exists(): raise FileNotFoundError(f"Output directory '{config['workspace']['output_dir']}' either doesn't exist or is misspelled.")
     return config
 
 ## Saving adata files
@@ -126,10 +123,10 @@ def filenames(input_dir, filetype):
     """
     if input_dir.exists():
         entries = list(input_dir.iterdir())
-        filenames = [entry for entry in entries if entry.is_file() and entry.match(f"*objects.{filetype}") and not entry.name.startswith("._") and not entry.name.startswith(".")]  # Exclude hidden files and macOS resource forks
+        filenames = [entry for entry in entries if entry.is_file() and entry.match(f"*_objects.{filetype}") and not entry.name.startswith("._") and not entry.name.startswith(".")]  # Exclude hidden files and macOS resource forks
         return filenames
-    print(f"WARNING: Input directory '{input_dir}' doesn't exists or it's misspelled.") # An empty list is returned.
-    return []
+    else:
+        raise FileNotFoundError(f"Input directory '{input_dir}' doesn't exists or it's misspelled.")
 
 ## Cleaning data
 def cleaned_data(file_names, output_dir, filetype='tsv'):
@@ -152,8 +149,9 @@ def cleaned_data(file_names, output_dir, filetype='tsv'):
     adata_dicts : Dict[str:AnnData]
        Dictionary containing multiple annotated data matrices. 
     """
-    adata_dicts = {}
-    data_dicts  = {}
+    adata_dicts    = {}
+    data_dicts     = {}
+    filename_dicts = {}
     if len(file_names)!=0:
         for filename in file_names:
             separator = '\t' if filetype=='tsv' else ','
@@ -188,10 +186,10 @@ def cleaned_data(file_names, output_dir, filetype='tsv'):
                 for val_check,where_check in {'CYTO':columns_cyto,'NUC':columns_nuc,'Cell':columns_cell}.items()
                 if val_check in column_check
                 for new_col_check in where_check
-                if column_check.replace("DAPI", "DAPI,").replace("Positivity - ",",").replace("*","*,").split(",")[1] in new_col_check
+                if column_check.replace("DAPI", "DAPI,").replace("Positivity - ",",").replace("*","*,").replace(" (MV", ", (MV").split(",")[1] in new_col_check
             ]
             columns_pos = data.columns[data.columns.isin(['cellID', 'X-coordinate', 'Y-coordinate'])]                          # keep spatial columns
-            data_temp = data[intensities_columns].iloc[:,1:]
+            data_temp = data[intensities_columns]#.iloc[:,1:]
             adata = AnnData(                                                                                                   # generate AnnData file to include spatial data
                 data_temp.set_index((str(x) for x in data_temp.index)),
                 obsm={
@@ -200,14 +198,16 @@ def cleaned_data(file_names, output_dir, filetype='tsv'):
                     "Positivity":data[pos_cols].to_numpy()
                 },
                 uns={
-                    "spatial":{"unique":{}}
+                    "spatial":{"unique":{}},
+                    "filename_id":{name_of_file: name_of_file[-14:-12]}
                 }
             )
 
             data = data[["cellID"]+pos_cols.tolist()]
             adata_dicts[f"{data.iloc[0,0][-8:-6]}"] = adata
             data_dicts[f"{data.iloc[0,0][-8:-6]}"] = data
-        df = pd.DataFrame({"Samples Id": list(data_dicts.keys())})
+            filename_dicts[f"{data.iloc[0,0][-8:-6]}"] = name_of_file
+        df = pd.DataFrame({"Samples Id":filename_dicts.keys(), "Samples filename":filename_dicts.values()})
         results_path = output_dir / "results"
         results_path.mkdir(parents=True, exist_ok=True)
         df.to_csv(results_path / "Samples Id.csv", index=False)
@@ -335,12 +335,12 @@ def get_index_nones(cell_types, protein_markers, sub_protein_markers, sub_cell_t
     """
     none_dicc = {}
     total_markers = len(protein_markers)
-    none_subindices = [index+total_markers for index in range(len(sub_protein_markers['all']))]
+    # none_subindices = [index+total_markers for index in range(len(sub_protein_markers['all']))]
     for cell_type in cell_types.keys():
         none_indices = [index for index, value in enumerate(protein_markers) if value not in cell_types[cell_type].keys()]
         none_dicc[cell_type]=none_indices
     for cell_type in sub_cell_types.keys():
-        none_indices_temp = none_dicc[cell_type]+none_subindices
+        # none_indices_temp = none_dicc[cell_type]+none_subindices
         for subcell_type in sub_cell_types[cell_type].keys():
             # none_indices = [index for index in none_indices_temp if index not in [total_markers + sub_protein_markers['all'].index(val) for val in sub_cell_types[cell_type][subcell_type].keys()]]
             none_indices = [total_markers + sub_protein_markers['all'].index(val) for val in sub_protein_markers[cell_type] if val not in sub_cell_types[cell_type][subcell_type].keys()]
@@ -1095,6 +1095,49 @@ def get_all_children(celltype, dicc, visited=None):
     
     return children
 
+def order_sub_cell_types(cell_subtypes):
+    """
+    Return top-level cell subtypes keys in dependency order.
+
+    Parameters
+        -----
+        cell_subtypes : Dict[str:Dict]
+            Dictionary containing the cell subtypes defined by user.
+        
+        Return
+        ------
+        List
+           List containing all cell subtypes ordered by dependency. The original order is preserved when multiple keys are at the same level of dependence.
+    """
+    top_level_keys = list(cell_subtypes.keys())
+    top_level_set = set(top_level_keys)
+    children_by_parent = defaultdict(list)
+    indegree = {key: 0 for key in top_level_keys}
+
+    for parent, child_dict in cell_subtypes.items():
+        if not isinstance(child_dict, dict): continue
+        for child in child_dict.keys():
+            if child in top_level_set:
+                children_by_parent[parent].append(child)
+                indegree[child] += 1
+
+    queue = deque([key for key in top_level_keys if indegree[key] == 0])
+    ordered = []
+    while queue:
+        parent = queue.popleft()
+        ordered.append(parent)
+        for child in children_by_parent[parent]:
+            indegree[child] -= 1
+            if indegree[child] == 0: queue.append(child)
+
+    if len(ordered) != len(top_level_keys):
+        remaining = [key for key in top_level_keys if indegree[key] > 0]
+        raise ValueError(
+            "Cycle detected among cell_subtypes dependencies. "
+            f"These keys could not be ordered: {remaining}"
+        )
+    return ordered
+
 ## Labeling cell types
 def labeling_cell_types(data_dicts, adata_dicts, cell_type_dict, sub_cell_type_dict, protein_markers, output_dir, custom_colors, save_anndata=True):
     """
@@ -1150,15 +1193,14 @@ def labeling_cell_types(data_dicts, adata_dicts, cell_type_dict, sub_cell_type_d
                     sct_temp = sct_temp.mask(subtype_values.isin(valid_labels),f"Other {cell_type}")
                     new_obs_cols[f"only {subcell_type}"] = sct_temp.mask(subtype_values==subcell_type,subtype_values)
                 custom_colors[f"Other {cell_type}"] = custom_colors[cell_type]
-        for cell_type in sub_cell_type_dict.keys():
+        matches = {parent_key: list(set(child_dict.keys()) & set(sub_cell_type_dict.keys()))
+            for parent_key, child_dict in sub_cell_type_dict.items()
+            if isinstance(child_dict, dict)
+        }
+        matches = {k: v for k, v in matches.items() if v}
+        ordered_keys = order_sub_cell_types(sub_cell_type_dict)
+        for cell_type in ordered_keys:
             if cell_type not in cell_type_dict.keys():
-                ct_check = ""
-                for ct_og in cell_type_dict.keys():
-                    # if cell_type in new_obs_cols[f"Subtypes of {ct_og}"].values: 
-                    if ct_og in sub_cell_type_dict.keys() and new_obs_cols[f"Subtypes of {ct_og}"].isin([cell_type]).any():
-                        ct_check = f"Subtypes of {ct_og}"
-                        break
-                if ct_check == "": break
                 list_folder_names.append(cell_type)
                 valid_labels = {cell_type} | get_all_children(cell_type, list_final_subsets)
                 key_to_look = ""
@@ -1168,7 +1210,12 @@ def labeling_cell_types(data_dicts, adata_dicts, cell_type_dict, sub_cell_type_d
                             key_to_look = key1
                             break
                 subtype_values = assign_cell_types_vectorized(data, list_cell_types[cell_type]|{cell_type:list_cell_types[key_to_look][cell_type]},cell_type)
-                temp_for_only = new_obs_cols[f"only {cell_type}"].mask(new_obs_cols[f"only {cell_type}"].ne(cell_type), "Other cells")
+                for type_of_cell in matches.keys():
+                    if cell_type in matches[type_of_cell]:
+                        if type_of_cell in cell_type_dict.keys():
+                            temp_for_only = new_obs_cols[f"only {cell_type}"].mask(new_obs_cols[f"only {cell_type}"].ne(cell_type), "Other cells")
+                        else:
+                            temp_for_only = new_obs_cols[f"{type_of_cell} - only {cell_type}"].mask(new_obs_cols[f"{type_of_cell} - only {cell_type}"].ne(cell_type), "Other cells")
                 new_obs_cols[f"Subtypes of {cell_type}"] = subtype_values.mask(temp_for_only.eq("Other cells"), "Other cells")
                 new_obs_cols[f"Only {cell_type}"] = subtype_values.where(subtype_values == "Other cells", cell_type)
                 for subcell_type in valid_labels:
@@ -1233,7 +1280,7 @@ def create_or_load_anndata(config):
     return adata_dicts
 
 
-def plotting_helper(custom_colors, overwrite_existing_files, dpi, size, plots_path, k, adata, folder_name):
+def plotting_helper(custom_colors, overwrite_existing_files, selected_plots, dpi, size, plots_path, k, adata, folder_name):
     if folder_name == 'General':
         universe_to_color = 'clusters' 
         title_name = f"Sample {k} ({adata.n_obs} cells)"
@@ -1251,21 +1298,111 @@ def plotting_helper(custom_colors, overwrite_existing_files, dpi, size, plots_pa
     save_namefile = plots_path / f"Spatial - {title_name}.png"
 
     if save_namefile.exists() and not overwrite_existing_files:
-        print(f"File 'Spatial - {title_name}.png' already exists...")
+        if selected_plots != "highlight":
+            print(f"File 'Spatial - {title_name}.png' already exists...")
+        if selected_plots != "overview":
+            for cell_type, selected_color in custom_colors.items():
+                if cell_type=='Other cells': continue
+                if cell_type.startswith('Other'): continue
+                if cell_type not in adata.obs[universe_to_color].values: continue
+                if (adata.obs[universe_to_color] == cell_type).sum()==0: continue
+                title_name2 = f"Sample {k} - {cell_type} ({adata.n_obs} cells)" if folder_name == 'General' else f"Sample {k} - {folder_name} - {cell_type} ({total_subcells} cells)"
+                check_path = plots_path / f"Other {folder_name} plots"
+                check_path.mkdir(parents=True, exist_ok=True)
+                save_namefile2 = check_path /  f"Spatial - {title_name2}.png"
+                if save_namefile2.exists() and not overwrite_existing_files:
+                    print(f"File 'Spatial - {title_name2}.png' already exists...")
+                    continue
+                # adata.obs[f"only {cell_type}"]
+                # adata.obs[f"Subtypes of {cell_type}"] # Sub universe
+                color_spatial = f"Only {cell_type}" if cell_type == folder_name or folder_name == 'General' else f"only {cell_type}"
+                color_to_check = f"{folder_name} - only {cell_type}"
+                color_spatial = color_to_check if adata.obs.columns.isin([color_to_check]).any() else color_spatial
+                    # cmap_gene = selected_color
+                # own_palette_list = [selected_color,custom_colors['Other cells']] if cell_type<'Other cells' else [custom_colors['Other cells'],selected_color]
+                own_palette_list = [custom_colors[label] for label in sorted([cell_type, f"Other cells"])] if folder_name=='General' or (folder_name!='General' and not any(adata.obs[color_spatial]==f"Other {folder_name}")) else [custom_colors[label] for label in sorted([cell_type, f"Other {folder_name}", f"Other cells"])]
+                own_palette = ListedColormap(own_palette_list)
+                    # cmap_gene = ListedColormap(cmap_gene)
+                    
+                fig, ax = plt.subplots()
+                with warnings.catch_warnings(): # Filtering harmless warning
+                    warnings.filterwarnings(
+                            "ignore",
+                            message=".*No data for colormapping provided via 'c'. Parameters 'cmap', 'norm' will be ignored.*"
+                        )
+                    sq.pl.spatial_scatter(
+                            adata, 
+                            shape=None, 
+                            library_id="unique",
+                            color=color_spatial,
+                            title=title_name2,
+                            dpi=dpi,
+                            # cmap=cmap_gene,
+                            palette=own_palette,
+                            size=size,
+                            ax=ax)
+                ax.set_facecolor("black")
+                ax.set_aspect('auto')
+                # ax.set_aspect('equal')
+                fig.subplots_adjust(right=0.8)
+                # fig.tight_layout()
+                plt.savefig(save_namefile2, dpi=dpi)
+                plt.close(fig)
+        return
+    if selected_plots != "highlight":
+        color_spatial = universe_to_color
+            # cmap_gene = None
+        which_colors = []
+        colors_temp = list(custom_colors.keys())
+        colors_temp.sort()
+        custom_colors_t = {k:custom_colors[k] for k in colors_temp}
+        for cell_type,selected_color in custom_colors_t.items():
+            if (adata.obs[universe_to_color] == cell_type).sum()!=0: which_colors.append(selected_color)
+        own_palette_list = (which_colors)
+        own_palette = ListedColormap(own_palette_list)
+            
+        fig, ax = plt.subplots()
+        with warnings.catch_warnings(): # Filtering harmless warning
+            warnings.filterwarnings(
+                    "ignore",
+                    message=".*No data for colormapping provided via 'c'. Parameters 'cmap', 'norm' will be ignored.*"
+                )
+            sq.pl.spatial_scatter(
+                    adata, 
+                    shape=None, 
+                    library_id="unique",
+                    color=color_spatial,
+                    title=title_name,
+                    dpi=dpi,
+                    # cmap=cmap_gene,
+                    palette=own_palette,
+                    size=size,
+                    ax=ax)
+        ax.set_facecolor("black")
+        ax.set_aspect('auto')
+        # ax.set_aspect('equal')
+        fig.subplots_adjust(right=0.8)
+        # plt.legend(ncol=1,loc='center right',bbox_to_anchor=(0.5, -0.05))
+        # fig.tight_layout()
+        plt.savefig(save_namefile, dpi=dpi)
+        plt.close(fig)
+        # print(f"File 'Spatial - {title_name}.png' created!")
+        # print(f"Spatial plots for the cell types in {folder_name} has been created!")
+        
+    if selected_plots != "overview":
         for cell_type, selected_color in custom_colors.items():
             if cell_type=='Other cells': continue
             if cell_type.startswith('Other'): continue
             if cell_type not in adata.obs[universe_to_color].values: continue
             if (adata.obs[universe_to_color] == cell_type).sum()==0: continue
+                
             title_name2 = f"Sample {k} - {cell_type} ({adata.n_obs} cells)" if folder_name == 'General' else f"Sample {k} - {folder_name} - {cell_type} ({total_subcells} cells)"
             check_path = plots_path / f"Other {folder_name} plots"
             check_path.mkdir(parents=True, exist_ok=True)
-            save_namefile2 = check_path /  f"Spatial - {title_name2}.png"
-            if save_namefile2.exists() and not overwrite_existing_files:
+            save_namefile2 = check_path / f"Spatial - {title_name2}.png"
+            if save_namefile2.exists() and not overwrite_existing_files: 
                 print(f"File 'Spatial - {title_name2}.png' already exists...")
                 continue
-            # adata.obs[f"only {cell_type}"]
-            # adata.obs[f"Subtypes of {cell_type}"] # Sub universe
             color_spatial = f"Only {cell_type}" if cell_type == folder_name or folder_name == 'General' else f"only {cell_type}"
             color_to_check = f"{folder_name} - only {cell_type}"
             color_spatial = color_to_check if adata.obs.columns.isin([color_to_check]).any() else color_spatial
@@ -1274,7 +1411,6 @@ def plotting_helper(custom_colors, overwrite_existing_files, dpi, size, plots_pa
             own_palette_list = [custom_colors[label] for label in sorted([cell_type, f"Other cells"])] if folder_name=='General' or (folder_name!='General' and not any(adata.obs[color_spatial]==f"Other {folder_name}")) else [custom_colors[label] for label in sorted([cell_type, f"Other {folder_name}", f"Other cells"])]
             own_palette = ListedColormap(own_palette_list)
                 # cmap_gene = ListedColormap(cmap_gene)
-                
             fig, ax = plt.subplots()
             with warnings.catch_warnings(): # Filtering harmless warning
                 warnings.filterwarnings(
@@ -1299,98 +1435,9 @@ def plotting_helper(custom_colors, overwrite_existing_files, dpi, size, plots_pa
             # fig.tight_layout()
             plt.savefig(save_namefile2, dpi=dpi)
             plt.close(fig)
-            # print(f"File 'Spatial - {title_name2}.png' created!")
-        # print(f"Spatial plots for the cell subtypes of each single cell types in {folder_name} has been created!")
-        return
-    color_spatial = universe_to_color
-        # cmap_gene = None
-    which_colors = []
-    colors_temp = list(custom_colors.keys())
-    colors_temp.sort()
-    custom_colors_t = {k:custom_colors[k] for k in colors_temp}
-    for cell_type,selected_color in custom_colors_t.items():
-        if (adata.obs[universe_to_color] == cell_type).sum()!=0: which_colors.append(selected_color)
-    own_palette_list = (which_colors)
-    own_palette = ListedColormap(own_palette_list)
-        
-    fig, ax = plt.subplots()
-    with warnings.catch_warnings(): # Filtering harmless warning
-        warnings.filterwarnings(
-                "ignore",
-                message=".*No data for colormapping provided via 'c'. Parameters 'cmap', 'norm' will be ignored.*"
-            )
-        sq.pl.spatial_scatter(
-                adata, 
-                shape=None, 
-                library_id="unique",
-                color=color_spatial,
-                title=title_name,
-                dpi=dpi,
-                # cmap=cmap_gene,
-                palette=own_palette,
-                size=size,
-                ax=ax)
-    ax.set_facecolor("black")
-    ax.set_aspect('auto')
-    # ax.set_aspect('equal')
-    fig.subplots_adjust(right=0.8)
-    # plt.legend(ncol=1,loc='center right',bbox_to_anchor=(0.5, -0.05))
-    # fig.tight_layout()
-    plt.savefig(save_namefile, dpi=dpi)
-    plt.close(fig)
-    # print(f"File 'Spatial - {title_name}.png' created!")
-    # print(f"Spatial plots for the cell types in {folder_name} has been created!")
-        
-    for cell_type, selected_color in custom_colors.items():
-        if cell_type=='Other cells': continue
-        if cell_type.startswith('Other'): continue
-        if cell_type not in adata.obs[universe_to_color].values: continue
-        if (adata.obs[universe_to_color] == cell_type).sum()==0: continue
-            
-        title_name2 = f"Sample {k} - {cell_type} ({adata.n_obs} cells)" if folder_name == 'General' else f"Sample {k} - {folder_name} - {cell_type} ({total_subcells} cells)"
-        check_path = plots_path / f"Other {folder_name} plots"
-        check_path.mkdir(parents=True, exist_ok=True)
-        save_namefile2 = check_path / f"Spatial - {title_name2}.png"
-        if save_namefile2.exists() and not overwrite_existing_files: 
-            print(f"File 'Spatial - {title_name2}.png' already exists...")
-            continue
-        color_spatial = f"Only {cell_type}" if cell_type == folder_name or folder_name == 'General' else f"only {cell_type}"
-        color_to_check = f"{folder_name} - only {cell_type}"
-        color_spatial = color_to_check if adata.obs.columns.isin([color_to_check]).any() else color_spatial
-            # cmap_gene = selected_color
-        # own_palette_list = [selected_color,custom_colors['Other cells']] if cell_type<'Other cells' else [custom_colors['Other cells'],selected_color]
-        own_palette_list = [custom_colors[label] for label in sorted([cell_type, f"Other cells"])] if folder_name=='General' or (folder_name!='General' and not any(adata.obs[color_spatial]==f"Other {folder_name}")) else [custom_colors[label] for label in sorted([cell_type, f"Other {folder_name}", f"Other cells"])]
-        own_palette = ListedColormap(own_palette_list)
-            # cmap_gene = ListedColormap(cmap_gene)
-        fig, ax = plt.subplots()
-        with warnings.catch_warnings(): # Filtering harmless warning
-            warnings.filterwarnings(
-                    "ignore",
-                    message=".*No data for colormapping provided via 'c'. Parameters 'cmap', 'norm' will be ignored.*"
-                )
-            sq.pl.spatial_scatter(
-                    adata, 
-                    shape=None, 
-                    library_id="unique",
-                    color=color_spatial,
-                    title=title_name2,
-                    dpi=dpi,
-                    # cmap=cmap_gene,
-                    palette=own_palette,
-                    size=size,
-                    ax=ax)
-        ax.set_facecolor("black")
-        ax.set_aspect('auto')
-        # ax.set_aspect('equal')
-        fig.subplots_adjust(right=0.8)
-        # fig.tight_layout()
-        plt.savefig(save_namefile2, dpi=dpi)
-        plt.close(fig)
-        # print(f"File 'Spatial - {title_name2}.png' created!")
-    # print(f"Spatial plots for the cell subtypes of each single cell types in {folder_name} has been created!")
 
 ## Plotting spacial data
-def plot_spatial(adata_dicts,custom_colors,output_dir,overwrite_existing_files=False,dpi=300,size=50):
+def plot_spatial(adata_dicts,custom_colors,output_dir,plot_options,custom_plot,overwrite_existing_files=False,dpi=300,size=50):
     """
     Plots spatial data from AnnData and saves it in plots directory.
     
@@ -1412,70 +1459,89 @@ def plot_spatial(adata_dicts,custom_colors,output_dir,overwrite_existing_files=F
     rcParams["figure.figsize"] = (10,10)
     plots_path = output_dir / "plots" 
     plots_path.mkdir(parents=True, exist_ok=True)
+    samples_filepath = output_dir / "results" / "Samples Id.csv"
+    if samples_filepath.exists(): sample_names_dict = pd.read_csv(samples_filepath,dtype={"Samples Id": str}).set_index('Samples Id').to_dict()['Samples filename']
+    custom_plot_dict = {v['fileName'] : v['type'] for w,v in enumerate(custom_plot)}
     for k, adata in adata_dicts.items():
-        for key,val in zip(adata.uns['color_keys'], adata.uns['color_vals']):
-            if key not in custom_colors.keys(): custom_colors[key] = val
+        if "color_keys" in adata.uns and "color_vals" in adata.uns:
+            for key,val in zip(adata.uns['color_keys'], adata.uns['color_vals']):
+                if key not in custom_colors.keys(): custom_colors[key] = val
+        selected_plots = plot_options
+        if plot_options == 'custom':
+            if custom_plot_dict[sample_names_dict[k]] == 'none':
+                continue
+            selected_plots = custom_plot_dict[sample_names_dict[k]]
         for folder_name in adata.uns['folder_names']:
             plots_path_folder = plots_path / folder_name
             plots_path_folder.mkdir(parents=True, exist_ok=True)
-            plotting_helper(custom_colors, overwrite_existing_files, dpi, size, plots_path_folder, k, adata, folder_name)
+            plotting_helper(custom_colors, overwrite_existing_files, selected_plots, dpi, size, plots_path_folder, k, adata, folder_name)
         print(f"All spatial plots for cell subtypes in Sample {k} have been created!")
         # raise Exception (f"NotFinishedFunctionError: Just testing. This is custom_colors: {custom_colors}")
 
 ## Calculating cell proportions and saving them in csv files
-def calculate_cell_proportions(adata_dicts,custom_colors, output_dir, overwrite_existing_files=False):
-    """
-    Quantifies cell population from AnnData and saves it to csv files in results directory.
+# def calculate_cell_proportions(adata_dicts,custom_colors, output_dir, overwrite_existing_files=False):
+#     """
+#     Quantifies cell population from AnnData and saves it to csv files in results directory.
     
-    Parameters
-    -----
-    adata_dicts : Dict[str:AnnData]
-       Dictionary containing multiple annotated data matrices. 
-    custom_colors : Dict[str:str]
-       Dictionary containing HEX colors per cell type. 
-    output_dir : Path
-        Path to the output directory.
-    overwrite_existing_files : Bool (Optional; Default is False)
-        Boolean value to decide if plots will be overwrited in plots directory or not.
-    """
-    for k, adata in adata_dicts.items():
-        for key,val in zip(adata.uns['color_keys'], adata.uns['color_vals']):
-            if key not in custom_colors.keys(): custom_colors[key] = val
-        for folder_name in adata.uns['folder_names']:
-            if folder_name == 'General':
-                universe_to_count = adata.obs['clusters'] 
-                total_subcells = adata.n_obs
-                title_name = f"Sample {k} ({adata.n_obs} cells)"
-            else:
-                universe_to_count = adata.obs[f"Subtypes of {folder_name}"][adata.obs[f"Subtypes of {folder_name}"]!="Other cells"]
-                if folder_name in adata.obs['clusters'].unique():
-                    total_subcells = (adata.obs['clusters'] == folder_name).sum()
-                else:
-                    total_subcells = 'x'
-                    for idx in adata.obs.columns[adata.obs.columns.str.contains("Subtypes of")].unique():
-                        if folder_name in adata.obs[idx].unique():
-                            total_subcells = (adata.obs[idx] == folder_name).sum()
-                            break
-                    if total_subcells == 'x': continue
-                title_name = f"Sample {k} - {folder_name} ({total_subcells} cells)"
-            save_namefile = output_dir / "results" /  folder_name / f"Cell type proportions - {title_name}.csv"
-            if save_namefile.exists() and not overwrite_existing_files: 
-                print(f"File 'Cell type proportions - {title_name}' already exists...")
-                continue
-            sum_dict = {}
-            sum_dict["Total cells"] = adata.n_obs
-            if sum_dict["Total cells"]==0: 
-                print(f"No cells in '{title_name}' file. Skipping...")
-                break
-            prop_dict = {}
-            for cell_type,_ in custom_colors.items():
-                if cell_type not in universe_to_count.values: continue
-                sum_dict[cell_type]  = (universe_to_count == cell_type).sum()
-                prop_dict[cell_type] = str(np.round(sum_dict[cell_type]/total_subcells*100,2))+"%" if total_subcells != 0 else "0%"
+#     Parameters
+#     -----
+#     adata_dicts : Dict[str:AnnData]
+#        Dictionary containing multiple annotated data matrices. 
+#     custom_colors : Dict[str:str]
+#        Dictionary containing HEX colors per cell type. 
+#     output_dir : Path
+#         Path to the output directory.
+#     overwrite_existing_files : Bool (Optional; Default is False)
+#         Boolean value to decide if plots will be overwrited in plots directory or not.
+#     """
+#     output_dir = Path(output_dir)
+#     results_dir = output_dir / "results"
+#     results_dir.mkdir(parents=True, exist_ok=True)
+
+#     for k, adata in adata_dicts.items():
+#         if "color_keys" in adata.uns and "color_vals" in adata.uns:
+#             for key,val in zip(adata.uns['color_keys'], adata.uns['color_vals']):
+#                 if key not in custom_colors.keys(): custom_colors[key] = val
+#         for folder_name in adata.uns['folder_names']:
+#             folder_dir = results_dir / folder_name
+#             folder_dir.mkdir(parents=True, exist_ok=True)
+#             if folder_name == 'General':
+#                 universe_to_count = adata.obs['clusters'] 
+#                 total_subcells = adata.n_obs
+#                 title_name = f"Sample {k} ({adata.n_obs} cells)"
+#             else:
+#                 subtype_col = f"Subtypes of {folder_name}"
+#                 if subtype_col not in adata.obs.columns:
+#                     continue
+#                 universe_to_count = adata.obs[f"Subtypes of {folder_name}"][adata.obs[f"Subtypes of {folder_name}"]!="Other cells"]
+#                 if folder_name in adata.obs['clusters'].unique():
+#                     total_subcells = (adata.obs['clusters'] == folder_name).sum()
+#                 else:
+#                     total_subcells = 'x'
+#                     for idx in adata.obs.columns[adata.obs.columns.str.contains("Subtypes of")].unique():
+#                         if folder_name in adata.obs[idx].unique():
+#                             total_subcells = (adata.obs[idx] == folder_name).sum()
+#                             break
+#                     if total_subcells == 'x': continue
+#                 title_name = f"Sample {k} - {folder_name} ({total_subcells} cells)"
+#             save_namefile = output_dir / "results" /  folder_name / f"Cell type proportions - {title_name}.csv"
+#             if save_namefile.exists() and not overwrite_existing_files: 
+#                 print(f"File 'Cell type proportions - {title_name}' already exists...")
+#                 continue
+#             sum_dict = {}
+#             sum_dict["Total cells"] = adata.n_obs
+#             if sum_dict["Total cells"]==0: 
+#                 print(f"No cells in '{title_name}' file. Skipping...")
+#                 break
+#             prop_dict = {}
+#             for cell_type,_ in custom_colors.items():
+#                 if cell_type not in universe_to_count.values: continue
+#                 sum_dict[cell_type]  = (universe_to_count == cell_type).sum()
+#                 prop_dict[cell_type] = str(np.round(sum_dict[cell_type]/total_subcells*100,2))+"%" if total_subcells != 0 else "0%"
             
-            df = pd.DataFrame(data = {cell_type:[sum_dict[cell_type],prop_dict[cell_type]] for cell_type,_ in custom_colors.items() if cell_type in universe_to_count.values}, index = ["Total cells in cell type", "Percentage"])
-            df.to_csv(save_namefile, index=False)
-        print(f"All 'Cell type proportions' csv files for Sample {k} have been created!")
+#             df = pd.DataFrame(data = {cell_type:[sum_dict[cell_type],prop_dict[cell_type]] for cell_type,_ in custom_colors.items() if cell_type in universe_to_count.values}, index = ["Total cells in cell type", "Percentage"])
+#             df.to_csv(save_namefile, index=False)
+#         print(f"All 'Cell type proportions' csv files for Sample {k} have been created!")
 
 
 

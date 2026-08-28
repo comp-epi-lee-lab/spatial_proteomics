@@ -3,136 +3,311 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>SpPrAn config generator</title>
+<title>SpPrAn configuration tool</title>
 <style>
-  :root { color-scheme: light; --border: #d8dee4; --muted: #57606a; --panel: #f6f8fa; --danger: #b42318; }
-
-  * { box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; margin: 20px auto; max-width: 980px; padding: 0 16px 40px; line-height: 1.4; }
-  h1 { font-size: 1.6rem; }
-  h3, h4 { margin-bottom: 6px; }
-  label { display: block; margin-top: 12px; font-weight: 600; }
-  input[type="text"], input[type="number"], select, textarea { width: 100%; padding: 8px; margin-top: 6px; border: 1px solid #8c959f; border-radius: 4px; background: white; }
-  input[type="file"] { margin-top: 8px; }
-  input[type="color"] { width: 48px; height: 34px; padding: 2px; border: 1px solid #8c959f; border-radius: 4px; background: white; }
-  button { margin-top: 10px; padding: 8px 12px; cursor: pointer; }
-  button.danger { color: var(--danger); }
-  hr.section-divider { border: 0; border-top: 8px solid #1c1b1b; border-radius: 5px; margin: 24px 0 18px; }.row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }.row > * { flex: 1 1 220px; }.fixed-button { flex: 0 0 150px; }.small { font-size: 0.9rem; color: var(--muted); }.list-item { border: 1px solid var(--border); padding: 12px; margin: 10px 0; border-radius: 7px; }.subtype-list-item { border-left: 4px solid var(--border); margin-left: 16px; background: #fcfcfc; }.item-header { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }.item-title { display: flex; align-items: center; gap: 8px; }.color-swatch { display: inline-block; width: 18px; height: 18px; border-radius: 3px; border: 1px solid rgba(0, 0, 0, 0.25); }.color-control { display: flex; gap: 8px; align-items: center; }.color-control label { margin: 0; }.marker-grid { margin-top: 12px; }.marker-row { display: grid; grid-template-columns: minmax(250px, 2fr) minmax(180px, 1fr); gap: 10px; align-items: center; padding: 6px 0; border-top: 1px solid #eef0f2; }.marker-row:first-child { border-top: 0; }.marker-row select { margin-top: 0; }.subtype-panel { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }.empty-state { color: var(--muted); font-size: 0.9rem; padding: 8px 0; }.status-box { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 10px; margin-top: 10px; }
-  pre { background: var(--panel); padding: 12px; overflow: auto; min-height: 120px; border: 1px solid var(--border); border-radius: 6px; }
-  .multiline-status { white-space: pre-wrap; }
-
-  @media (max-width: 700px) { .marker-row { grid-template-columns: 1fr; } .fixed-button { flex-basis: 100%; } .subtype-list-item { margin-left: 0; } }
+:root {
+  color-scheme: light;
+  --bg: #f6f8fa;
+  --surface: #ffffff;
+  --surface-soft: #f8fafc;
+  --text: #1f2937;
+  --muted: #667085;
+  --border: #d0d7de;
+  --border-soft: #e7ebef;
+  --accent: #0969da;
+  --accent-hover: #0758b7;
+  --danger: #cf222e;
+  --danger-soft: #ffebe9;
+  --green: #1a7f37;
+  --green-soft: #dafbe1;
+  --red: #cf222e;
+  --red-soft: #ffebe9;
+  --black: #24292f;
+  --shadow: 0 1px 2px rgba(31,35,40,.04), 0 6px 22px rgba(31,35,40,.05);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  line-height: 1.5;
+}
+main { max-width: 1180px; margin: 0 auto; padding: 36px 24px 60px; }
+.hero { margin-bottom: 26px; }
+.hero h1 { margin: 0 0 8px; font-size: clamp(1.8rem, 3vw, 2.5rem); letter-spacing: -.02em; }
+.hero p { margin: 0; max-width: 850px; color: var(--muted); }
+form { margin: 0; }
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 22px;
+  margin: 18px 0;
+}
+.panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.panel-heading h2 { margin: 0; font-size: 1.15rem; }
+.panel-heading p { margin: 4px 0 0; color: var(--muted); font-size: .92rem; }
+.step-badge {
+  flex: 0 0 auto; min-width: 32px; height: 32px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #ddf4ff; color: #0550ae; font-weight: 700; font-size: .9rem;
+}
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.field label, label.small { display: block; margin: 0 0 6px; font-weight: 600; color: #344054; font-size: .9rem; }
+.small { color: var(--muted); font-size: .88rem; }
+.help { color: var(--muted); font-size: .9rem; margin: 0 0 14px; }
+input[type="text"], input[type="number"], select, textarea {
+  width: 100%; border: 1px solid #b9c1c9; border-radius: 8px; padding: 9px 11px;
+  background: #fff; color: var(--text); font: inherit; outline: none;
+}
+input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px rgba(9,105,218,.12);
+}
+input[type="file"] { width: 100%; font: inherit; color: var(--muted); }
+input[type="color"] { width: 44px; height: 34px; padding: 2px; border: 1px solid #b9c1c9; border-radius: 7px; background: #fff; }
+button {
+  border: 1px solid var(--border); border-radius: 8px; background: var(--surface-soft); color: var(--text);
+  padding: 8px 12px; font: inherit; font-weight: 600; cursor: pointer; margin-top: 8px;
+}
+button:hover { background: #eef2f6; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary:hover { background: var(--accent-hover); }
+button.danger { background: #fff; color: var(--danger); border-color: #f1b8bd; }
+button.danger:hover { background: var(--danger-soft); }
+button:disabled { opacity: .55; cursor: not-allowed; }
+.row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.row > * { flex: 1 1 220px; }
+.fixed-button { flex: 0 0 170px; }
+.status-box, .status {
+  background: var(--surface-soft); border: 1px solid var(--border-soft); border-radius: 9px;
+  padding: 11px 12px; margin-top: 12px; color: var(--muted); font-size: .88rem;
+}
+.multiline-status { white-space: pre-wrap; }
+.empty-state, .empty-message { color: var(--muted); font-size: .88rem; font-style: italic; padding: 8px 0; }
+.list-item {
+  border: 1px solid var(--border); padding: 14px; margin: 10px 0; border-radius: 10px; background: #fff;
+}
+#proteinMarkersList .list-item { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+.item-header { display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.item-title { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.item-title strong { font-size: 1.02rem; }
+.item-title-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.compact-button { margin-top: 0; padding: 5px 8px; font-size: .8rem; }
+.color-swatch { width: 17px; height: 17px; border-radius: 4px; border: 1px solid rgba(0,0,0,.2); }
+.color-control { display: flex; align-items: center; gap: 8px; }
+.color-control label { margin: 0; font-size: .85rem; color: var(--muted); }
+.marker-grid { margin-top: 12px; }
+.marker-row {
+  display: grid; grid-template-columns: minmax(220px, 1fr) auto; gap: 14px; align-items: center;
+  padding: 9px 0; border-top: 1px solid var(--border-soft);
+}
+.marker-row:first-child { border-top: 0; }
+.marker-name { overflow-wrap: anywhere; }
+.presence-control { display: inline-flex; gap: 7px; align-items: center; }
+.presence-button {
+  width: 34px; height: 34px; border-radius: 50%; padding: 0; margin: 0;
+  display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: .84rem;
+  background: #fff; transition: transform .08s ease, box-shadow .08s ease, background .08s ease;
+}
+.presence-button:hover { transform: translateY(-1px); }
+.presence-positive { border-color: #68b67b; color: var(--green); }
+.presence-negative { border-color: #e39aa1; color: var(--red); }
+.presence-na { border-color: #5b626a; color: var(--black); }
+.presence-positive.selected { background: var(--green-soft); border-color: var(--green); box-shadow: 0 0 0 2px rgba(26,127,55,.12); }
+.presence-negative.selected { background: var(--red-soft); border-color: var(--red); box-shadow: 0 0 0 2px rgba(207,34,46,.10); }
+.presence-na.selected { background: #24292f; color: #fff; border-color: #24292f; box-shadow: 0 0 0 2px rgba(36,41,47,.12); }
+.subtype-list-item { border-left: 4px solid #b8c4d1; margin-left: 18px; background: #fcfdff; }
+.subtype-panel { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-soft); }
+.item-body[hidden] { display: none; }
+.marker-selector { margin-top: 12px; }
+.matrix-table { border-collapse: collapse; width: 100%; margin-top: 14px; overflow: hidden; border-radius: 8px; }
+.matrix-table th, .matrix-table td { border: 1px solid var(--border); padding: 9px; text-align: center; }
+.matrix-table th { background: #f3f5f7; font-size: .85rem; }
+.matrix-table th:first-child, .matrix-table td:first-child { text-align: left; }
+#hiddenDiv { display: none; }
+.plot-custom { margin-top: 14px; padding: 14px; border: 1px solid var(--border-soft); border-radius: 10px; background: var(--surface-soft); }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.yaml-preview {
+  min-height: 240px; max-height: 560px; overflow: auto; background: #0d1117; color: #c9d1d9;
+  border-radius: 11px; padding: 16px; border: 1px solid #30363d; font: 13px/1.5 "SFMono-Regular", Consolas, monospace;
+}
+.legend { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-top: 10px; color: var(--muted); font-size: .85rem; }
+.legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.legend-dot { width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: .7rem; font-weight: 800; }
+.legend-dot.pos { background: var(--green-soft); color: var(--green); border: 1px solid var(--green); }
+.legend-dot.neg { background: var(--red-soft); color: var(--red); border: 1px solid var(--red); }
+.legend-dot.na { background: #24292f; color: #fff; border: 1px solid #24292f; }
+@media (max-width: 820px) {
+  main { padding: 24px 14px 40px; }
+  .grid, .grid.three { grid-template-columns: 1fr; }
+  .marker-row { grid-template-columns: 1fr; }
+  .fixed-button { flex-basis: 100%; }
+  .subtype-list-item { margin-left: 0; }
+}
 </style>
 </head>
 <body>
-  <h1>Generate YAML config file for SpPrAn pipeline</h1>
-  <p>This form creates a config file for the SpPrAn pipeline.</p>
-  <p class="small">
-    Adjust the configuration fields and download the resulting YAML file.
-  </p>
+
+<main>
+  <header class="hero">
+    <h1>SpPrAn configuration tool</h1>
+    <p>Create, restore, and edit a configuration file for the SpPrAn spatial proteomics pipeline.</p>
+  </header>
 
   <form id="mainForm" onsubmit="return false;">
-    <hr class="section-divider" />
-
-    <h3>Edit an existing configuration</h3>
-    <p class="small">
-      Upload a previously downloaded YAML file to restore its saved settings in this form. Missing supported keys use safe defaults. The YAML cannot contain TSV/CSV columns that were never selected, so upload the representative data file again when you need to restore additional unused markers.
-    </p>
-    <label class="small" for="yamlFile">Upload a YAML configuration</label>
-    <input type="file" id="yamlFile" accept=".yaml,.yml,text/yaml,application/x-yaml" />
-    <div id="yamlImportStatus" class="status-box small multiline-status" hidden aria-live="polite"></div>
-
-    <hr class="section-divider" />
-
-    <h3>Workspace</h3>
-    <p class="small">
-      Choose the common input-file format. The input and output directory values remain empty in this YAML file and are assigned later by Python.
-    </p>
-
-    <label class="small" for="filetype">Input-file format</label>
-    <select id="filetype">
-      <option value="csv">csv (comma-separated values)</option>
-      <option value="tsv">tsv (tab-separated values)</option>
-    </select>
-
-    <hr class="section-divider" />
-
-    <h3>Protein markers</h3>
-    <p class="small">
-      Upload a representative TSV or CSV file. Select one or more positivity columns to define the major cell types. Once selected, markers disappear from this selector. Positivity columns not selected here remain available for defining cell subtypes.
-    </p>
-
-    <label class="small" for="markerFile">Upload a TSV or CSV file</label>
-    <input type="file" id="markerFile" accept=".tsv,.csv,text/tab-separated-values,text/csv" />
-
-    <div id="columnSelectContainer"></div>
-
-    <div id="markerPoolStatus" class="status-box small" hidden></div>
-    <div id="proteinMarkersList" aria-live="polite"></div>
-
-    <hr class="section-divider" />
-
-    <h3>Cell types</h3>
-    <p class="small">
-      Define each major cell type using the selected protein markers. A value of “Not applicable” becomes <code>null</code> in the YAML array.
-    </p>
-
-    <div class="row">
-      <div>
-        <label class="small" for="newCellType">Add a cell type</label>
-        <input id="newCellType" type="text" placeholder="New cell type" />
+    <section class="panel">
+      <div class="panel-heading">
+        <div><h2>Restore or start</h2><p>Load a previous configuration file or provide a representative data file to recover available protein marker columns.</p></div>
+        <span class="step-badge">1</span>
       </div>
-      <div class="fixed-button">
-        <button id="addCellTypeBtn" type="button">Add cell type</button>
+      <div class="grid">
+        <div class="field">
+          <label for="yamlFile">Existing configuration file</label>
+          <input type="file" id="yamlFile" accept=".yaml,.yml,text/yaml,application/x-yaml" />
+          <div id="yamlImportStatus" class="status-box multiline-status" hidden aria-live="polite"></div>
+        </div>
+        <div class="field">
+          <label for="markerFile">Representative TSV or CSV file</label>
+          <input type="file" id="markerFile" accept=".tsv,.csv,text/tab-separated-values,text/csv" />
+          <p class="small">This file is used only to identify positivity columns; the data itself is not uploaded anywhere.</p>
+        </div>
       </div>
-    </div>
+    </section>
 
-    <div id="cellTypesList" aria-live="polite"></div>
-
-    <div class="status-box">
-      <div class="color-control">
-        <label class="small" for="otherCellsColor">Other cells color</label>
-        <input id="otherCellsColor" type="color" value="#a3a3a3" title="Choose the color for unclassified cells" />
+    <section class="panel">
+      <div class="panel-heading">
+        <div><h2>Workspace</h2><p>Write the input and output paths (or select them later within the app), and select the common input format.</p></div>
+        <span class="step-badge">2</span>
       </div>
-    </div>
+      <div class="grid three">
+        <div class="field">
+          <label for="input_dir">Input directory</label>
+          <input id="input_dir" type="text" placeholder="Example: /Users/username/input_files" />
+        </div>
+        <div class="field">
+          <label for="output_dir">Output directory</label>
+          <input id="output_dir" type="text" placeholder="Example: /Users/username/output_files" />
+        </div>
+        <div class="field">
+          <label for="filetype">Input-file format</label>
+          <select id="filetype">
+            <option value="csv">csv</option>
+            <option value="tsv">tsv</option>
+          </select>
+        </div>
+      </div>
+    </section>
 
-    <hr class="section-divider" />
+    <section class="panel">
+      <div class="panel-heading">
+        <div><h2>Protein markers</h2><p>Select one or more positivity columns for the major cell type definitions. Unselected markers remain available to define subtypes.</p></div>
+        <span class="step-badge">3</span>
+      </div>
+      <div id="columnSelectContainer" class="marker-selector"></div>
+      <div id="markerPoolStatus" class="status-box" hidden></div>
+      <div id="proteinMarkersList" aria-live="polite"></div>
+    </section>
 
-    <h3>Output files</h3>
-    <p class="small">Choose whether existing pipeline outputs may be replaced.</p>
+    <section class="panel">
+      <div class="panel-heading">
+        <div>
+          <h2>Cell types and subtypes</h2>
+          <p>Define the phenotype of each population and optionally create nested subtype branches.</p>
+          <div class="legend">
+            <span class="legend-item"><span class="legend-dot pos">+</span> Present</span>
+            <span class="legend-item"><span class="legend-dot neg">−</span> Absent</span>
+            <span class="legend-item"><span class="legend-dot na">NA</span> Not applicable</span>
+          </div>
+        </div>
+        <span class="step-badge">4</span>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="newCellType">Add a cell type</label>
+          <input id="newCellType" type="text" placeholder="Example: T cells" />
+        </div>
+        <div class="fixed-button"><button id="addCellTypeBtn" type="button" class="primary">Add cell type</button></div>
+      </div>
+      <div id="cellTypesList" aria-live="polite"></div>
+      <div class="status-box">
+        <div class="color-control">
+          <label for="otherCellsColor"><h3>Other cells color</h3></label>
+          <input id="otherCellsColor" type="color" value="#a3a3a3" title="Choose the color for unclassified cells" />
+        </div>
+      </div>
+    </section>
 
-    <label class="small" for="overwrite_existing_files">Overwrite existing output files?</label>
-    <select id="overwrite_existing_files">
-      <option value="false">No, keep the old files and do not save replacements</option>
-      <option value="true">Yes, overwrite existing output files</option>
-    </select>
+    <section class="panel">
+      <div class="panel-heading">
+        <div><h2>Output and spatial plotting</h2><p>Control file handling and the spatial plots generated for each sample.</p></div>
+        <span class="step-badge">5</span>
+      </div>
+      <div class="grid three">
+        <div class="field">
+          <label for="overwrite_existing_files" title="If 'Yes' is selected, previous generated output files in the output path will be replaced">Overwrite existing outputs?</label>
+          <select id="overwrite_existing_files">
+            <option value="false">No</option>
+            <option value="true">Yes</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="locally_save_anndata_files" title="If 'Yes' is selected, AnnData files will be saved in the output path. The AnnData files can be used for generating plots and follow-up analyses outside this tool using Python or R.">Save AnnData files?</label>
+          <select id="locally_save_anndata_files">
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="plot_options" title="Overview: all annotations together.&#10;&#10;Highlight: a single annotation vs all other cells.&#10;&#10;Both: overview and highlight will happen at the same time.&#10;&#10;No spatial plotting: SpPrAn won't generate spatial plots for all samples in the run.&#10;&#10;Custom plotting: SpPrAn will generate custom spatial plot types for each sample in the run.&#10;&#10;See 'Readme' file for more information.">Spatial plot type</label>
+          <select id="plot_options">
+            <option value="overview">Overview</option>
+            <option value="highlight">Highlight</option>
+            <option value="all" selected>Overview and highlight</option>
+            <option value="none">No spatial plotting</option>
+            <option value="custom">Custom plotting</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="dpi">Plot DPI</label>
+          <input id="dpi" type="number" min="1" placeholder="300" />
+        </div>
+        <div class="field">
+          <label for="scatter_point_size">Scatter-point size</label>
+          <input id="scatter_point_size" type="number" min="0" step="any" placeholder="50" />
+        </div>
+      </div>
 
-    <p class="small">AnnData files can make later pipeline runs faster because they preserve cleaned data.</p>
-    <label class="small" for="locally_save_anndata_files">Generate and save AnnData files?</label>
-    <select id="locally_save_anndata_files">
-      <option value="true">Yes</option>
-      <option value="false">No</option>
-    </select>
+      <div id="hiddenDiv" class="plot-custom">
+        <p class="help">For custom plotting, select the input folder and choose a plot type for each matching file. Files are not uploaded; only filenames are read locally. <b>Don't forget to save the custom plotting options!</b></p>
+        <label class="small" for="folderInput">Input folder</label>
+        <input type="file" id="folderInput" webkitdirectory directory multiple />
+        <button id="saveCustomPlot" type="button">Save custom plotting options</button>
+        <table class="matrix-table" id="fileTable">
+          <thead>
+            <tr><th>File name</th><th>Overview</th><th>Highlight</th><th>Both</th><th>None</th></tr>
+          </thead>
+          <tbody id="fileTableBody"></tbody>
+        </table>
+        <p id="emptyMessage" class="empty-message">No files selected yet.</p>
+      </div>
+    </section>
 
-    <hr class="section-divider" />
-
-    <h3>Spatial plot settings</h3>
-    <label class="small" for="dpi">Dots per inch (DPI)</label>
-    <input id="dpi" type="number" min="1" placeholder="300" />
-
-    <label class="small" for="scatter_point_size">Scatter-point size</label>
-    <input id="scatter_point_size" type="number" min="0" step="any" placeholder="50" />
-
-    <hr class="section-divider" />
-
-    <div class="row">
-      <div class="fixed-button"><button id="downloadYaml" type="button">Download YAML</button></div>
-      <div class="fixed-button"><button id="previewYaml" type="button">Preview YAML</button></div>
-    </div>
-
-    <h3>YAML Preview</h3>
-    <pre id="yamlPreview">(click “Preview YAML”)</pre>
+    <section class="panel">
+      <div class="panel-heading">
+        <div><h2>Configuration preview and download</h2><p>Review the generated configuration before saving it.</p></div>
+        <span class="step-badge">6</span>
+      </div>
+      <div class="actions">
+        <button id="previewYaml" type="button">Preview configuration file</button>
+        <button id="downloadYaml" type="button" class="primary">Download configuration file</button>
+      </div>
+      <pre id="yamlPreview" class="yaml-preview">(click “Preview configuration file")</pre>
+    </section>
   </form>
+</main>
 
 <script>
 'use strict';
@@ -149,6 +324,152 @@ const state = {
   cellTypes: [],
   otherCellsColor: '#a3a3a3'
 };
+
+document.getElementById('plot_options').addEventListener('change', function() {
+  const selectedValue = this.value;
+  const div = document.getElementById('hiddenDiv');
+  
+  if (selectedValue === 'custom') {
+    div.style.display = 'block'; // Show div
+  } else {
+    div.style.display = 'none';  // Hide div
+    finalPlottingByFiles = [];
+  }
+});
+
+// for custom plot
+const folderInput = document.getElementById("folderInput");
+const fileTableBody = document.getElementById("fileTableBody");
+const emptyMessage = document.getElementById("emptyMessage");
+const tempInputFileFormat = document.getElementById("filetype");
+const tempSaveCustomPlot = document.getElementById("saveCustomPlot");
+
+let selectedCsvFiles = [];
+let finalPlottingByFiles = [];
+
+folderInput.addEventListener("change", function (event) {
+  const files = Array.from(event.target.files);
+  
+  selectedCsvFiles = files.filter((file) =>
+    file.name.toLowerCase().endsWith(`.${tempInputFileFormat.value}`)
+  );
+
+  finalPlottingByFiles = renderCsvTable(selectedCsvFiles);
+});
+
+function renderCsvTable(csvFiles) {
+  fileTableBody.innerHTML = "";
+
+  if (csvFiles.length === 0) {
+    emptyMessage.textContent = `No .${tempInputFileFormat.value} files found in the selected folder.`;
+    emptyMessage.style.display = "block";
+    return [];
+  }
+
+  emptyMessage.style.display = "none";
+
+  csvFiles.forEach((file, index) => {
+    const row = document.createElement("tr");
+
+    const fileCell = document.createElement("td");
+    fileCell.textContent = file.name;
+    row.appendChild(fileCell);
+
+    ["overview", "highlight", "all", "none"].forEach((typeValue, typeIndex) => {
+      const typeCell = document.createElement("td");
+      typeCell.className = "radio-cell";
+
+      const radio = document.createElement("input");
+      radio.type = "radio";
+      radio.name = `csv_type_${index}`;
+      radio.value = typeValue;
+      radio.required = true;
+
+      if (typeIndex === 0) {
+        radio.checked = true;
+      }
+
+      typeCell.appendChild(radio);
+      row.appendChild(typeCell);
+    });
+    fileTableBody.appendChild(row);
+  });
+
+  const csvSelections = selectedCsvFiles.map((file, index) => {
+    const selectedType = document.querySelector(
+      `input[name="csv_type_${index}"]:checked`
+    );
+
+    return {
+      fileName: file.name,
+      type: selectedType ? selectedType.value : null,
+    };
+  });
+  return csvSelections;
+}
+
+function renderImportedCustomPlot(customPlot) {
+  fileTableBody.innerHTML = "";
+
+  if (!Array.isArray(customPlot) || customPlot.length === 0) {
+    selectedCsvFiles = [];
+    finalPlottingByFiles = [];
+    emptyMessage.textContent = "No custom plotting entries were found in the configuration file.";
+    emptyMessage.style.display = "block";
+    return;
+  }
+
+  const validPlotTypes = new Set(["overview", "highlight", "all", "none"]);
+  selectedCsvFiles = customPlot.map(item => ({ name: String(item?.fileName || "") }));
+  finalPlottingByFiles = customPlot.map(item => ({
+    fileName: String(item?.fileName || ""),
+    type: validPlotTypes.has(String(item?.type || "").toLowerCase())
+      ? String(item.type).toLowerCase()
+      : "overview"
+  }));
+
+  emptyMessage.style.display = "none";
+
+  finalPlottingByFiles.forEach((item, index) => {
+    const row = document.createElement("tr");
+    const fileCell = document.createElement("td");
+    fileCell.textContent = item.fileName;
+    row.appendChild(fileCell);
+
+    ["overview", "highlight", "all", "none"].forEach(typeValue => {
+      const typeCell = document.createElement("td");
+      typeCell.className = "radio-cell";
+      const radio = document.createElement("input");
+      radio.type = "radio";
+      radio.name = `csv_type_${index}`;
+      radio.value = typeValue;
+      radio.required = true;
+      radio.checked = item.type === typeValue;
+      typeCell.appendChild(radio);
+      row.appendChild(typeCell);
+    });
+    fileTableBody.appendChild(row);
+  });
+}
+
+tempSaveCustomPlot.addEventListener('click', () => {
+  if (selectedCsvFiles.length === 0) {
+    return;
+  }
+  finalPlottingByFiles = selectedCsvFiles.map((file, index) => {
+    const selectedType = document.querySelector(
+      `input[name="csv_type_${index}"]:checked`
+    );
+
+    return {
+      fileName: file.name,
+      type: selectedType ? selectedType.value : null,
+    };
+  });
+  alert("Custom plotting options saved!")
+});
+
+// END for custom plot
 
 function makeId() {
   if (window.crypto && typeof window.crypto.randomUUID === 'function') {
@@ -288,10 +609,27 @@ async function handleYamlFileUpload(event) {
     state.otherCellsColor = importedState.otherCellsColor;
 
     document.getElementById('filetype').value = formValues.filetype;
+    document.getElementById('input_dir').value = formValues.input_dir;
+    document.getElementById('output_dir').value = formValues.output_dir;
     document.getElementById('overwrite_existing_files').value = String(formValues.overwriteExistingFiles);
     document.getElementById('locally_save_anndata_files').value = String(formValues.locallySaveAnndataFiles);
     document.getElementById('dpi').value = String(formValues.dpi);
     document.getElementById('scatter_point_size').value = String(formValues.scatterPointSize);
+    document.getElementById('plot_options').value = formValues.plot_options;
+    const div = document.getElementById('hiddenDiv');
+
+    if (formValues.plot_options === 'custom') {
+      div.style.display = 'block';
+      renderImportedCustomPlot(formValues.custom_plot);
+    } else {
+      div.style.display = 'none';
+      selectedCsvFiles = [];
+      finalPlottingByFiles = [];
+      fileTableBody.innerHTML = '';
+      emptyMessage.textContent = 'No files selected yet.';
+      emptyMessage.style.display = 'block';
+    }
+
     markerFileInput.value = '';
 
     syncStateWithMarkers();
@@ -301,7 +639,7 @@ async function handleYamlFileUpload(event) {
     const summary = [
       `Loaded ${file.name}.`,
       `${state.proteinMarkers.length} primary marker(s), ${state.cellTypes.length} cell type(s), and ${countSubtypeNodes(state.cellTypes)} subtype(s) were restored.`,
-      'Unused TSV/CSV columns are not stored in YAML; upload the representative data file again to recover those columns.'
+      'Unused TSV/CSV columns are not stored; upload the representative data file again to recover those columns.'
     ];
     if (warnings.length > 0) {
       summary.push('', `Warnings (${warnings.length}):`, ...warnings.map(item => `- ${item}`));
@@ -310,7 +648,7 @@ async function handleYamlFileUpload(event) {
   } catch (error) {
     console.error(error);
     showYamlImportStatus(`Could not load ${file.name}: ${error.message}`, true);
-    alert(`Unable to read the YAML file:\n${error.message}`);
+    alert(`Unable to read the configuration file:\n${error.message}`);
   }
 }
 
@@ -354,7 +692,7 @@ function parseConfigYaml(yamlText) {
 
   const [value, nextIndex] = parseYamlBlock(lines, 0, lines[0].indent);
   if (nextIndex !== lines.length) {
-    throw new Error(`Unexpected YAML content near line ${lines[nextIndex].lineNumber}.`);
+    throw new Error(`Unexpected configuration content near line ${lines[nextIndex].lineNumber}.`);
   }
   return value;
 }
@@ -459,7 +797,7 @@ function parseYamlMapping(lines, startIndex, indent) {
     }
 
     const keyText = line.content.slice(0, colonIndex).trim();
-    if (!keyText) throw new Error(`Empty YAML key at line ${line.lineNumber}.`);
+    if (!keyText) throw new Error(`Empty configuration key at line ${line.lineNumber}.`);
     const key = String(parseYamlKey(keyText, line.lineNumber));
     const valueText = line.content.slice(colonIndex + 1).trim();
     index += 1;
@@ -518,7 +856,7 @@ function findYamlKeyColon(text) {
 function parseYamlKey(text, lineNumber) {
   const value = parseYamlScalar(text, lineNumber);
   if (value !== null && typeof value === 'object') {
-    throw new Error(`Complex YAML keys are not supported (line ${lineNumber}).`);
+    throw new Error(`Complex configuration keys are not supported (line ${lineNumber}).`);
   }
   return value;
 }
@@ -564,7 +902,7 @@ function parseYamlScalar(text, lineNumber) {
   if (/^[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?$/i.test(value)) return Number(value);
 
   if (/^[&*!]|^<<\s*:|^[>|]/.test(value)) {
-    throw new Error(`Unsupported YAML feature at line ${lineNumber}.`);
+    throw new Error(`Unsupported configuration feature at line ${lineNumber}.`);
   }
 
   return value;
@@ -626,7 +964,7 @@ function isPlainObject(value) {
 
 function buildImportedConfiguration(config) {
   if (!isPlainObject(config)) {
-    throw new Error('The YAML root must be a mapping/object.');
+    throw new Error('The configuration root must be a mapping/object.');
   }
 
   const warnings = [];
@@ -650,11 +988,14 @@ function buildImportedConfiguration(config) {
     warnings.push(`Unsupported workspace.filetype "${workspace.filetype}"; csv was used.`);
   }
 
+  const input_dir = String(workspace.input_dir || '')
+  const output_dir = String(workspace.output_dir || '')
+
   let primaryMarkers = [];
   if (config.protein_markers === undefined) {
-    warnings.push('protein_markers is missing; an empty primary-marker list was used.');
+    warnings.push('protein_markers is missing; an empty primary marker list was used.');
   } else if (!Array.isArray(config.protein_markers)) {
-    warnings.push('protein_markers was not a list; an empty primary-marker list was used.');
+    warnings.push('protein_markers was not a list; an empty primary marker list was used.');
   } else {
     primaryMarkers = config.protein_markers
       .map(item => normalizeName(item))
@@ -705,9 +1046,9 @@ function buildImportedConfiguration(config) {
 
   const cellTypeDefinitions = isPlainObject(config.cell_types) ? config.cell_types : {};
   if (config.cell_types === undefined) {
-    warnings.push('cell_types is missing; cell-type roots were inferred from sub_cell_types when possible.');
+    warnings.push('cell_types is missing; cell type roots were inferred from sub_cell_types when possible.');
   } else if (!isPlainObject(config.cell_types)) {
-    warnings.push('cell_types was not a mapping; cell-type roots were inferred from sub_cell_types when possible.');
+    warnings.push('cell_types was not a mapping; cell type roots were inferred from sub_cell_types when possible.');
   }
 
   const usedNames = new Set();
@@ -808,7 +1149,7 @@ function buildImportedConfiguration(config) {
         return;
       }
       if (usedNames.has(normalizedName)) {
-        warnings.push(`Duplicate cell type/subtype name "${normalizedName}" was ignored because YAML color and subtype keys require unique names.`);
+        warnings.push(`Duplicate cell type/subtype name "${normalizedName}" was ignored because configuration color and subtype keys require unique names.`);
         return;
       }
 
@@ -822,7 +1163,8 @@ function buildImportedConfiguration(config) {
         color: importedColor(normalizedName),
         markerStates: makeSubtypeMarkerStates(markerDefinition, normalizedName),
         subtypes,
-        showSubtypes: subtypes.length > 0
+        showSubtypes: subtypes.length > 0,
+        collapsed: false
       });
     });
     return nodes;
@@ -841,6 +1183,7 @@ function buildImportedConfiguration(config) {
       color: importedColor(normalizedName),
       markerStates: makeCellTypeMarkerStates(definition, normalizedName),
       showSubtypes: subtypes.length > 0,
+      collapsed: false,
       subtypes
     });
     if (inferred) warnings.push(`Cell type "${normalizedName}" was inferred from sub_cell_types because it was absent from cell_types.`);
@@ -896,9 +1239,40 @@ function buildImportedConfiguration(config) {
 
   const spatialPlot = isPlainObject(config.spatial_plot) ? config.spatial_plot : {};
   if (config.spatial_plot !== undefined && !isPlainObject(config.spatial_plot)) {
-    warnings.push('spatial_plot was not a mapping; spatial-plot defaults were used.');
+    warnings.push('spatial_plot was not a mapping; spatial plot defaults were used.');
   }
 
+  const validPlotOptions = new Set(['overview', 'highlight', 'all', 'none', 'custom']);
+  let plot_options = String(spatialPlot.plot_options || 'all').toLowerCase();
+  if (!validPlotOptions.has(plot_options)) {
+    warnings.push(`spatial_plot.plot_options "${plot_options}" is not supported; "all" was used.`);
+    plot_options = 'all';
+  }
+
+  let custom_plot = [];
+  if (spatialPlot.custom_plot === undefined || spatialPlot.custom_plot === null) {
+    custom_plot = [];
+  } else if (Array.isArray(spatialPlot.custom_plot)) {
+    custom_plot = spatialPlot.custom_plot.map((item, index) => {
+      if (!isPlainObject(item)) {
+        warnings.push(`spatial_plot.custom_plot[${index}] was not a mapping and was ignored.`);
+        return null;
+      }
+      const fileName = String(item.fileName || '').trim();
+      let type = String(item.type || 'overview').toLowerCase();
+      if (!fileName) {
+        warnings.push(`spatial_plot.custom_plot[${index}] had no fileName and was ignored.`);
+        return null;
+      }
+      if (!['overview', 'highlight', 'all', 'none'].includes(type)) {
+        warnings.push(`Custom plot type "${type}" for "${fileName}" is not supported; "overview" was used.`);
+        type = 'overview';
+      }
+      return { fileName, type };
+    }).filter(Boolean);
+  } else {
+    warnings.push('spatial_plot.custom_plot was not a list; no custom file plotting rows were restored.');
+  }
   return {
     importedState: {
       allProteinColumns,
@@ -910,10 +1284,14 @@ function buildImportedConfiguration(config) {
     },
     formValues: {
       filetype,
+      input_dir,
+      output_dir,
       overwriteExistingFiles: importedBoolean(config.overwrite_existing_files, false, 'overwrite_existing_files'),
       locallySaveAnndataFiles: importedBoolean(config.locally_save_anndata_files, true, 'locally_save_anndata_files'),
       dpi: importedNumber(spatialPlot.dpi, 300, 'spatial_plot.dpi', 1),
-      scatterPointSize: importedNumber(spatialPlot.scatter_point_size, 50, 'spatial_plot.scatter_point_size', 0)
+      scatterPointSize: importedNumber(spatialPlot.scatter_point_size, 50, 'spatial_plot.scatter_point_size', 0),
+      plot_options,
+      custom_plot,
     },
     warnings
   };
@@ -1012,7 +1390,7 @@ function renderProteinMarkerSelect() {
   if (availableMarkers.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'empty-state';
-    empty.textContent = 'All positivity columns have been selected for major cell-type definitions.';
+    empty.textContent = 'All positivity columns have been selected for major cell type definitions.';
     columnSelectContainer.appendChild(empty);
     return;
   }
@@ -1030,7 +1408,7 @@ function renderProteinMarkerSelect() {
       renderAll();
     },
     {
-      labelText: 'Select protein markers for major cell-type definitions:',
+      labelText: 'Select protein markers for major cell type definitions:',
       addButtonText: 'Add selected protein markers'
     }
   ));
@@ -1097,7 +1475,7 @@ function addCellType() {
     return;
   }
   if (isNameUsed(name)) {
-    alert('Cell type and subtype names must be unique because they are also used as YAML keys and color keys.');
+    alert('Cell type and subtype names must be unique because they are also used as configuration keys and color keys.');
     return;
   }
 
@@ -1110,6 +1488,7 @@ function addCellType() {
     color: '#00aaff',
     markerStates,
     showSubtypes: false,
+    collapsed: false,
     subtypes: []
   });
 
@@ -1119,6 +1498,31 @@ function addCellType() {
 
 function removeCellType(cellTypeId) {
   state.cellTypes = state.cellTypes.filter(cellType => cellType.id !== cellTypeId);
+  renderCellTypes();
+}
+
+function editNodeName(node, nodeTypeLabel) {
+  const proposedName = window.prompt(`Edit ${nodeTypeLabel} name:`, node.name);
+  if (proposedName === null) return;
+
+  const name = normalizeName(proposedName);
+  if (!name) {
+    alert(`${nodeTypeLabel} name is required.`);
+    return;
+  }
+
+  if (sameName(name, node.name)) {
+    node.name = name;
+    renderCellTypes();
+    return;
+  }
+
+  if (isNameUsed(name, node.id)) {
+    alert('Cell type and subtype names must be unique because they are also used as configuration keys and color keys.');
+    return;
+  }
+
+  node.name = name;
   renderCellTypes();
 }
 
@@ -1240,17 +1644,42 @@ function createCellTypeCard(cellType) {
   card.className = 'list-item';
   card.dataset.cellTypeId = cellType.id;
 
+  if (typeof cellType.collapsed !== 'boolean') cellType.collapsed = false;
+
   const header = document.createElement('div');
   header.className = 'item-header';
 
   const title = document.createElement('div');
   title.className = 'item-title';
+
   const strong = document.createElement('strong');
   strong.textContent = cellType.name;
+
   const swatch = document.createElement('span');
   swatch.className = 'color-swatch';
   swatch.style.backgroundColor = cellType.color;
-  title.append(strong, swatch);
+
+  const titleActions = document.createElement('div');
+  titleActions.className = 'item-title-actions';
+
+  const collapseButton = document.createElement('button');
+  collapseButton.type = 'button';
+  collapseButton.className = 'compact-button';
+  collapseButton.textContent = cellType.collapsed ? 'Expand' : 'Collapse';
+  collapseButton.title = cellType.collapsed ? 'Expand this cell type' : 'Collapse this cell type';
+  collapseButton.addEventListener('click', () => {
+    cellType.collapsed = !cellType.collapsed;
+    renderCellTypes();
+  });
+
+  const editButton = document.createElement('button');
+  editButton.type = 'button';
+  editButton.className = 'compact-button';
+  editButton.textContent = 'Edit name';
+  editButton.addEventListener('click', () => editNodeName(cellType, 'cell type'));
+
+  titleActions.append(collapseButton, editButton);
+  title.append(strong, swatch, titleActions);
 
   const colorControl = createColorControl(cellType.color, newColor => {
     cellType.color = newColor;
@@ -1258,6 +1687,10 @@ function createCellTypeCard(cellType) {
   });
 
   header.append(title, colorControl);
+
+  const body = document.createElement('div');
+  body.className = 'item-body';
+  body.hidden = cellType.collapsed;
 
   const buttons = document.createElement('div');
   const removeButton = document.createElement('button');
@@ -1297,15 +1730,22 @@ function createCellTypeCard(cellType) {
 
   subtypeToggleLabel.append(
     subtypeToggle,
-    document.createTextNode(`Add cell subtypes for ${cellType.name}`)
+    document.createTextNode(`Include cell subtypes for ${cellType.name} in configuration file`)
   );
 
-  card.append(header, buttons, markerGrid, subtypeToggleLabel);
+  body.append(buttons, markerGrid, subtypeToggleLabel);
 
   if (cellType.showSubtypes) {
-    card.appendChild(createSubtypePanel(cellType, 0, [cellType]));
+    body.appendChild(createSubtypePanel(cellType, 0, [cellType]));
+  } else if (cellType.subtypes && cellType.subtypes.length > 0) {
+    const preserved = document.createElement('div');
+    preserved.className = 'status-box small';
+    preserved.textContent =
+      `${cellType.subtypes.length} saved subtype(s) are currently excluded from configuration preview/download. Re-check the box to edit and include them again.`;
+    body.appendChild(preserved);
   }
 
+  card.append(header, body);
   return card;
 }
 
@@ -1330,29 +1770,55 @@ function createColorControl(initialColor, onColorInput) {
   return wrapper;
 }
 
+function createPresenceStateControl(currentValue, onChange) {
+  const control = document.createElement('div');
+  control.className = 'presence-control';
+  control.setAttribute('role', 'group');
+  control.setAttribute('aria-label', 'Protein marker state');
+
+  const choices = [
+    { value: 1, label: '+', title: 'Present', className: 'presence-positive' },
+    { value: 0, label: '−', title: 'Absent', className: 'presence-negative' },
+    { value: -1, label: 'NA', title: 'Not applicable', className: 'presence-na' }
+  ];
+
+  const normalizedValue = [1, 0, -1].includes(Number(currentValue)) ? Number(currentValue) : -1;
+
+  choices.forEach(choice => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `presence-button ${choice.className}`;
+    button.textContent = choice.label;
+    button.title = choice.title;
+    button.setAttribute('aria-label', choice.title);
+    button.setAttribute('aria-pressed', String(normalizedValue === choice.value));
+    if (normalizedValue === choice.value) button.classList.add('selected');
+
+    button.addEventListener('click', () => {
+      control.querySelectorAll('.presence-button').forEach(item => {
+        item.classList.remove('selected');
+        item.setAttribute('aria-pressed', 'false');
+      });
+      button.classList.add('selected');
+      button.setAttribute('aria-pressed', 'true');
+      onChange(choice.value);
+    });
+
+    control.appendChild(button);
+  });
+
+  return control;
+}
+
 function createMarkerStateRow(rawMarker, currentValue, onChange) {
   const row = document.createElement('div');
   row.className = 'marker-row';
 
   const markerName = document.createElement('div');
+  markerName.className = 'marker-name';
   markerName.textContent = state.allProteinRawColumns[rawMarker] || rawMarker;
 
-  const select = document.createElement('select');
-  [
-    { value: '1', label: 'Present' },
-    { value: '0', label: 'Absent' },
-    { value: '-1', label: 'Not applicable' }
-  ].forEach(item => {
-    const option = document.createElement('option');
-    option.value = item.value;
-    option.textContent = item.label;
-    select.appendChild(option);
-  });
-
-  select.value = String(currentValue ?? -1);
-  select.addEventListener('change', () => onChange(Number(select.value)));
-
-  row.append(markerName, select);
+  row.append(markerName, createPresenceStateControl(currentValue, onChange));
   return row;
 }
 
@@ -1397,7 +1863,7 @@ function createSubtypePanel(parentNode, depth = 0, ancestorChain = [parentNode])
       return;
     }
     if (isNameUsed(name)) {
-      alert('Subtype names must be unique because they are used as YAML keys and color keys.');
+      alert('Subtype names must be unique because they are used as configuration keys and color keys.');
       return;
     }
 
@@ -1407,7 +1873,8 @@ function createSubtypePanel(parentNode, depth = 0, ancestorChain = [parentNode])
       color: '#00aaff',
       markerStates: {},
       subtypes: [],
-      showSubtypes: false
+      showSubtypes: false,
+      collapsed: false
     });
 
     subtypeNameInput.value = '';
@@ -1442,20 +1909,46 @@ function createSubtypeCard(parentNode, subtype, depth = 0, ancestorChain = []) {
   const card = document.createElement('section');
   card.className = 'list-item subtype-list-item';
   card.dataset.subtypeId = subtype.id;
-  // Add indentation for nested subtypes
   card.style.marginLeft = (depth * 16) + 'px';
+
+  if (typeof subtype.collapsed !== 'boolean') subtype.collapsed = false;
+  if (!Array.isArray(subtype.subtypes)) subtype.subtypes = [];
+  if (typeof subtype.showSubtypes !== 'boolean') subtype.showSubtypes = false;
 
   const header = document.createElement('div');
   header.className = 'item-header';
 
   const title = document.createElement('div');
   title.className = 'item-title';
+
   const strong = document.createElement('strong');
   strong.textContent = subtype.name;
+
   const swatch = document.createElement('span');
   swatch.className = 'color-swatch';
   swatch.style.backgroundColor = subtype.color;
-  title.append(strong, swatch);
+
+  const titleActions = document.createElement('div');
+  titleActions.className = 'item-title-actions';
+
+  const collapseButton = document.createElement('button');
+  collapseButton.type = 'button';
+  collapseButton.className = 'compact-button';
+  collapseButton.textContent = subtype.collapsed ? 'Expand' : 'Collapse';
+  collapseButton.title = subtype.collapsed ? 'Expand this subtype' : 'Collapse this subtype';
+  collapseButton.addEventListener('click', () => {
+    subtype.collapsed = !subtype.collapsed;
+    renderCellTypes();
+  });
+
+  const editButton = document.createElement('button');
+  editButton.type = 'button';
+  editButton.className = 'compact-button';
+  editButton.textContent = 'Edit name';
+  editButton.addEventListener('click', () => editNodeName(subtype, 'subtype'));
+
+  titleActions.append(collapseButton, editButton);
+  title.append(strong, swatch, titleActions);
 
   const colorControl = createColorControl(subtype.color, newColor => {
     subtype.color = newColor;
@@ -1463,6 +1956,10 @@ function createSubtypeCard(parentNode, subtype, depth = 0, ancestorChain = []) {
   });
 
   header.append(title, colorControl);
+
+  const body = document.createElement('div');
+  body.className = 'item-body';
+  body.hidden = subtype.collapsed;
 
   const removeButton = document.createElement('button');
   removeButton.type = 'button';
@@ -1489,27 +1986,16 @@ function createSubtypeCard(parentNode, subtype, depth = 0, ancestorChain = []) {
       row.className = 'marker-row';
 
       const name = document.createElement('div');
-      name.textContent = marker;
+      name.textContent = `${marker}\u2003`;
 
       const controls = document.createElement('div');
       controls.className = 'row';
       controls.style.alignItems = 'center';
 
-      const stateSelect = document.createElement('select');
-      [
-        { value: '1', label: 'Present' },
-        { value: '0', label: 'Absent' },
-        { value: '-1', label: 'Not applicable' }
-      ].forEach(item => {
-        const option = document.createElement('option');
-        option.value = item.value;
-        option.textContent = item.label;
-        stateSelect.appendChild(option);
-      });
-      stateSelect.value = String(subtype.markerStates[marker]);
-      stateSelect.addEventListener('change', () => {
-        subtype.markerStates[marker] = Number(stateSelect.value);
-      });
+      const stateControl = createPresenceStateControl(
+        subtype.markerStates[marker],
+        value => { subtype.markerStates[marker] = value; }
+      );
 
       const removeMarkerButton = document.createElement('button');
       removeMarkerButton.type = 'button';
@@ -1521,33 +2007,26 @@ function createSubtypeCard(parentNode, subtype, depth = 0, ancestorChain = []) {
         renderCellTypes();
       });
 
-      controls.append(stateSelect, removeMarkerButton);
+      // controls.append(stateControl, removeMarkerButton);
+      name.append(removeMarkerButton);
+      controls.append(stateControl);
       row.append(name, controls);
       markerGrid.appendChild(row);
     });
   }
 
-  card.append(header, removeButton, markerAdder, markerGrid);
-   
-  // Add nested subtypes section if this subtype has children or if toggled
-  if (!subtype.subtypes) {
-    subtype.subtypes = [];
-    subtype.showSubtypes = false;
-  }
-   
-  // Add checkbox to toggle/show nested subtypes form
   const nestedToggleRow = document.createElement('div');
   nestedToggleRow.style.marginTop = '12px';
   nestedToggleRow.style.paddingTop = '12px';
   nestedToggleRow.style.borderTop = '1px solid #eef0f2';
-   
+
   const checkboxLabel = document.createElement('label');
   checkboxLabel.className = 'small';
   checkboxLabel.style.display = 'flex';
   checkboxLabel.style.alignItems = 'center';
   checkboxLabel.style.fontWeight = 'normal';
   checkboxLabel.style.margin = '0';
-   
+
   const checkbox = document.createElement('input');
   checkbox.type = 'checkbox';
   checkbox.checked = subtype.showSubtypes;
@@ -1556,21 +2035,28 @@ function createSubtypeCard(parentNode, subtype, depth = 0, ancestorChain = []) {
     subtype.showSubtypes = checkbox.checked;
     renderCellTypes();
   });
-   
-  checkboxLabel.append(checkbox, `Add cell subtypes for ${subtype.name}`);
+
+  checkboxLabel.append(checkbox, `Include cell subtypes for ${subtype.name} in configuration file`);
   nestedToggleRow.appendChild(checkboxLabel);
-  card.appendChild(nestedToggleRow);
-   
-  // Show nested subtypes form if checked
+
+  body.append(removeButton, markerAdder, markerGrid, nestedToggleRow);
+
   if (subtype.showSubtypes) {
     const nestedPanel = createSubtypePanel(
       subtype,
       depth + 1,
       [...ancestorChain, subtype]
     );
-    card.appendChild(nestedPanel);
+    body.appendChild(nestedPanel);
+  } else if (subtype.subtypes.length > 0) {
+    const preserved = document.createElement('div');
+    preserved.className = 'status-box small';
+    preserved.textContent =
+      `${subtype.subtypes.length} saved child subtype(s) are currently excluded from configuration preview/download. Re-check the box to edit and include them again.`;
+    body.appendChild(preserved);
   }
 
+  card.append(header, body);
   return card;
 }
 
@@ -1660,76 +2146,61 @@ function buildCellTypesMap() {
 
 function buildCellSubTypesMap() {
   const result = {};
-  
-  /* Recursively flatten the subtype tree: each node with children becomes a top-level key */
-  function flattenSubtypes(nodesList, parentName = null) {
-    nodesList.forEach(node => {
-      if (node.subtypes && node.subtypes.length > 0) {
-        // This node has children, so it becomes a key in sub_cell_types
-        result[node.name] = {};
-        node.subtypes.forEach(child => {
-          result[node.name][child.name] = {};
-          Object.entries(child.markerStates).forEach(([cleanedMarker, value]) => {
-            const rawMarker = state.allProteinRawColumnsReverse[cleanedMarker] || cleanedMarker;
-            result[node.name][child.name][rawMarker] = presenceToYamlValue(value);
-          });
-        });
-        // Recursively process this node's subtypes
-        flattenSubtypes(node.subtypes);
-      }
-    });
-  }
-  
-  // Process subtypes from all cell types
-  state.cellTypes.forEach(cellType => {
-    if (cellType.subtypes && cellType.subtypes.length > 0) {
-      result[cellType.name] = {};
-      cellType.subtypes.forEach(subtype => {
-        result[cellType.name][subtype.name] = {};
-        Object.entries(subtype.markerStates).forEach(([cleanedMarker, value]) => {
-          const rawMarker = state.allProteinRawColumnsReverse[cleanedMarker] || cleanedMarker;
-          result[cellType.name][subtype.name][rawMarker] = presenceToYamlValue(value);
-        });
-      });
-      // Recursively flatten nested subtypes
-      flattenSubtypes(cellType.subtypes);
-    }
-  });
 
+  /* showSubtypes is the export/include switch.
+     Unchecked branches remain stored in state, but are omitted from YAML. */
+  function exportChildren(parentNode) {
+    if (!parentNode.showSubtypes || !Array.isArray(parentNode.subtypes) || parentNode.subtypes.length === 0) {
+      return;
+    }
+
+    result[parentNode.name] = {};
+
+    parentNode.subtypes.forEach(child => {
+      result[parentNode.name][child.name] = {};
+      Object.entries(child.markerStates || {}).forEach(([cleanedMarker, value]) => {
+        const rawMarker = state.allProteinRawColumnsReverse[cleanedMarker] || cleanedMarker;
+        result[parentNode.name][child.name][rawMarker] = presenceToYamlValue(value);
+      });
+    });
+
+    parentNode.subtypes.forEach(child => exportChildren(child));
+  }
+
+  state.cellTypes.forEach(cellType => exportChildren(cellType));
   return result;
 }
 
 function buildCustomColorsMap() {
   const result = {};
+
   state.cellTypes.forEach(cellType => {
     result[cellType.name] = cellType.color;
   });
+
   result['Other cells'] = state.otherCellsColor || '#a3a3a3';
-  
-  /* Recursively collect colors from all subtype levels */
-  function collectSubtypeColors(subtypes) {
-    subtypes.forEach(subtype => {
+
+  /* Only subtype branches enabled for YAML export contribute colors.
+     Hidden/disabled subtype data remains preserved in the HTML state. */
+  function collectEnabledSubtypeColors(parentNode) {
+    if (!parentNode.showSubtypes || !Array.isArray(parentNode.subtypes)) return;
+
+    parentNode.subtypes.forEach(subtype => {
       result[subtype.name] = subtype.color;
-      if (subtype.subtypes && subtype.subtypes.length > 0) {
-        collectSubtypeColors(subtype.subtypes);
-      }
+      collectEnabledSubtypeColors(subtype);
     });
   }
-  
-  state.cellTypes.forEach(cellType => {
-    if (cellType.subtypes && cellType.subtypes.length > 0) {
-      collectSubtypeColors(cellType.subtypes);
-    }
-  });
-  
+
+  state.cellTypes.forEach(cellType => collectEnabledSubtypeColors(cellType));
+
   return result;
 }
 
 function collectFormData() {
   return {
     workspace: {
-      input_dir: '',
-      output_dir: '',
+      input_dir: document.getElementById('input_dir').value || '',
+      output_dir: document.getElementById('output_dir').value || '',
       filetype: document.getElementById('filetype').value || 'csv'
     },
     protein_markers: [...state.proteinMarkers],
@@ -1740,7 +2211,9 @@ function collectFormData() {
     locally_save_anndata_files: getBool('locally_save_anndata_files', true),
     spatial_plot: {
       dpi: getNum('dpi', 300),
-      scatter_point_size: getNum('scatter_point_size', 50)
+      scatter_point_size: getNum('scatter_point_size', 50),
+      plot_options: document.getElementById('plot_options').value || 'all',
+      custom_plot: finalPlottingByFiles
     }
   };
 }

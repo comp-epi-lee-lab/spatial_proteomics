@@ -1,5 +1,5 @@
-# Version 0.2
-from email.mime import message
+# Version 0.2.5
+
 import os
 import sys
 from pathlib import Path
@@ -53,9 +53,11 @@ class SpPrAnGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("SpPrAn")
-        self.root.geometry("800x600")
+        # self.root.geometry("1000x800")
         
         self.config_path = None
+        self.input_dir = None
+        self.output_dir = None
         self.queue = queue.Queue()
 
         self.main_frame = tk.Frame(root)
@@ -68,30 +70,37 @@ class SpPrAnGUI:
         self.root.after(100, self.process_log_queue)
 
     def build_main_frame(self):
+        self.btn = tk.Button(self.main_frame, text="Restart", command=self.reset_frame, state=tk.DISABLED)
         Label(self.main_frame, text="SpPrAn: Spatial Proteomics Analysis", font=("Helvetica", 18, "bold")).pack(pady=20)        
         
         button_frame = tk.Frame(self.main_frame)
         button_frame.pack(pady=10)
-        Button(button_frame, text="Choose a config YAML file", command=self.choose_config_file, width=20).pack(side=tk.LEFT,padx=10)
-        Button(button_frame, text="Create a new or edit an existing config YAML file", command=self.open_config_file_editor, width=35).pack(side=tk.LEFT,padx=10)
-        self.config_label = Label(self.main_frame, text="No config file selected", wraplength=600)
+        Button(button_frame, text="Create a new or edit an existing configuration file", command=self.open_config_file_editor, width=20, wraplength=200, justify='center').pack(side=tk.LEFT,padx=10)
+        Button(button_frame, text="Open a configuration file", command=self.choose_config_file, width=20).pack(side=tk.LEFT,padx=10)
+        self.config_label = Label(self.main_frame, text="No configuration file selected", wraplength=600)
         self.config_label.pack(pady=10)
 
         button_frame_2 = tk.Frame(self.main_frame)
         button_frame_2.pack(pady=10)
         self.input_button = Button(button_frame_2, text="Select an input directory", command=lambda: self.select_folder("input_dir"), width=20, state=tk.DISABLED)
-        self.input_button.pack(side=tk.LEFT,padx=10)
         self.output_button = Button(button_frame_2, text="Select an output directory", command=lambda: self.select_folder("output_dir"), width=20, state=tk.DISABLED)
-        self.output_button.pack(side=tk.LEFT,padx=10)
         self.config_label_2 = WrappingLabel(self.main_frame, text="")
         self.config_label_2.pack(pady=10, expand=True, fill=tk.X)
 
         self.text_area = scrolledtext.ScrolledText(self.main_frame, wrap=tk.WORD, height=22, width=85, font=("Courier", 10))
-        self.text_area.pack(padx=5, pady=5, expand=True, fill=tk.BOTH)
         self.run_button = Button(self.main_frame, text="Run analysis", command=self.run_pipeline, width=25, state=tk.DISABLED)
-        self.run_button.pack(pady=20)
+
+    def reset_frame(self):
+        self.log_frame.destroy()
+        self.main_frame.destroy()
+        self.log_frame = tk.Frame(root)
+        self.main_frame = tk.Frame(root)
+        self.build_main_frame()
+        self.build_log_frame()
+        self.main_frame.pack(expand=True, fill=tk.BOTH)
 
     def build_log_frame(self):
+        self.btn2 = tk.Button(self.log_frame, text="Restart", command=self.reset_frame, state=tk.DISABLED)
         Label(self.log_frame, text="Run SpPrAn", font=("Helvetica", 16, "bold")).pack(pady=10)
         self.log_text = scrolledtext.ScrolledText(self.log_frame, wrap=tk.WORD, height=22, width=85, font=("Courier", 10))
         self.log_text.pack(padx=5, pady=5, expand=True, fill=tk.BOTH)
@@ -109,22 +118,33 @@ class SpPrAnGUI:
     def choose_config_file(self):
         """Opens a file dialog to select a YAML config file and displays its content in the text area."""
         config_file_path = filedialog.askopenfilename(
-            title="Select config YAML file",
+            title="Select a configuration file",
             filetypes=[("YAML files", ("*.yaml","*.yml"))]
         )
+        if not config_file_path: return
         self.config_label.config(text=f"config file = {config_file_path}")
         with open(config_file_path, "r", encoding="utf-8", errors="replace") as file:
             content = file.read()
-        self.text_area.delete(1.0, tk.END)
-        self.text_area.insert(tk.END, content)
-        self.text_area.configure(state='disabled')
-        self.root.config_path = config_file_path
-        self.run_button.config(state=tk.NORMAL)
-        self.input_button.config(state=tk.NORMAL)
-        self.output_button.config(state=tk.NORMAL)
-        with open(config_file_path) as f:
-            cfg = yaml.safe_load(f)
-        self.config_label_2.config(text=f"input_dir = {cfg["workspace"]['input_dir']}\n\noutput_dir = {cfg["workspace"]['output_dir']}")
+            cfg = yaml.safe_load(content)
+        if config_file_path:
+            self.btn.place(relx=1.0, rely=0.0, anchor="ne", x=-10, y=10)
+            self.btn.config(state=tk.NORMAL)
+            self.text_area.pack(padx=5, pady=5, expand=True, fill=tk.BOTH)
+            self.text_area.configure(state='normal')
+            self.text_area.delete(1.0, tk.END)
+            self.text_area.insert(tk.END, content)
+            self.text_area.configure(state='disabled')
+            self.root.config_path = config_file_path
+        if cfg:
+            self.input_button.pack(side=tk.LEFT,padx=10)
+            self.input_button.config(state=tk.NORMAL)
+            self.output_button.pack(side=tk.LEFT,padx=10)
+            self.output_button.config(state=tk.NORMAL)
+            self.config_label_2.config(text=f"input_dir = {cfg["workspace"]['input_dir']}\noutput_dir = {cfg["workspace"]['output_dir']}")
+            self.input_dir = cfg["workspace"]['input_dir']
+            self.output_dir = cfg["workspace"]['output_dir']
+            self.run_button.pack(pady=20)
+            self.run_button.config(state=tk.NORMAL)
 
     def select_folder(self, dir_type):
         if not getattr(self.root, 'config_path', None):
@@ -133,9 +153,12 @@ class SpPrAnGUI:
         folder = filedialog.askdirectory()
         with open(self.root.config_path) as f:
             cfg = yaml.safe_load(f)
-        if folder != "": cfg["workspace"][dir_type] = folder
+        if folder != "":
+            cfg["workspace"][dir_type] = folder
+            if dir_type == 'input_dir': self.input_dir = folder
+            else: self.output_dir = folder
         with open(self.root.config_path, "w") as f:
-            yaml.dump(cfg, f, Dumper=CustomDumper)
+            yaml.dump(cfg, f, Dumper=CustomDumper, width=float('inf'))
         with open(self.root.config_path, "r", encoding="utf-8", errors="replace") as file:
             content = file.read()
         self.text_area.configure(state='normal')
@@ -154,7 +177,13 @@ class SpPrAnGUI:
     def run_pipeline(self):
         """Runs the SpPrAn analysis pipeline using the selected config file."""
         if not getattr(self.root, 'config_path', None):
-            messagebox.showerror("Missing config file", "Please select a config YAML file.")
+            messagebox.showerror("Missing config file", "Please select a configuration file before run analysis.")
+            return
+        if getattr(self, 'input_dir')=="" or getattr(self, 'input_dir') is None:
+            messagebox.showerror("Missing input directory", "Please select an input directory before run analysis.")
+            return
+        if getattr(self, 'output_dir')=="" or getattr(self, 'output_dir') is None:
+            messagebox.showerror("Missing output directory", "Please select an output directory before run analysis.")
             return
         self.log_text.delete(1.0, tk.END)
         self.done_button.config(text="Running...", state=tk.DISABLED)
@@ -173,9 +202,9 @@ class SpPrAnGUI:
                 self.queue.put("SpPrAn analysis pipeline finished successfully.\n")
             self.queue.put("__DONE__")
         except Exception as e:
-            error_message = f"[ERROR] An error occurred: {e}\n{traceback.format_exc()}"
+            error_message = f"[SpPrAn failed] An error occurred: {e}\n{traceback.format_exc()}"
             self.queue.put(error_message)
-        
+
     def process_log_queue(self):
         try:
             while True:
@@ -184,6 +213,13 @@ class SpPrAnGUI:
                     self.done_button.config(text="Back to Main Menu", state=tk.NORMAL)
                     messagebox.showinfo("Sp", "SpPrAn analysis pipeline finished.")
                     continue
+                elif "[SpPrAn failed] An error occurred:" in item:
+                    self.log_text.insert(tk.END, item)
+                    self.log_text.see(tk.END)
+                    self.done_button.pack_forget()
+                    self.btn2.config(state=tk.NORMAL)
+                    self.btn2.pack(pady=10)
+                    continue             
                 self.log_text.insert(tk.END, item)
                 self.log_text.see(tk.END)
         except queue.Empty:
