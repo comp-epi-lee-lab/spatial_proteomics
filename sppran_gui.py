@@ -199,10 +199,10 @@ class SpPrAnGUI:
                 print("Starting SpPrAn analysis pipeline...")
                 print(f"Using config file: {self.root.config_path}")
                 main_gui(self.root.config_path)
-                self.queue.put("SpPrAn analysis pipeline finished successfully.\n")
+                self.queue.put("\nSpPrAn analysis pipeline finished successfully.\n")
             self.queue.put("__DONE__")
         except Exception as e:
-            error_message = f"[SpPrAn failed] An error occurred: {e}\n{traceback.format_exc()}"
+            error_message = f"[SpPrAn STOPPED] An error occurred:\n{e}"#\n{traceback.format_exc()}"
             self.queue.put(error_message)
 
     def process_log_queue(self):
@@ -213,7 +213,7 @@ class SpPrAnGUI:
                     self.done_button.config(text="Back to Main Menu", state=tk.NORMAL)
                     messagebox.showinfo("Sp", "SpPrAn analysis pipeline finished.")
                     continue
-                elif "[SpPrAn failed] An error occurred:" in item:
+                elif "[SpPrAn STOPPED] An error occurred:" in item:
                     self.log_text.insert(tk.END, item)
                     self.log_text.see(tk.END)
                     self.done_button.pack_forget()

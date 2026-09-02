@@ -132,5 +132,5 @@ def calculate_cell_proportions(adata_dicts, custom_colors, output_dir, sub_cell_
         save_namefile2 = report_dir / f"Cell type proportions report - Sample {k}.csv"
         report_df.to_csv(save_namefile2, index=False)
 
-        print(f"All 'Cell type proportions' csv files for Sample {k} have been created!")
+        logger.warning(f"All 'Cell type proportions' csv files for Sample {k} have been created!")
 

@@ -1,5 +1,7 @@
-from spatial_proteomics.utils import *
-from spatial_proteomics.cell_proportions import *
+from spatial_proteomics.configuration import load_config
+from spatial_proteomics.anndata import create_or_load_anndata
+from spatial_proteomics.spatial_plot import plot_spatial
+from spatial_proteomics.cell_proportions import calculate_cell_proportions
 import argparse
 import sys
 

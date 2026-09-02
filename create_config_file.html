@@ -771,6 +771,26 @@ function parseYamlSequence(lines, startIndex, indent) {
       } else {
         result.push(null);
       }
+    } else if (itemText.includes(':')) {
+      const [key, ...rest] = itemText.split(':');
+      const value = rest.join(':').trim();
+
+      const obj = {};
+      obj[key.trim()] = value === '' ? null : parseYamlScalar(value, line.lineNumber);
+
+      if (index < lines.length && lines[index].indent > indent) {
+        const [child, nextIndex] = parseYamlBlock(lines, index, lines[index].indent);
+
+        if (typeof child === 'object' && child !== null && !Array.isArray(child)) {
+          Object.assign(obj, child);
+        } else {
+          throw new Error(`Expected mapping after line ${line.lineNumber}.`);
+        }
+
+        index = nextIndex;
+      }
+
+      result.push(obj);
     } else {
       result.push(parseYamlScalar(itemText, line.lineNumber));
     }
