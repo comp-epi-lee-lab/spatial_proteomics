@@ -1,7 +1,5 @@
 # Loading needed libraries
 
-from pathlib import Path
-import yaml
 import warnings
 
 import numpy as np
@@ -40,7 +38,7 @@ def _expand_subsets(col,df):
     df : pd.DataFrame
         DataFrame containing the cell type information.
 
-    Return
+    Returns
     ------
     pd.DataFrame
        Expanded DataFrame with subsets of the cell type.
@@ -59,27 +57,8 @@ def _expand_subsets(col,df):
 
 def _move_bigger_groups(dic, zero_degree_items, target, final_subsets):
     """
-    Moves bigger groups to the target level in the dictionary.
-
-    Parameters
-    -----
-    dic : Dict[int:List]
-        Dictionary containing groups of cell types.
-    zero_degree_items : List[str]
-        List of cell types with zero degrees.
-    target : int
-        Target level in the dictionary.
-    final_subsets : Dict[str:List] 
-        Dictionary containing the final subsets of cell types.  
-    
-    Return
-    ------
-    Dict[int:List]
-       Dictionary containing the updated groups of cell types.
-    int
-         Maximum level in the updated dictionary.
+    Reorganize less-specific phenotype groups during subset resolution.
     """
-
     find = []
     for k, item_list in dic.items():
         for item in zero_degree_items:
@@ -179,27 +158,38 @@ def _create_intersection_color(intersection_label, list_intersected_cell_subtype
 
 def plot_digraph(ct_df, protein_markers, output_dir, output_filename_identifier, order_dicc, custom_colors):
     """
-    Plots a directed graph of the final subsets of cell types.
+    Resolve phenotype subset relationships and plot their directed graph.
 
     Parameters
-    -----
-    ct_df : pd.DataFrame
-        DataFrame containing the cell type data.
-    protein_markers : List[str]
-        List of protein markers.
-    output_dir : Path
-        Path to the output directory.
+    ----------
+    ct_df : pandas.DataFrame
+        Marker-rule table whose columns represent phenotypes.
+    protein_markers : list of str
+        Marker names represented in the rule table.
+    output_dir : pathlib.Path
+        Base SpPrAn output directory.
     output_filename_identifier : str
-        Identifier for the output filename.
-    order_dicc : Dict[int, List]
-        Ordered dictionary of cell types.
-    custom_colors : Dict[str, str]
-        Dictionary mapping cell types to colors.
+        Label used to identify the generated hierarchy output.
+    order_dicc : dict
+        Phenotype ordering grouped by rule specificity.
+    custom_colors : dict of str to str
+        Phenotype color mapping.
 
-    Return
+    Returns
+    -------
+    final_subsets : dict
+        Resolved subset relationships.
+    subtype_definitions : dict
+        Phenotype definitions generated during subset resolution.
+    larger_groups : list or dict
+        Less-specific parent groups retained by the hierarchy.
+    custom_colors : dict
+        Updated phenotype color mapping.
+
+    Notes
     -----
-    custom_colors : Dict[str, str]
-        Updated dictionary mapping cell types to colors.
+    The directed graph represents logical set containment among
+    marker-defined phenotypes rather than a biological developmental lineage.
     """
     combinations_list = [list(c) for c in combinations(ct_df.columns, 2)]
     dicc_subsets = {col:_expand_subsets(col, ct_df) for col in ct_df.columns}
@@ -227,15 +217,12 @@ def plot_digraph(ct_df, protein_markers, output_dir, output_filename_identifier,
             case x if x==len(temp_0): 
                 logger.warning(f'{elem[0]} is subset of {elem[1]}')
                 cell_type_chart.add_edges_from([(elem[0],elem[1])])
-                # print(f"We added the path from {elem[0]} to {elem[1]}") # debugging
                 final_subsets[elem[1]].append(elem[0])
                 if len(temp_1) != 1:
                     for pos_subset in range([key for key in dicc_temp.keys() if elem[0] in dicc_temp[key]][0]):
                         for pot_subset in dicc_temp[pos_subset]:
                             if nx.has_path(cell_type_chart,source=pot_subset,target=elem[1]) and nx.shortest_path_length(cell_type_chart, source=pot_subset, target=elem[1])==1:
-                                # print(f"We attempted removing the path from {pot_subset} to {elem[1]}") # debugging
                                 cell_type_chart.remove_edge(pot_subset, elem[1])
-                                # print(f"We succeeded removing the path from {pot_subset} to {elem[1]}") # debugging
                                 final_subsets[elem[1]].remove(pot_subset)
             case x if x>0: 
                 whos_who = []
@@ -249,11 +236,9 @@ def plot_digraph(ct_df, protein_markers, output_dir, output_filename_identifier,
                 0.2+len(temp_new)
                 match len(temp_new):
                     case x if x>1:
-                        # df_temp = dicc_subsets[elem[0]].rename(index={idx:val for idx,val in enumerate(protein_markers)})
-                        logger.warning(f"There are sub cell types that are not defined by user and belong to both {elem[0]} and {elem[1]}.")#\nThey are the following:")
+                        logger.warning(f"There are sub cell types that are not defined by user and belong to both {elem[0]} and {elem[1]}.")
                         
                         for num_to_add,sct_def in enumerate(temp_new):
-                            # print(df_temp[sct_def].to_dict())
                             if sct_def in cell_type_chart:
                                 if not nx.has_path(cell_type_chart,source=sct_def,target=elem[0]): 
                                     cell_type_chart.add_edges_from([(sct_def,elem[0])])
@@ -266,7 +251,7 @@ def plot_digraph(ct_df, protein_markers, output_dir, output_filename_identifier,
                                     name_to_add = f"Rare {elem[0]} & {elem[1]}_{num_to_add+1}"
                                     final_subsets_mirror[elem[1]].append((sct_def,name_to_add))
                             else: 
-                                cell_type_chart.add_node(sct_def) # Adding the node to the graph if it doesn't exist # debugging
+                                cell_type_chart.add_node(sct_def)
                                 cell_type_chart.add_edges_from([(sct_def,elem[0])])
                                 cell_type_chart.add_edges_from([(sct_def,elem[1])])
                                 final_subsets[elem[0]].append(sct_def)
@@ -276,9 +261,7 @@ def plot_digraph(ct_df, protein_markers, output_dir, output_filename_identifier,
                                 final_subsets_mirror[elem[1]].append((sct_def,name_to_add))
                             custom_colors[f"Rare {elem[0]} & {elem[1]}_{num_to_add+1}"] = _create_intersection_color(f"Rare {elem[0]} & {elem[1]}_{num_to_add+1}",[elem[0],elem[1]],custom_colors,limit_dim_color[temp_new.index(sct_def)])
                     case x if x==1:
-                        # df_temp = dicc_subsets[elem[0]].rename(index={idx:val for idx,val in enumerate(protein_markers)})
-                        logger.warning(f"There is a sub cell type that is not defined by user and belongs to both {elem[0]} and {elem[1]}.")#\nIt is the following:")
-                        # print(df_temp[temp_new[0]].to_dict())
+                        logger.warning(f"There is a sub cell type that is not defined by user and belongs to both {elem[0]} and {elem[1]}.")
                         if temp_new[0] in cell_type_chart:
                             if not nx.has_path(cell_type_chart,source=temp_new[0],target=elem[0]): 
                                 cell_type_chart.add_edges_from([(temp_new[0],elem[0])])
@@ -291,7 +274,7 @@ def plot_digraph(ct_df, protein_markers, output_dir, output_filename_identifier,
                                 name_to_add = f"Rare {elem[0]} & {elem[1]}_1"
                                 final_subsets_mirror[elem[1]].append((temp_new[0],name_to_add))
                         else:
-                            cell_type_chart.add_node(temp_new[0]) # Adding the node to the graph if it doesn't exist # debugging  
+                            cell_type_chart.add_node(temp_new[0])
                             cell_type_chart.add_edges_from([(temp_new[0],elem[0])])
                             cell_type_chart.add_edges_from([(temp_new[0],elem[1])])
                             final_subsets[elem[0]].append(temp_new[0])
@@ -315,16 +298,11 @@ def plot_digraph(ct_df, protein_markers, output_dir, output_filename_identifier,
     temu_dicc = {cell_type:[] for cell_type in final_subsets.keys()}
     for cell_type, list_val in final_subsets.items():
         for elem_prime in list_val:
-            # bandera = 0
             for elem_to_check in final_subsets_mirror[cell_type]:
                 if elem_prime == elem_to_check[0]:
                     temu_dicc[cell_type].append(elem_to_check[1])
-                    # bandera+=1
-            # if bandera==0:
-            #     print("who's elem_prime?",elem_prime)
     pd.DataFrame({k:[v] for k,v in temu_dicc.items()},index=['Subsets']).T.to_csv(csv_path / "Cell type subsets.csv", index=True)
     
-    # ct_final_subsets = pd.DataFrame(cell_types, index=protein_markers, dtype=object)
     ct_final_subsets = ct_df.copy()
     final_order = []
     new_columns = {}
@@ -338,21 +316,13 @@ def plot_digraph(ct_df, protein_markers, output_dir, output_filename_identifier,
                 if ct not in columns_to_check and ct not in past_keys:
                     for elem_to_check in final_subsets_mirror[k]:
                         if ct == elem_to_check[0]:
-                            # print("debug: ct",ct)
-                            # print("debug: elem_to_check",elem_to_check)
-                            # print("debug: k",k)
                             past_keys.append(ct)
                             new_columns[elem_to_check[1]]=dicc_subsets[k][ct].rename(index={idx:pmarker for idx,pmarker in enumerate(protein_markers)})
                             final_order.append(elem_to_check[1])
-                    # raise Exception(f"test: who's ct? {ct}")
-                    # new_columns[ct]=dicc_subsets[k][ct].rename(index={idx:pmarker for idx,pmarker in enumerate(protein_markers)})
-                    # final_order.append(ct)
         final_order.append(k)
     if new_columns: ct_final_subsets = pd.concat([ct_final_subsets,pd.DataFrame(new_columns)],axis=1)
     ct_final_subsets = ct_final_subsets[final_order]
-    # ct_final_subsets = {col:ct_final_subsets[col].to_list() for col in ct_final_subsets.columns}
     ct_final_subsets = ct_final_subsets.to_dict()
-    # print("ct_final_subsets\n",ct_final_subsets)
     df_df_temp = pd.DataFrame(ct_final_subsets, dtype=object)
     none_mask_temp = df_df_temp.isna()
     for col in df_df_temp.columns:
@@ -360,31 +330,10 @@ def plot_digraph(ct_df, protein_markers, output_dir, output_filename_identifier,
             df_df_temp.loc[df_df_temp[col].isna(), col] = [[0,1] for _ in range(df_df_temp[col].isna().sum())]
     df_df_temp.to_csv(csv_path / "All cell type definitions.csv", index=True)
     
-    # plt.figure(figsize=(6,6),dpi=300)
     cell_type_chart = cell_type_chart.subgraph(list(ct_df.columns)).copy() # This line avoids to plot not-defined cell types
-    # pos = nx.spring_layout(cell_type_chart, seed=538610)  # This can be replaced with other layout strategies
-    pos = {}
     zero_degree_ct = [cell_type for cell_type in ct_df.columns if cell_type_chart.degree[cell_type] == 0]
     if max_N != 0: dicc_temp, max_N = _move_bigger_groups(dicc_temp, zero_degree_ct, max_N, final_subsets)
-    # max_per_group = max([len(N_pos) for N_pos in dicc_temp.values()])
-    # for i in reversed(range(max_N+1)):
-    #     for j in reversed(range(len(dicc_temp[i]))):
-    #         cell_type = dicc_temp[i][j]
-    #         # pos[cell_type] = np.array([j+(max_per_group/len(dicc_temp[i])),i+(max_per_group/len(dicc_temp))]) if len(dicc_temp[i])!=1 else np.array([j+((max_per_group+1)/2),i+(max_per_group/len(dicc_temp))])
-    #         pos[cell_type] = (j+((max_per_group-len(dicc_temp[i]))/2),i)
-    # nx.draw(cell_type_chart, pos, with_labels=True,
-    #         node_size=8000,
-    #         labels = {node:node.replace(" ", "\n") for node in cell_type_chart.nodes()},
-    #         node_color=[custom_colors[node] if node in custom_colors.keys() else 'lightgray' for node in cell_type_chart.nodes()],
-    #         font_size=16,
-    #         width = 3,
-    #         margins = 0.15,
-    #         edge_color='gray', arrowstyle='-|>')
-    # plt.title("Cell types hierarchy", size=20)
-    # plots_path = output_dir / "plots" / output_filename_identifier 
-    # if not plots_path.exists(): plots_path.mkdir(parents=True, exist_ok=True)
-    # plt.savefig(plots_path / "Cell types hierarchy.png")
-    # plt.close()
+
     return temu_dicc, ct_final_subsets, dicc_temp[max_N], custom_colors
 
 def _plot_cell_hierarchy(
@@ -622,22 +571,56 @@ def _build_cell_hierarchy_graph(protein_markers, cell_types, cell_sub_types,cust
     return graph
 
 def plot_general_cell_hierarchy(protein_markers, cell_types, cell_sub_types, custom_colors, save_path, arrows_orientation="contains"):
+    """
+    Plot the user-defined primary and subtype phenotype hierarchy.
+
+    Parameters
+    ----------
+    protein_markers : list of str
+        Primary protein-marker positivity columns.
+    cell_types : dict
+        Primary phenotype definitions.
+    cell_sub_types : dict
+        Parent-child subtype definitions.
+    custom_colors : dict of str to str
+        Phenotype color mapping.
+    save_path : pathlib.Path
+        Directory where the hierarchy figure is saved.
+    arrows_orientation : {"contains", "isContained"}, default="contains"
+        Direction used for hierarchy arrows.
+
+    Returns
+    -------
+    None
+        The hierarchy figure is saved to disk.
+
+    Notes
+    -----
+    Nodes represent marker-defined populations. Parent-child edges describe
+    nested phenotype definitions supplied by the user.
+    """
     graph = _build_cell_hierarchy_graph(protein_markers, cell_types, cell_sub_types, custom_colors)
     _plot_cell_hierarchy(graph, custom_colors, save_path, arrows_orientation=arrows_orientation)
 
 def order_sub_cell_types(cell_subtypes):
     """
-    Return top-level cell subtypes keys in dependency order.
+    Order subtype parents so ancestors are processed before descendants.
 
     Parameters
-        -----
-        cell_subtypes : Dict[str:Dict]
-            Dictionary containing the cell subtypes defined by user.
-        
-        Return
-        ------
-        List
-           List containing all cell subtypes ordered by dependency. The original order is preserved when multiple keys are at the same level of dependence.
+    ----------
+    cell_subtypes : dict
+        User-defined subtype hierarchy.
+
+    Returns
+    -------
+    list of str
+        Parent phenotype names in dependency order. Original insertion order is
+        preserved when multiple nodes have the same dependency level.
+
+    Raises
+    ------
+    ValueError
+        If the dependency structure cannot be topologically ordered.
     """
     top_level_keys = list(cell_subtypes.keys())
     top_level_set = set(top_level_keys)

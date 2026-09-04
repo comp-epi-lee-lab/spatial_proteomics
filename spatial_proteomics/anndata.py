@@ -8,17 +8,25 @@ logger = logging.getLogger(__name__)
 
 def load_anndata_files(output_dir):
     """
-    Loads AnnData files from anndata directory (if they exists).
-    
-    Parameters
-    -----
-    output_dir : Path
-        Path to the output directory.
+    Load previously generated AnnData objects for all known samples.
 
-    Return
-    ------
-    Dict[str:AnnData] | Dict[str:None] | Dict
-       Dictionary containing multiple annotated data matrices. 
+    Parameters
+    ----------
+    output_dir : pathlib.Path
+        SpPrAn output directory containing the ``results`` and ``adata``
+        subdirectories.
+
+    Returns
+    -------
+    dict of str to anndata.AnnData or None
+        Mapping from sample identifier to loaded AnnData object. A missing
+        sample file is represented by ``None``. An empty dictionary is
+        returned when the sample index file is unavailable.
+
+    Notes
+    -----
+    Sample identifiers are read from ``results/Samples Id.csv`` and AnnData
+    files are expected at ``adata/Sample_<sample>.h5ad``.
     """
     filepath = output_dir / "results" / "Samples Id.csv"
     if filepath.exists():
@@ -38,19 +46,28 @@ def load_anndata_files(output_dir):
 
 def filenames(input_dir, filetype):
     """
-    Gets files' paths from input directory.
-    
-    Parameters
-    -----
-    input_dir : Path
-        Path to the input directory.
-    filetype : str
-        File extension to search.
+    Find SpPrAn object-level input files.
 
-    Return
+    Parameters
+    ----------
+    input_dir : pathlib.Path
+        Directory containing Visiopharm object-level exports.
+    filetype : {"tsv", "csv"}
+        Input-file extension.
+
+    Returns
+    -------
+    list of pathlib.Path
+        Files matching ``*_objects.<filetype>``.
+
+    Raises
     ------
-    List[str]
-       List containing multiple paths to input files. 
+    FileNotFoundError
+        If ``input_dir`` does not exist.
+
+    Notes
+    -----
+    Hidden files and macOS ``._`` resource-fork files are excluded.
     """
     if input_dir.exists():
         entries = list(input_dir.iterdir())
@@ -61,23 +78,38 @@ def filenames(input_dir, filetype):
 
 def cleaned_data(file_names, output_dir, protein_markers, cell_subtype_dict, filetype='tsv'):
     """
-    Performs QC to input data and generates AnnData dictionary.
-    
-    Parameters
-    -----
-    file_names : List[str]
-        List containing multiple paths to input files.
-    output_dir : Path
-        Path to the output directory.
-    filetype : str
-        File extension of all input files.
+    Clean object-level spatial proteomics tables and create AnnData objects.
 
-    Return
-    ------
-    data_dicts : Dict[str:pd.DataFrame]
-       Dictionary containing all data cleaned. 
-    adata_dicts : Dict[str:AnnData]
-       Dictionary containing multiple annotated data matrices. 
+    Parameters
+    ----------
+    file_names : list of pathlib.Path
+        Object-level input files to process.
+    output_dir : pathlib.Path
+        Directory where SpPrAn result metadata will be written.
+    protein_markers : list of str
+        Primary positivity-column names used for cell-type classification.
+    cell_subtype_dict : dict
+        Hierarchical subtype definitions. Subtype marker columns are retained
+        when required for downstream classification.
+    filetype : {"tsv", "csv"}, default="tsv"
+        Input table format.
+
+    Returns
+    -------
+    data_dicts : dict of str to pandas.DataFrame
+        Cleaned per-sample tables used for phenotype assignment.
+    adata_dicts : dict of str to anndata.AnnData
+        Per-sample AnnData objects containing cell-level measurements and
+        spatial information.
+
+    Notes
+    -----
+    When the DAPI positivity column is available, rows lacking nuclear DAPI
+    positivity are removed. SpPrAn also records sample identifiers and the
+    detected positivity-column names in the output directory.
+
+    The resulting AnnData objects represent individual segmented cells, not
+    aggregated tissue regions.
     """
     adata_dicts    = {}
     data_dicts     = {}
@@ -164,19 +196,24 @@ def cleaned_data(file_names, output_dir, protein_markers, cell_subtype_dict, fil
 
 def create_cell_type_dict(protein_markers, cell_types):
     """
-    Creates a dictionary with the definition of the pre-established cell types considering the presence or absent of protein markers.
-    
-    Parameters
-    -----
-    protein_markers : List[str]
-        List containing protein markers.
-    cell_types : Dict[str:List]
-        Dictionary containing cell types as keys and a list with 0, 1, and None as values.
+    Convert ordered cell-type rules into marker-to-state dictionaries.
 
-    Return
-    ------
-    Dict[str:Dict]
-       Dictionary containing the definition of each cell types.
+    Parameters
+    ----------
+    protein_markers : list of str
+        Ordered positivity-column names.
+    cell_types : dict of str to list
+        Cell-type definitions containing ``1`` for positive, ``0`` for
+        negative, and ``None`` for unconstrained markers.
+
+    Returns
+    -------
+    dict of str to dict
+        Marker-based phenotype rules keyed by cell-type name.
+
+    Notes
+    -----
+    Unconstrained markers are omitted from the returned rule dictionary.
     """
     cell_type_dict = {}
     for cell_type, rule in cell_types.items():
@@ -189,23 +226,23 @@ def create_cell_type_dict(protein_markers, cell_types):
 
 def get_index_nones(cell_types, protein_markers, sub_protein_markers, sub_cell_types):
     """
-    Identifies the indices of None values in the cell types definition.
+    Identify unconstrained marker positions for each phenotype.
 
     Parameters
-    -----
-    cell_types : Dict[str:List]
-        Dictionary containing cell types as keys and a list with 0, 1, and None as values.
-    protein_markers : List[str]
-        List containing protein markers.
-    sub_protein_markers : List[str]
-        List containing sub-protein markers.
-    sub_cell_types : Dict[str:Dict]
-        Dictionary containing the definition of each sub cell types.
+    ----------
+    cell_types : dict
+        Primary marker-based phenotype definitions.
+    protein_markers : list of str
+        Primary marker names.
+    sub_protein_markers : dict
+        Subtype marker names grouped by parent population.
+    sub_cell_types : dict
+        Hierarchical subtype definitions.
 
-    Return
-    ------
-    Dict[str:List]
-       Dictionary containing the indices of None values for each cell type.
+    Returns
+    -------
+    dict of str to list of int
+        Marker positions that are not constrained for each phenotype.
     """
     none_dicc = {}
     total_markers = len(protein_markers)
@@ -223,21 +260,24 @@ def get_index_nones(cell_types, protein_markers, sub_protein_markers, sub_cell_t
 
 def fill_n_order_df_by_total_none_values(df, idx_name, order_dicc):
     """
-    Orders a DataFrame based on the number of None values in each column.
+    Expand unconstrained marker states and order phenotype columns.
 
     Parameters
-    -----
-    df : pd.DataFrame
-        DataFrame to order.
+    ----------
+    df : pandas.DataFrame
+        Marker-by-phenotype rule table.
     idx_name : str
-        Name of the index to order by.
-    order_dicc : Dict[str:List]
-        Dictionary containing the indices of None values for each cell type.
+        Name assigned to the DataFrame index.
+    order_dicc : dict
+        Phenotype ordering grouped by specificity/dependency.
 
-    Return
-    ------
-    pd.DataFrame
-       Ordered DataFrame.
+    Returns
+    -------
+    expanded_df : pandas.DataFrame
+        Rule table in which unconstrained states are represented as both
+        possible binary states.
+    original_df : pandas.DataFrame
+        Ordered copy retaining the original unconstrained values.
     """
     df_og = df.copy()
     for col in df.columns:
@@ -251,27 +291,42 @@ def fill_n_order_df_by_total_none_values(df, idx_name, order_dicc):
 
 def sets_and_subsets_cell_types(cell_type_dict, sub_cell_type_dict, protein_markers, output_dir, custom_colors, arrows_orientation="contains"):
     """
-    Identifies set and subsets of cell types based on their marker expressions.
-    
-    Parameters
-    -----
-    cell_type_dict : Dict[str:Dict]
-        Dictionary containing the definition of each cell types.
-    sub_cell_type_dict : Dict[str:Dict]
-        Dictionary containing the definition of each sub cell types.
-    protein_markers : List[str]
-        List containing protein markers.
+    Determine hierarchical subset relationships among marker-defined phenotypes.
 
-    Return
-    ------
-    final_subsets : Dict[str:List]
-        Dictionary containing the final subsets of cell types.
-    ct_final_subsets : Dict[str:Dict]
-        Dictionary containing the final definition of each cell types.
-    dicc_temp[max_N] : Lists[str]
-        List with the biggest cell types in the analysis.
-    custom_colors : Dict[str, str]
-        Updated dictionary mapping cell types to colors.
+    Parameters
+    ----------
+    cell_type_dict : dict
+        Primary marker-based cell-type definitions.
+    sub_cell_type_dict : dict
+        User-defined hierarchical subtype definitions.
+    protein_markers : list of str
+        Primary marker names.
+    output_dir : pathlib.Path
+        Output directory used for hierarchy visualizations and related files.
+    custom_colors : dict of str to str
+        Hexadecimal color assigned to each phenotype.
+    arrows_orientation : {"contains", "isContained"}, default="contains"
+        Direction used to display relationships in hierarchy diagrams.
+
+    Returns
+    -------
+    final_subsets : dict
+        Final subset relationships for each hierarchy level.
+    subtype_definitions : dict
+        Marker definitions associated with resolved phenotype subsets.
+    larger_groups : dict
+        Parent or less-specific phenotype groups identified during hierarchy
+        resolution.
+    custom_colors : dict
+        Color mapping including any colors generated for intersecting
+        phenotypes.
+
+    Notes
+    -----
+    Cell populations are compared as sets defined by marker positivity rules.
+    These subset relationships describe the logical phenotype definitions used
+    by SpPrAn and should not automatically be interpreted as developmental
+    lineage relationships.
     """
     sub_protein_markers = {cell_type: [] for cell_type in sub_cell_type_dict.keys()}
     all_temp = []
@@ -332,6 +387,31 @@ def sets_and_subsets_cell_types(cell_type_dict, sub_cell_type_dict, protein_mark
     return list_final_subsets, list_sub_cell_types, list_bigger_cell_types, custom_colors
 
 def assign_cell_types_vectorized(data, cell_type_dict, container):
+    """
+    Assign marker-defined phenotype labels to cells using vectorized comparisons.
+
+    Parameters
+    ----------
+    data : pandas.DataFrame
+        Cell-level table containing the positivity columns referenced by the
+        phenotype rules.
+    cell_type_dict : dict
+        Mapping from phenotype names to marker-state rules.
+    container : str
+        Name of the parent population being subdivided. Use ``"General"`` for
+        primary cell typing.
+
+    Returns
+    -------
+    pandas.Series
+        Phenotype label for every row in ``data``.
+
+    Notes
+    -----
+    Cells are assigned in dictionary iteration order and only previously
+    unassigned cells are evaluated for subsequent phenotypes. Cells not
+    matching any rule are labeled ``"Other cells"`` at the general level.
+    """
     labels = pd.Series("Other cells", index=data.index)
     unassigned = pd.Series(True, index=data.index)
     for cell_type, rule in cell_type_dict.items():
@@ -357,7 +437,7 @@ def get_all_children(celltype, dicc, visited=None):
     visited : set (Optional)
         Set of already visited cell types to avoid infinite recursion. 
 
-    Return
+    Returns
     ------
     set
        Set containing all children of the given cell type.
@@ -389,41 +469,59 @@ def get_all_children(celltype, dicc, visited=None):
 
 def save_anndata_files(adata_dicts, adata_dir):
     """
-    Saves AnnData files in anndata directory.
-    
+    Save per-sample AnnData objects as H5AD files.
+
     Parameters
-    -----
-    adata_dicts : Dict[str:AnnData]
-        Dictionary containing multiple annotated data matrices.
-    adata_dir : Path
-        Path to the anndata directory.
+    ----------
+    adata_dicts : dict of str to anndata.AnnData
+        Per-sample annotated data matrices.
+    adata_dir : pathlib.Path
+        Destination directory.
+
+    Returns
+    -------
+    None
+        Files are written as ``Sample_<sample>.h5ad``.
     """
     for k, adata in adata_dicts.items():
         adata.write(adata_dir / f"Sample_{k}.h5ad")
 
 def labeling_cell_types(data_dicts, adata_dicts, cell_type_dict, sub_cell_type_dict, protein_markers, output_dir, custom_colors, save_anndata=True, arrows_orientation="contains"):
     """
-    Labels all cells in AnnData with the corresponding cell type.
-    
-    Parameters
-    -----
-    data_dicts : Dict[str:pd.DataFrame]
-       Dictionary containing all data cleaned. 
-    adata_dicts : Dict[str:AnnData]
-       Dictionary containing multiple annotated data matrices. 
-    cell_type_dict : Dict[str:Dict]
-        Dictionary containing the definition of each cell types.
-    sub_cell_type_dict : Dict[str:Dict]
-        Dictionary containing the definition of each sub cell types.
-    output_dir : Path
-        Path to the output directory.
-    save_anndata : Bool (Optional; Default is True)
-        Boolean value to decide if AnnData files will be saved in anndata directory or not.
+    Assign primary and hierarchical phenotype labels to AnnData objects.
 
-    Return
-    ------
-    adata_dicts : Dict[str:AnnData]
-       Dictionary containing multiple updated annotated data matrices.
+    Parameters
+    ----------
+    data_dicts : dict of str to pandas.DataFrame
+        Cleaned cell-level tables used for marker comparisons.
+    adata_dicts : dict of str to anndata.AnnData
+        Corresponding per-sample AnnData objects.
+    cell_type_dict : dict
+        Primary marker-based phenotype definitions.
+    sub_cell_type_dict : dict
+        Hierarchical subtype definitions.
+    protein_markers : list of str
+        Primary protein-marker positivity columns.
+    output_dir : pathlib.Path
+        SpPrAn output directory.
+    custom_colors : dict of str to str
+        Phenotype color mapping.
+    save_anndata : bool, default=True
+        Whether updated AnnData objects should be written to disk.
+    arrows_orientation : {"contains", "isContained"}, default="contains"
+        Orientation used for hierarchy diagrams.
+
+    Returns
+    -------
+    dict of str to anndata.AnnData
+        AnnData objects containing primary labels, hierarchical subtype
+        annotations, colors, and plotting metadata.
+
+    Notes
+    -----
+    Primary population labels are stored in ``adata.obs["clusters"]``.
+    Hierarchical subtype annotations are stored in additional observation
+    columns associated with their parent phenotype.
     """
     list_final_subsets, list_cell_types, list_bigger_cell_types, custom_colors = sets_and_subsets_cell_types(cell_type_dict, sub_cell_type_dict, protein_markers, output_dir, custom_colors,arrows_orientation=arrows_orientation)
 
@@ -510,17 +608,23 @@ def labeling_cell_types(data_dicts, adata_dicts, cell_type_dict, sub_cell_type_d
 
 def create_or_load_anndata(config):
     """
-    Creates or loads AnnData files from anndata directory (if they exists).
-    
-    Parameters
-    -----
-    config : Dict
-        Parsed configuration dictionary.
+    Load cached AnnData objects or generate them from source tables.
 
-    Return
-    ------
-    adata_dicts : Dict[str:AnnData]
-       Dictionary containing multiple annotated data matrices. 
+    Parameters
+    ----------
+    config : dict
+        Validated SpPrAn configuration dictionary.
+
+    Returns
+    -------
+    dict of str to anndata.AnnData
+        Per-sample annotated data matrices.
+
+    Notes
+    -----
+    Existing H5AD files are reused when allowed by the configuration. If files
+    are missing, incomplete, or overwrite mode is enabled, SpPrAn rebuilds the
+    AnnData objects from the original object-level input files.
     """
     output_dir = config['workspace']['output_dir']
     if not config['overwrite_existing_files']: adata_dicts = load_anndata_files(output_dir)

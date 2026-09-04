@@ -10,11 +10,47 @@ from spatial_proteomics.utils import order_sub_cell_types
 logger = logging.getLogger(__name__)
 
 def _safe_percent(numerator, denominator):
+    """
+    Calculate a percentage while safely handling zero or missing denominators.
+
+    Returns
+    -------
+    float
+        Percentage rounded to two decimal places, or ``0.0`` when the
+        denominator is zero or missing.
+    """
     if denominator in (None, 0) or pd.isna(denominator): return 0.0
     return float(np.round((numerator / denominator) * 100, 2))
 
-def _build_hierarchical_report_for_sample(adata, sample_name, custom_colors, sub_cell_types={}, include_other_cells=True):
+def _build_hierarchical_report_for_sample(adata, sample_name, custom_colors, sub_cell_types=None, include_other_cells=True):
+    """
+    Build a hierarchical cell-population report for one sample.
 
+    Parameters
+    ----------
+    adata : anndata.AnnData
+        Annotated sample containing primary and subtype phenotype labels.
+    sample_name : str
+        Sample identifier included in the output table.
+    custom_colors : dict of str to str
+        Phenotype color mapping.
+    sub_cell_types : dict, optional
+        User-defined parent-child subtype hierarchy.
+    include_other_cells : bool, default=True
+        Whether unclassified cells are included in the report.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Table containing population name, parent population, cell count,
+        percentage of the parent population, and percentage of all cells.
+
+    Notes
+    -----
+    ``% of parent`` and ``% of total`` answer different biological questions.
+    A subtype may represent a large fraction of its lineage while remaining a
+    small fraction of the complete tumor microenvironment.
+    """
     rows = []
     total_cells = int(adata.n_obs)
     if total_cells == 0:
@@ -32,7 +68,6 @@ def _build_hierarchical_report_for_sample(adata, sample_name, custom_colors, sub
                 "Count": int(count),
                 "% of parent": _safe_percent(count, denominator),
                 "% of total": _safe_percent(count, total_cells),
-                # "Denominator": int(denominator) if denominator not in (None, 0) else denominator,
             }
         )
 
@@ -57,18 +92,30 @@ def _build_hierarchical_report_for_sample(adata, sample_name, custom_colors, sub
 
 def calculate_cell_proportions(adata_dicts, custom_colors, output_dir, sub_cell_types={}, overwrite_existing_files=False):
     """
-    Quantifies cell population from AnnData and saves it to csv files in results directory.
-    
+    Calculate and export cell-population counts and proportions.
+
     Parameters
+    ----------
+    adata_dicts : dict of str to anndata.AnnData
+        Annotated spatial proteomics samples.
+    custom_colors : dict of str to str
+        Phenotype color mapping.
+    output_dir : pathlib.Path
+        SpPrAn output directory.
+    overwrite_existing_files : bool, default=False
+        Whether existing population-report files may be replaced.
+    sub_cell_types : dict, optional
+        Hierarchical phenotype definitions.
+
+    Returns
+    -------
+    None
+        Cell-count and proportion tables are written to the output directory.
+
+    Notes
     -----
-    adata_dicts : Dict[str:AnnData]
-       Dictionary containing multiple annotated data matrices. 
-    custom_colors : Dict[str:str]
-       Dictionary containing HEX colors per cell type. 
-    output_dir : Path
-        Path to the output directory.
-    overwrite_existing_files : Bool (Optional; Default is False)
-        Boolean value to decide if plots will be overwrited in plots directory or not.
+    Reports distinguish a phenotype's percentage of its parent population from its
+    percentage of all cells in the sample.
     """
     output_dir = Path(output_dir)
     results_dir = output_dir / "results"

@@ -21,6 +21,44 @@ import logging
 logger = logging.getLogger(__name__)
 
 def plotting_helper(custom_colors, overwrite_existing_files, selected_plots, dpi, size, ncol, plots_path, k, adata, folder_name):
+    """
+    Generate requested spatial plots for one sample and hierarchy level.
+
+    Parameters
+    ----------
+    custom_colors : dict of str to str
+        Hexadecimal phenotype colors.
+    overwrite_existing_files : bool
+        Whether existing plot files may be replaced.
+    selected_plots : collection of str
+        Plot modes requested for the current sample.
+    dpi : int or float
+        Resolution of saved figures.
+    size : int or float
+        Scatter-point size used for individual cells.
+    ncol : int
+        Number of legend columns.
+    plots_path : pathlib.Path
+        Base directory for plot output.
+    k : str
+        Sample identifier.
+    adata : anndata.AnnData
+        Annotated sample containing spatial coordinates and phenotype labels.
+    folder_name : str
+        ``"General"`` for primary populations or the parent phenotype whose
+        subtypes should be plotted.
+
+    Returns
+    -------
+    None
+        Plot and legend image files are written to disk.
+
+    Notes
+    -----
+    Each plotted point represents an individual segmented cell at its tissue
+    coordinate. Hierarchical plots visualize subtypes within a selected parent
+    population.
+    """
     if folder_name == 'General':
         universe_to_color = 'clusters' 
         title_name = f"Sample {k} ({adata.n_obs} cells)"
@@ -56,16 +94,11 @@ def plotting_helper(custom_colors, overwrite_existing_files, selected_plots, dpi
                 if save_namefile2.exists() and not overwrite_existing_files:
                     logger.warning(f"File 'Spatial - {title_name2}.png' already exists...")
                     continue
-                # adata.obs[f"only {cell_type}"]
-                # adata.obs[f"Subtypes of {cell_type}"] # Sub universe
                 color_spatial = f"Only {cell_type}" if cell_type == folder_name or folder_name == 'General' else f"only {cell_type}"
                 color_to_check = f"{folder_name} - only {cell_type}"
                 color_spatial = color_to_check if adata.obs.columns.isin([color_to_check]).any() else color_spatial
-                    # cmap_gene = selected_color
-                # own_palette_list = [selected_color,custom_colors['Other cells']] if cell_type<'Other cells' else [custom_colors['Other cells'],selected_color]
                 own_palette_list = [custom_colors[label] for label in sorted([cell_type, f"Other cells"])] if folder_name=='General' or (folder_name!='General' and not any(adata.obs[color_spatial]==f"Other {folder_name}")) else [custom_colors[label] for label in sorted([cell_type, f"Other {folder_name}", f"Other cells"])]
                 own_palette = ListedColormap(own_palette_list)
-                    # cmap_gene = ListedColormap(cmap_gene)
                     
                 fig, ax = plt.subplots()
                 with warnings.catch_warnings(): # Filtering harmless warning
@@ -80,10 +113,8 @@ def plotting_helper(custom_colors, overwrite_existing_files, selected_plots, dpi
                             color=color_spatial,
                             title=title_name2,
                             dpi=dpi,
-                            # cmap=cmap_gene,
                             palette=own_palette,
                             size=size,
-                            # legend_loc="lower center",
                             ax=ax)
                 ax.set_facecolor("black")
                 ax.set_aspect('auto')
@@ -97,15 +128,11 @@ def plotting_helper(custom_colors, overwrite_existing_files, selected_plots, dpi
                 fig.subplots_adjust(bottom=0.1)
                 pos = ax.get_position()
                 ax.set_position([pos.x0,pos.y0+0.05,pos.width,pos.height])
-                # ax.set_aspect('equal')
-                # fig.subplots_adjust(right=0.8)
-                # fig.tight_layout()
                 plt.savefig(save_namefile2, dpi=dpi)
                 plt.close(fig)
         return
     if selected_plots != "highlight":
         color_spatial = universe_to_color
-            # cmap_gene = None
         which_colors = []
         colors_temp = list(custom_colors.keys())
         colors_temp.sort()
@@ -128,10 +155,8 @@ def plotting_helper(custom_colors, overwrite_existing_files, selected_plots, dpi
                     color=color_spatial,
                     title=title_name,
                     dpi=dpi,
-                    # cmap=cmap_gene,
                     palette=own_palette,
                     size=size,
-                    # legend_loc="lower center",
                     ax=ax)
         ax.set_facecolor("black")
         ax.set_aspect('auto')
@@ -145,14 +170,8 @@ def plotting_helper(custom_colors, overwrite_existing_files, selected_plots, dpi
         fig.subplots_adjust(bottom=0.1)
         pos = ax.get_position()
         ax.set_position([pos.x0,pos.y0+0.05,pos.width,pos.height])
-        # ax.set_aspect('equal')
-        # fig.subplots_adjust(right=0.8)
-        # plt.legend(ncol=1,loc='center right',bbox_to_anchor=(0.5, -0.05))
-        # fig.tight_layout()
         plt.savefig(save_namefile, dpi=dpi)
         plt.close(fig)
-        # print(f"File 'Spatial - {title_name}.png' created!")
-        # print(f"Spatial plots for the cell types in {folder_name} has been created!")
         
     if selected_plots != "overview":
         for cell_type, selected_color in custom_colors.items():
@@ -171,11 +190,8 @@ def plotting_helper(custom_colors, overwrite_existing_files, selected_plots, dpi
             color_spatial = f"Only {cell_type}" if cell_type == folder_name or folder_name == 'General' else f"only {cell_type}"
             color_to_check = f"{folder_name} - only {cell_type}"
             color_spatial = color_to_check if adata.obs.columns.isin([color_to_check]).any() else color_spatial
-                # cmap_gene = selected_color
-            # own_palette_list = [selected_color,custom_colors['Other cells']] if cell_type<'Other cells' else [custom_colors['Other cells'],selected_color]
             own_palette_list = [custom_colors[label] for label in sorted([cell_type, f"Other cells"])] if folder_name=='General' or (folder_name!='General' and not any(adata.obs[color_spatial]==f"Other {folder_name}")) else [custom_colors[label] for label in sorted([cell_type, f"Other {folder_name}", f"Other cells"])]
             own_palette = ListedColormap(own_palette_list)
-                # cmap_gene = ListedColormap(cmap_gene)
             fig, ax = plt.subplots()
             with warnings.catch_warnings(): # Filtering harmless warning
                 warnings.filterwarnings(
@@ -189,10 +205,8 @@ def plotting_helper(custom_colors, overwrite_existing_files, selected_plots, dpi
                         color=color_spatial,
                         title=title_name2,
                         dpi=dpi,
-                        # cmap=cmap_gene,
                         palette=own_palette,
                         size=size,
-                        # legend_loc="lower center",
                         ax=ax)
             ax.set_facecolor("black")
             ax.set_aspect('auto')
@@ -206,30 +220,45 @@ def plotting_helper(custom_colors, overwrite_existing_files, selected_plots, dpi
             fig.subplots_adjust(bottom=0.1)
             pos = ax.get_position()
             ax.set_position([pos.x0,pos.y0+0.05,pos.width,pos.height])
-            # ax.set_aspect('equal')
-            # fig.subplots_adjust(right=0.8)
-            # fig.tight_layout()
             plt.savefig(save_namefile2, dpi=dpi)
             plt.close(fig)
 
 def plot_spatial(adata_dicts,custom_colors,output_dir,plot_options,custom_plot,overwrite_existing_files=False,dpi=300,size=50,ncol=4):
     """
-    Plots spatial data from AnnData and saves it in plots directory.
-    
+    Generate spatial phenotype maps for SpPrAn samples.
+
     Parameters
+    ----------
+    adata_dicts : dict of str to anndata.AnnData
+        Annotated samples containing spatial coordinates and phenotype labels.
+    custom_colors : dict of str to str
+        Hexadecimal color assigned to each phenotype.
+    output_dir : pathlib.Path
+        SpPrAn output directory.
+    plot_options : {"none", "all", "highlight", "overview", "custom"}
+        Global plotting mode.
+    custom_plot : list of dict
+        Per-file plotting requests used when ``plot_options="custom"``.
+    overwrite_existing_files : bool, default=False
+        Whether existing plot files may be replaced.
+    dpi : int or float, default=300
+        Output resolution in dots per inch.
+    size : int or float, default=50
+        Scatter-point size representing individual cells.
+    ncol : int, default=4
+        Number of columns used in plot legends.
+
+    Returns
+    -------
+    None
+        Spatial plots and corresponding legends are saved below the configured
+        output directory.
+
+    Notes
     -----
-    adata_dicts : Dict[str:AnnData]
-       Dictionary containing multiple annotated data matrices. 
-    custom_colors : Dict[str:str]
-       Dictionary containing HEX colors per cell type. 
-    output_dir : Path
-        Path to the output directory.
-    overwrite_existing_files : Bool (Optional; Default is False)
-        Boolean value to decide if plots will be overwrited in plots directory or not.
-    dpi : int (Optional; Default is 300)
-        Dots per inch for spatial plot.
-    size : int (Optional; Default is 50)
-        Scatter dots size for spatial plot.
+    Spatial maps display marker-defined phenotypes and should be interpreted in
+    conjunction with tissue morphology, segmentation quality, staining
+    performance, and upstream positivity thresholds.
     """
     rcParams["figure.figsize"] = (10,10)
     plots_path = output_dir / "plots" 

@@ -40,7 +40,20 @@ ARROWS_ORIENTATIONS = {"contains", "isContained",}
 
 
 class ConfigValidationError(ValueError):
-    """Raised when one or more YAML configuration settings are invalid."""
+    """
+    Report one or more invalid SpPrAn configuration settings.
+
+    Parameters
+    ----------
+    errors : list of str
+        Human-readable validation messages collected while checking the YAML
+        configuration.
+
+    Attributes
+    ----------
+    errors : list of str
+        Individual configuration errors.
+    """
 
     def __init__(self, errors: list[str]):
         self.errors = errors
@@ -357,8 +370,8 @@ def _check_yaml(config: Any) -> dict:
             warning("'spatial_options' was renamed to 'plot_options' to match the configuration schema.")
 
         if "plot_options" not in spatial_plot:
-            warning("'spatial_plot.plot_options' is missing. Defaulting to 'none'.")
-            spatial_plot["plot_options"] = "none"
+            warning("'spatial_plot.plot_options' is missing. Defaulting to 'all'.")
+            spatial_plot["plot_options"] = "all"
 
         plot_option = spatial_plot["plot_options"]
 
@@ -460,10 +473,25 @@ def _check_yaml(config: Any) -> dict:
 
 
 def _resolve_workspace_path(path_value: str, config_path: Path) -> Path:
-    """Convert a workspace path to an absolute Path.
+    """
+    Resolve a configured workspace path to an absolute path.
 
-    Relative paths are interpreted relative to the YAML configuration file,
-    not relative to the process's current working directory.
+    Parameters
+    ----------
+    path_value : str
+        User-provided input or output directory.
+    config_path : pathlib.Path
+        Path to the YAML configuration file.
+
+    Returns
+    -------
+    pathlib.Path
+        Absolute normalized workspace path.
+
+    Notes
+    -----
+    Relative workspace paths are interpreted relative to the directory
+    containing the YAML file rather than the current working directory.
     """
     path = Path(path_value).expanduser()
     if not path.is_absolute(): path = config_path.parent / path
