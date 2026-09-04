@@ -1,0 +1,160 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Configuration file &mdash; SpPrAn  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Running SpPrAn" href="usage.html" />
+    <link rel="prev" title="Analysis workflow" href="workflow.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SpPrAn
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="desktop_app.html">Desktop application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_builder.html">SpPrAn Configuration Builder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">Analysis workflow</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Running SpPrAn</a></li>
+<li class="toctree-l1"><a class="reference internal" href="outputs.html">Outputs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Python API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SpPrAn</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Configuration file</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/configuration.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="configuration-file">
+<h1>Configuration file<a class="headerlink" href="#configuration-file" title="Link to this heading"></a></h1>
+<p>SpPrAn is controlled by a YAML configuration file. Users can create it manually
+from <code class="docutils literal notranslate"><span class="pre">config/config_example.yaml</span></code> or with the <a class="reference internal" href="config_builder.html"><span class="doc">SpPrAn Configuration Builder</span></a>.</p>
+<p>The configuration controls workspace paths, file format, protein markers,
+primary cell types, hierarchical subtypes, colors, AnnData saving, overwrite
+behavior, spatial plotting, custom plotting, and hierarchy orientation.</p>
+<p><code class="docutils literal notranslate"><span class="pre">protein_markers</span></code> option is a list that contains the primary protein markers to be used in the
+cell type definitions. Protein markers name must have one of the following formats:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>“Positivity - {<code class="docutils literal notranslate"><span class="pre">protein_marker_name</span></code>} (MV Cell)”</p></li>
+<li><p>“Positivity - {<code class="docutils literal notranslate"><span class="pre">protein_marker_name</span></code>}* (MV Cell)”</p></li>
+<li><p>“Positivity - {<code class="docutils literal notranslate"><span class="pre">protein_marker_name</span></code>} (MV - NUC)”</p></li>
+<li><p>“Positivity - {<code class="docutils literal notranslate"><span class="pre">protein_marker_name</span></code>}* (MV - NUC)”</p></li>
+<li><p>“Positivity - {<code class="docutils literal notranslate"><span class="pre">protein_marker_name</span></code>} (MV - CYTO)”</p></li>
+<li><p>“Positivity - {<code class="docutils literal notranslate"><span class="pre">protein_marker_name</span></code>}* (MV - CYTO)”</p></li>
+</ul>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">cell_types</span></code> option is a dictionary, where the keys are the cell type names and the values are
+a list with the detected intensity signal preserving the same order as <code class="docutils literal notranslate"><span class="pre">protein_markers</span></code>. Primary
+phenotype definitions inside a cell type use <code class="docutils literal notranslate"><span class="pre">1</span></code> for positive, <code class="docutils literal notranslate"><span class="pre">0</span></code> for negative, and
+<code class="docutils literal notranslate"><span class="pre">~</span></code>/<code class="docutils literal notranslate"><span class="pre">null</span></code> for unconstrained markers.</p>
+<p><code class="docutils literal notranslate"><span class="pre">sub_cell_types</span></code> option is a nested dictionary, where the first-level keys are the parent cell
+type and subtypes names and the values are dictionaries defining cell subtypes within that parent
+population. Each cell subtype name maps to a dictionary where the keys are protein markers and the
+values define the phenotype: <code class="docutils literal notranslate"><span class="pre">1</span></code> for positive, <code class="docutils literal notranslate"><span class="pre">0</span></code> for negative, and <code class="docutils literal notranslate"><span class="pre">~</span></code>/<code class="docutils literal notranslate"><span class="pre">null</span></code> for
+unconstrained markers. Cell type and subtype names cannot be the same.</p>
+<p><code class="docutils literal notranslate"><span class="pre">custom_colors</span></code> option is a dictionary, where the keys are the cell type or subtype names
+and the values are hexadecimal color codes used to represent each population in plots or other
+visual outputs. Cell type and subtype names cannot be the same.</p>
+<p><code class="docutils literal notranslate"><span class="pre">spatial_plot</span></code> option is a dictionary containing the parameters used to generate spatial plots.
+<code class="docutils literal notranslate"><span class="pre">dpi</span></code> defines the plot resolution, <code class="docutils literal notranslate"><span class="pre">scatter_point_size</span></code> controls the size of the plotted cells
+or objects, and <code class="docutils literal notranslate"><span class="pre">plot_options</span></code> specifies the plotting mode.</p>
+<p>The values for <code class="docutils literal notranslate"><span class="pre">plot_options</span></code> are <code class="docutils literal notranslate"><span class="pre">overview</span></code>, <code class="docutils literal notranslate"><span class="pre">highlight</span></code>, <code class="docutils literal notranslate"><span class="pre">all</span></code>, <code class="docutils literal notranslate"><span class="pre">none</span></code>, and <code class="docutils literal notranslate"><span class="pre">custom</span></code>.
+For more information, see <a class="reference internal" href="config_builder.html"><span class="doc">SpPrAn Configuration Builder</span></a>. When <code class="docutils literal notranslate"><span class="pre">plot_options</span></code> is set to <code class="docutils literal notranslate"><span class="pre">custom</span></code>,
+the <code class="docutils literal notranslate"><span class="pre">custom_plot</span></code> option is a list with the input files to plot, where each entry is a dictionary
+that defines the input <code class="docutils literal notranslate"><span class="pre">fileName</span></code> and the corresponding plot <code class="docutils literal notranslate"><span class="pre">type</span></code> similar to <code class="docutils literal notranslate"><span class="pre">plot_options</span></code>
+(except for <code class="docutils literal notranslate"><span class="pre">custom</span></code> value).</p>
+<p>An additional <code class="docutils literal notranslate"><span class="pre">arrows_orientation</span></code> option is available. For the cell hierarchy plot,
+<code class="docutils literal notranslate"><span class="pre">arrows_orientation</span></code> will change the orientation of the arrows. <code class="docutils literal notranslate"><span class="pre">contains</span></code> value
+will show arrows from up to down, and <code class="docutils literal notranslate"><span class="pre">isContained</span></code> value will show arrows from
+down to up.</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="workflow.html" class="btn btn-neutral float-left" title="Analysis workflow" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="usage.html" class="btn btn-neutral float-right" title="Running SpPrAn" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

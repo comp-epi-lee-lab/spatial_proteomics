@@ -1,0 +1,266 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SpPrAn Configuration Builder &mdash; SpPrAn  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Analysis workflow" href="workflow.html" />
+    <link rel="prev" title="Desktop application" href="desktop_app.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SpPrAn
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="desktop_app.html">Desktop application</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">SpPrAn Configuration Builder</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#settings-1-restore-or-start">Settings 1. Restore or start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#settings-2-workspace">Settings 2. Workspace</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#settings-3-protein-markers">Settings 3. Protein markers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#settings-4-cell-types-and-subtypes">Settings 4. Cell types and subtypes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#output-and-spatial-plotting">Output and spatial plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#preview-and-download">Preview and download</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">Analysis workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Running SpPrAn</a></li>
+<li class="toctree-l1"><a class="reference internal" href="outputs.html">Outputs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Python API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SpPrAn</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">SpPrAn Configuration Builder</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/config_builder.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="sppran-configuration-builder">
+<h1>SpPrAn Configuration Builder<a class="headerlink" href="#sppran-configuration-builder" title="Link to this heading"></a></h1>
+<p>The <strong>SpPrAn Configuration Builder</strong> is the local browser-based interface in
+<code class="docutils literal notranslate"><span class="pre">config_builder.html</span></code>. It can be opened directly or launched from the desktop
+application.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Files selected in the Configuration Builder are not uploaded to an external
+service. Representative data files are read locally to identify column
+names, and folders selected for custom plotting are used locally to obtain
+filenames.</p>
+</div>
+<section id="settings-1-restore-or-start">
+<h2>Settings 1. Restore or start<a class="headerlink" href="#settings-1-restore-or-start" title="Link to this heading"></a></h2>
+<p>Loading an existing <code class="docutils literal notranslate"><span class="pre">.yaml</span></code>/<code class="docutils literal notranslate"><span class="pre">.yml</span></code> configuration allows users to edit an existing
+one or take it as a template for a new one.</p>
+<p>Selecting a representative <code class="docutils literal notranslate"><span class="pre">.tsv</span></code>/<code class="docutils literal notranslate"><span class="pre">.csv</span></code> file allows users to start a new
+configuration file identifying available positivity columns in their input data.</p>
+</section>
+<section id="settings-2-workspace">
+<h2>Settings 2. Workspace<a class="headerlink" href="#settings-2-workspace" title="Link to this heading"></a></h2>
+<p>Specify the input directory, output directory, and common input format. For desktop
+application users, input and output directory can be selected through the corresponding
+app.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>All the files in the input directory must be the same type. If not, SpPrAn will ignore
+those different from the selected input-file format.</p>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Input file names must end with the suffix “<strong>_objects.{``filetype``}</strong>” to be analyzed
+by SpPrAn. Otherwise, code will not continue with the analysis.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We strongly recommend naming the input files with the suffix “<strong>XY_objects.{``filetype``}</strong>”,
+where <strong>X</strong> and <strong>Y</strong> are together the “Sample Id” in the analysis. <strong>X</strong> and <strong>Y</strong> can be any valid
+character allowed by the OS. Because “<strong>XY</strong>” is the Id of the sample, each file must contain
+different Ids.</p>
+</div>
+</section>
+<section id="settings-3-protein-markers">
+<h2>Settings 3. Protein markers<a class="headerlink" href="#settings-3-protein-markers" title="Link to this heading"></a></h2>
+<p>Select positivity columns obtained via the representative file to define major
+populations (cell types). Other protein markers will remain available for subtype definitions
+if needed.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The allowed formats for columns in input data to be accepted as “positive columns” are:</p>
+<ul class="simple">
+<li><p>“Positivity - {<code class="docutils literal notranslate"><span class="pre">protein_marker_name</span></code>} (MV Cell)”</p></li>
+<li><p>“Positivity - {<code class="docutils literal notranslate"><span class="pre">protein_marker_name</span></code>}* (MV Cell)”</p></li>
+<li><p>“Positivity - {<code class="docutils literal notranslate"><span class="pre">protein_marker_name</span></code>} (MV - NUC)”</p></li>
+<li><p>“Positivity - {<code class="docutils literal notranslate"><span class="pre">protein_marker_name</span></code>}* (MV - NUC)”</p></li>
+<li><p>“Positivity - {<code class="docutils literal notranslate"><span class="pre">protein_marker_name</span></code>} (MV - CYTO)”</p></li>
+<li><p>“Positivity - {<code class="docutils literal notranslate"><span class="pre">protein_marker_name</span></code>}* (MV - CYTO)”</p></li>
+</ul>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>When loading an existing configuration file, only protein marker used in the
+file will appear. Please select a representative file to retrieve and make
+available all the protein markers you may need.</p>
+</div>
+</section>
+<section id="settings-4-cell-types-and-subtypes">
+<h2>Settings 4. Cell types and subtypes<a class="headerlink" href="#settings-4-cell-types-and-subtypes" title="Link to this heading"></a></h2>
+<p>In this settings option, users define each major cell type using protein markers
+that are <strong>Present</strong>, <strong>Absent</strong>, or <strong>Not applicable</strong>, then optionally create
+nested subtypes using additional markers.</p>
+<p>Protein markers selected in settings option 3 will be used to define cell types. Please
+select introduce a name for the cell type and select the detected intensity signal for the protein
+markers to define it.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>Cell types and subtypes’ name can be modified clicking in <strong>Edit name</strong> button.</p></li>
+<li><p>Cell types and subtypes cannot have the same name or same detected intensity signal for the protein marker definition.</p></li>
+</ul>
+</div>
+<p>Cell subtypes can be added to each defined cell type by checking the <strong>Include cell subtypes</strong>
+checkbox. Cell subtypes will share the same protein markers used for defining the parent cell
+type. After naming a cell subtype, remaining protein markers can be selected for defining this subtype.</p>
+<p>To define a cell subtype from a cell subtype, follow the steps above.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A parent-child relationship represents a nested marker-based phenotype
+definition, not automatically a developmental lineage. For example:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>Immune<span class="w"> </span>cells
+└──<span class="w"> </span>T<span class="w"> </span>cells
+<span class="w">   </span>└──<span class="w"> </span>CD8<span class="w"> </span>T<span class="w"> </span>cells
+</pre></div>
+</div>
+<p>represents nested marker-based phenotype definitions, not by itself a developmental lineage
+or differentiation trajectory.</p>
+</div>
+<p>Click the <strong>Collapse</strong> button to temporarily hide the visualization of the cell type or
+subtype in the webpage. This is especially useful when there are many defined cell
+types and subtypes.</p>
+<p><em>Other cells</em> will collect all the cells that does not belong to any cell type or subtype. In
+each parent-child relationship, it can appear <em>Other</em> {<code class="docutils literal notranslate"><span class="pre">parent_name</span></code>} corresponding to the cells
+that belong to the parent but no to any of the children.</p>
+</section>
+<section id="output-and-spatial-plotting">
+<h2>Output and spatial plotting<a class="headerlink" href="#output-and-spatial-plotting" title="Link to this heading"></a></h2>
+<p>Configure output overwriting, AnnData saving, plot type, DPI, point size, and
+optional per-sample custom plotting.</p>
+<ul class="simple">
+<li><p>For <strong>Overwrite existing outputs?</strong> option, if <em>Yes</em> is selected, previous generated output files in the output path will be replaced by the new ones. If <em>No</em> is selected, SpPrAn will skip generating all the output files that already exist, just creating the non-existent.</p></li>
+<li><p>The AnnData files can be used for generating plots inside and outside this tool, and follow-up analyses outside this tool using Python or R. For <strong>Save AnnData files?</strong> option, if <em>Yes</em> is selected, AnnData files will be saved in the output path.</p></li>
+<li><dl class="simple">
+<dt>There are 5 options for plotting spatial plots:</dt><dd><ul>
+<li><p><strong>Overview</strong>: SpPrAn will generate the spatial plots considering all annotations together: in ‘General’ all the cell types in the spatial plot, and all the children for each parent.</p></li>
+<li><p><strong>Highlight</strong>: SpPrAn will generate the spatial plots considering a single annotation vs all other cells: if “Immune cells” is a cell type, it will be Immune cells against all non-immune cells.</p></li>
+<li><p><strong>Both</strong>: SpPrAn will generate the spatial plots considering the overview and highlight options at the same time. This is the default option.</p></li>
+<li><p><strong>No spatial plotting</strong>: SpPrAn won’t generate spatial plots for all samples in the input directory.</p></li>
+<li><p><strong>Custom plotting</strong>: SpPrAn will generate custom spatial plot types for each sample in the input directory.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<p>For custom plotting, the builder reads matching filenames from a selected local
+folder and lets the user assign each file an overview, highlight, both, or no
+plot. After assigning plot types for each file, click <strong>Save custom plotting options</strong>
+button for effectively save the assignations.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>This is the only option that needs to be saved through clicking a button; every other
+setting update is automatically saved.</p>
+</div>
+</section>
+<section id="preview-and-download">
+<h2>Preview and download<a class="headerlink" href="#preview-and-download" title="Link to this heading"></a></h2>
+<p>Preview the generated configuration in the browser. Download it for use with either
+the desktop application or in the command line:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sppran<span class="w"> </span>--config<span class="w"> </span>path/to/config.yaml
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="desktop_app.html" class="btn btn-neutral float-left" title="Desktop application" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="workflow.html" class="btn btn-neutral float-right" title="Analysis workflow" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

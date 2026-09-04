@@ -1,0 +1,160 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Desktop application &mdash; SpPrAn  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="SpPrAn Configuration Builder" href="config_builder.html" />
+    <link rel="prev" title="Installation" href="installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SpPrAn
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Desktop application</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#distribution">Distribution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#main-interface">Main interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#configuration-builder">Configuration Builder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-an-analysis">Running an analysis</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="config_builder.html">SpPrAn Configuration Builder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">Analysis workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Running SpPrAn</a></li>
+<li class="toctree-l1"><a class="reference internal" href="outputs.html">Outputs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Python API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SpPrAn</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Desktop application</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/desktop_app.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="desktop-application">
+<h1>Desktop application<a class="headerlink" href="#desktop-application" title="Link to this heading"></a></h1>
+<p>SpPrAn includes a Tkinter-based desktop application intended for users who
+prefer not to work from the command line.</p>
+<section id="distribution">
+<h2>Distribution<a class="headerlink" href="#distribution" title="Link to this heading"></a></h2>
+<p>Packaged Windows and macOS applications are available through GitHub
+Releases. Current suported platforms:</p>
+<ul class="simple">
+<li><p>Windows 11 (x86_64)</p></li>
+<li><p>Windows 11 (ARM64)</p></li>
+<li><p>macOS 26 (ARM64)</p></li>
+</ul>
+</section>
+<section id="main-interface">
+<h2>Main interface<a class="headerlink" href="#main-interface" title="Link to this heading"></a></h2>
+<p>The desktop application provides controls to:</p>
+<ul class="simple">
+<li><p>create, edit, or open a configuration file;</p></li>
+<li><p>choose input and output directories;</p></li>
+<li><p>inspect the selected configuration;</p></li>
+<li><p>run the SpPrAn analysis; and</p></li>
+<li><p>view progress and error messages.</p></li>
+</ul>
+</section>
+<section id="configuration-builder">
+<h2>Configuration Builder<a class="headerlink" href="#configuration-builder" title="Link to this heading"></a></h2>
+<p>Selecting <strong>Create a new or edit an existing configuration file</strong> opens the
+bundled <a class="reference internal" href="config_builder.html"><span class="doc">SpPrAn Configuration Builder</span></a> in the user’s default browser.</p>
+</section>
+<section id="running-an-analysis">
+<h2>Running an analysis<a class="headerlink" href="#running-an-analysis" title="Link to this heading"></a></h2>
+<p>Before an analysis can be launched, the desktop application requires a
+configuration file, an input directory, and an output directory. It then calls
+the same underlying SpPrAn analysis pipeline used by the command-line
+interface.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="config_builder.html" class="btn btn-neutral float-right" title="SpPrAn Configuration Builder" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
