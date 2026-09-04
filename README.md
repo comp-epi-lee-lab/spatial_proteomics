@@ -1,81 +1,156 @@
 # Spatial Proteomics Analysis (SpPrAn)
-A bioinformatic pipeline to analyze spatial proteomics samples data obtained via Visiopharm® using cell types defined by presence or abscent of protein markers.
 
----
-## Introduction
-This repository contains an end-to-end python-based pipeline for **processing and analyzing presence or abscent of protein markers in single cell spatial proteomics data**. The pipeline is designed for reproducible analysis using multiple objects outputs as inputs. Supports different cancer types as well as configurable protein markers and cell types via a YAML configuration file.
+**SpPrAn (Spatial Proteomics Analysis)** is a Python-based pipeline for analyzing single-cell spatial proteomics data exported from Visiopharm®. It classifies cells using user-defined protein-marker positivity rules, supports hierarchical cell subtypes, generates spatial phenotype maps, and reports cell-population counts and proportions.
 
-The primary use case is research-grade data analysis in an academic or translational research setting.
+SpPrAn is intended for research-grade analyses in cancer biology, tumor-microenvironment studies, and other academic or translational spatial proteomics applications.
 
----
-## Requirements
-- Python ≥ 3.10
+## Key features
 
-Additional dependencies are listed in:
-- `requirements.txt`
-
-This pipeline has been tested on macOS 26.1 (M2, RAM 8 GB) and macOS 15.7.2 (M4, RAM 32 GB).
-
----
-## Installation
-At this stage, the pipeline is intended to be run directly from the repository.
-```
-git clone https://github.com/comp-epi-lee-lab/spatial_proteomics.git
-cd spatial_proteomics
-pip install -r requirements.txt
-```
----
-
-## Configuration
-Pipeline parameters, input paths, and output locations are controlled through a YAML configuration file.
-1. Create a working configuration file:
-`cp config/config_example.yaml config/config.yaml`
-2. Edit `config/config.yaml` to specify:
-    - input data locations
-    - output directory
-    - analysis parameters
-
-The file `config_example.yaml` serves as a documented template and should not be edited directly.
-
-## Running the Pipeline
-
-Run the full end-to-end pipeline using:
-`python sppran --config config/config.yaml`
-Outputs will be written to the directory specified in the configuration file.
-
----
-## Expected Outputs
-The pipeline may generate:
-* AnnData files for easy generation of plots
-* Cell type proportion tables
-* Spatial plots featuring cell types
-
-Detailed descriptions of outputs are provided in the documentation.
+* Process multiple Visiopharm® object-level `.tsv` or `.csv` files in a single run.
+* Define major cell populations using positive, negative, or unconstrained protein markers.
+* Create hierarchical cell subtypes using additional marker rules.
+* Store annotated single-cell data as AnnData (`.h5ad`) files for downstream analysis.
+* Generate overview, highlighted, or custom spatial phenotype plots.
+* Calculate cell counts and percentages relative to both parent populations and all cells.
+* Visualize marker-defined cell-type and subtype hierarchies.
+* Create or edit YAML configuration files using the browser-based **SpPrAn Configuration Builder**.
+* Run the complete pipeline either from the command line or through the desktop graphical interface.
 
 ## Documentation
-A step-by-step description of the workflow is available (or forthcoming) on protocols.io, including guidance on expected inputs, runtime, and interpretation of results.
 
----
-## License
-***License pending institutional review**
+Full documentation is maintained in the `docs/` directory and is intended for publication through **Read the Docs**.
 
-This software is currently under review by the authors’ institution to determine the appropriate licensing terms. Until a license is formally specified, all rights are reserved.
+The documentation includes installation, command-line and desktop-app usage, configuration creation, use of the SpPrAn Configuration Builder, marker-based cell-type/subtype definitions, output interpretation, and Python API documentation.
 
-The code is shared for evaluation, review, and reproducibility of published research.
+<!-- Once the Read the Docs project is published, add the hosted documentation URL here. -->
 
-Please contact the corresponding author before any reuse, modification, or redistribution.
+## Ways to use SpPrAn
 
----
+### 1. Desktop application
+
+Precompiled desktop applications for **Windows** and **macOS** are distributed through GitHub Releases when available.
+
+The desktop application is intended for users who prefer not to install Python or work from the command line. It lets users create, edit, or open a configuration file, select input/output directories, launch the pipeline, and view runtime messages.
+
+The desktop application includes the **SpPrAn Configuration Builder**, which opens locally in the user's default web browser.
+
+> The Configuration Builder operates locally in the browser. Representative data files and folders selected through the builder are used only to read local column names or filenames needed for configuration; they are not uploaded to an external server.
+
+### 2. Python / command line
+
+Users who prefer direct access to the Python environment can clone and install the repository.
+
+## Requirements
+
+* Python >= 3.12
+
+Python dependencies are defined in `setup.py` and `requirements.txt`.
+
+## Installation from source
+
+```bash
+git clone https://github.com/comp-epi-lee-lab/spatial_proteomics.git
+cd spatial_proteomics
+python -m pip install -e .
+```
+
+This installs the package and makes the `sppran` command-line entry point available.
+
+## Configuration
+
+SpPrAn analyses are controlled by a YAML configuration file.
+
+### Configuration Builder
+
+Open `config_builder.html` in a web browser, or launch it from the desktop SpPrAn application.
+
+The builder can create a new configuration, restore/edit an existing YAML file, identify positivity columns from a representative `.tsv`/`.csv`, define major populations and nested subtypes, assign colors, configure AnnData/output behavior, configure spatial plotting, and preview/download the YAML file.
+
+### Manual YAML configuration
+
+A current template is provided at:
+
+```text
+config/config_example.yaml
+```
+
+Create a working copy:
+
+```bash
+cp config/config_example.yaml config/config.yaml
+```
+
+Then edit the copy for the intended dataset.
+
+## Running the pipeline
+
+```bash
+sppran --config config/config.yaml
+```
+
+Outputs are written to the directory specified under `workspace.output_dir`.
+
+## Input data
+
+SpPrAn is designed for object-level spatial proteomics tables exported from Visiopharm®. Input files are expected to contain one row per segmented cell/object and the positivity columns referenced by the configuration file.
+
+The biological interpretation of a SpPrAn population depends on the marker panel, staining performance, segmentation strategy, and positivity thresholds used upstream.
+
+## Expected outputs
+
+Depending on the configuration, SpPrAn can generate:
+
+* annotated AnnData (`.h5ad`) files;
+* primary cell-type annotations;
+* hierarchical subtype annotations;
+* cell-count and population-proportion tables;
+* percentages relative to parent populations and to all cells;
+* marker-definition and hierarchy information;
+* spatial overview plots;
+* population-highlighted spatial plots; and
+* cell-type/subtype hierarchy visualizations.
+
+Detailed output descriptions and interpretation guidance are provided in the documentation.
+
+## Interpretation
+
+SpPrAn assigns **marker-defined phenotypes**. These labels should not be interpreted as independent biological ground truth.
+
+For example:
+
+```text
+Immune cells
+└── T cells
+    └── CD8 T cells
+```
+
+represents nested marker-based phenotype definitions, not by itself a developmental lineage or differentiation trajectory.
+
 ## Citation
-If you use this pipeline for academic research, please cite:
-Zamora-Erazo, S., Franco-Barraza, J., Lee, H. **SpPrAn**: a Bioinformatics pipeline for multiple Spatial Proteomics Analyses. Preprint, 2025.
 
-(A formal software citation will be added once licensing is finalized.)
+A formal software citation will be provided with the associated SpPrAn publication.
 
-### Contact
-For questions, issues, or collaboration inquiries, please contact:
-- Sergio Zamora-Erazo     
-sergio.zamora-erazo@fccc.edu     
-Lee Lab, Cancer Epigenetics Institute     
-Fox Chase Cancer Center     
-Philadelphia, PA, USA     
+If SpPrAn is used in academic work before that citation is finalized, please contact the project authors ([Dr. Janusz Franco-Barraza](mailto:Janusz.FrancoBarraza@fccc.edu) for biological matters, [Dr. Hayan Lee](mailto:Hayan.Lee@fccc.edu) for computational matters, and [Dr. Sergio Zamora-Erazo](mailto:sergio.zamorae@gmail.com) for technical matters) for the preferred citation.
+
+Software authorship and publication authorship are not necessarily identical; final citation metadata can distinguish software contributors from authors of the associated scientific publication.
+
+## License
+
+**License pending**
+
+No open-source license has currently been granted for SpPrAn. Until licensing terms are formally specified, the source code remains subject to applicable copyright restrictions.
+
+The repository is publicly available for scientific transparency, evaluation, and reproducibility. Please contact the repository owner ([Dr. Hayan Lee](mailto:Hayan.Lee@fccc.edu)) before reuse, modification, redistribution, or incorporation into another software product.
+
+## Contributing and issues
+
+Bug reports, questions, and suggestions can be submitted through the GitHub Issues page.
+
+## Contact
+
+**Sergio Zamora-Erazo**
+<!-- Cukierman Lab, Greenberg Pancreatic Cancer Institute -->
+<!-- Lee Lab, Cancer Epigenetics Institute -->
+<!-- Fox Chase Cancer Center -->
+Philadelphia, PA, USA
+[sergio.zamorae@gmail.com](mailto:sergio.zamorae@gmail.com)
