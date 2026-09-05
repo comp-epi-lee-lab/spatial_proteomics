@@ -28,7 +28,7 @@ Documentation preview version is available [here](http://htmlpreview.github.io/?
 
 ### 1. Desktop application
 
-Pre-built desktop applications for **Windows** and **macOS** are available through (GitHub Releases)[https://github.com/comp-epi-lee-lab/spatial_proteomics/releases]. The current software releases are maintained by [Dr. Sergio Zamora-Erazo](mailto:sergio.zamorae@gmail.com).
+Pre-built desktop applications for **Windows** and **macOS** are available through [GitHub Releases](https://github.com/comp-epi-lee-lab/spatial_proteomics/releases). The current software releases are maintained by [Dr. Sergio Zamora-Erazo](mailto:sergio.zamorae@gmail.com).
 
 The desktop application is intended for users who prefer not to install Python or work from the command line. It lets users create, edit, or open a configuration file, select input/output directories, launch the pipeline, and view runtime messages.
 
