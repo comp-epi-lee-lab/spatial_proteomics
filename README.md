@@ -22,13 +22,13 @@ Full documentation is maintained in the `docs/` directory and is intended for pu
 
 The documentation includes installation, command-line and desktop-app usage, configuration creation, use of the SpPrAn Configuration Builder, marker-based cell-type/subtype definitions, output interpretation, and Python API documentation.
 
-<!-- Once the Read the Docs project is published, add the hosted documentation URL here. -->
+Documentation preview version is available [here](http://htmlpreview.github.io/?https://github.com/comp-epi-lee-lab/spatial_proteomics/blob/main/docs/_build/html/index.html).
 
 ## Ways to use SpPrAn
 
 ### 1. Desktop application
 
-Precompiled desktop applications for **Windows** and **macOS** are distributed through GitHub Releases when available.
+Pre-built desktop applications for **Windows** and **macOS** are available through GitHub Releases. The current software releases are maintained by [Dr. Sergio Zamora-Erazo](mailto:sergio.zamorae@gmail.com).
 
 The desktop application is intended for users who prefer not to install Python or work from the command line. It lets users create, edit, or open a configuration file, select input/output directories, launch the pipeline, and view runtime messages.
 
@@ -132,8 +132,6 @@ A formal software citation will be provided with the associated SpPrAn publicati
 
 If SpPrAn is used in academic work before that citation is finalized, please contact the project authors ([Dr. Janusz Franco-Barraza](mailto:Janusz.FrancoBarraza@fccc.edu) for biological matters, [Dr. Hayan Lee](mailto:Hayan.Lee@fccc.edu) for computational matters, and [Dr. Sergio Zamora-Erazo](mailto:sergio.zamorae@gmail.com) for technical matters) for the preferred citation.
 
-Software authorship and publication authorship are not necessarily identical; final citation metadata can distinguish software contributors from authors of the associated scientific publication.
-
 ## License
 
 **License pending**
@@ -148,9 +146,10 @@ Bug reports, questions, and suggestions can be submitted through the GitHub Issu
 
 ## Contact
 
-**Sergio Zamora-Erazo**
+**Sergio Zamora-Erazo, Ph.D.**
 <!-- Cukierman Lab, Greenberg Pancreatic Cancer Institute -->
 <!-- Lee Lab, Cancer Epigenetics Institute -->
 <!-- Fox Chase Cancer Center -->
 Philadelphia, PA, USA
+
 [sergio.zamorae@gmail.com](mailto:sergio.zamorae@gmail.com)

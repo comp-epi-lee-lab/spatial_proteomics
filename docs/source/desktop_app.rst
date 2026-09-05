@@ -8,11 +8,11 @@ Distribution
 ------------
 
 Packaged Windows and macOS applications are available through GitHub
-Releases. Current suported platforms:
+Releases. Current supported platforms:
 
-* Windows 11 (x86_64)
-* Windows 11 (ARM64)
-* macOS 26 (ARM64)
+* Windows 11 (x86_64 - 64-bit Intel or AMD processors)
+* Windows 11 (ARM64 / Copilot+ PCs)
+* macOS 26   (Apple Silicon: M1/M2/M3/M4)
 
 Main interface
 --------------

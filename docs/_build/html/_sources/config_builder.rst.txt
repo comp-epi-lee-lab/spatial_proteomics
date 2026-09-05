@@ -113,7 +113,7 @@ types and subtypes.
 each parent-child relationship, it can appear *Other* {``parent_name``} corresponding to the cells
 that belong to the parent but no to any of the children.
 
-Output and spatial plotting
+Settings 5. Output and spatial plotting
 ---------------------------
 
 Configure output overwriting, AnnData saving, plot type, DPI, point size, and
@@ -138,7 +138,7 @@ button for effectively save the assignations.
    This is the only option that needs to be saved through clicking a button; every other 
    setting update is automatically saved.
 
-Preview and download
+Settings 6. Preview and download
 --------------------
 
 Preview the generated configuration in the browser. Download it for use with either

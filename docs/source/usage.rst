@@ -20,8 +20,10 @@ Typical workflow
 
 #. Export object-level measurements from Visiopharm®.
 #. Create or update a YAML configuration.
-   #. Define biologically appropriate marker rules.
-   #. Add hierarchical subtypes where supported by the marker panel.
-   #. Select spatial plotting/output options.
+
+   * Define biologically appropriate marker rules.
+   * Add hierarchical subtypes where supported by the marker panel.
+   * Select spatial plotting/output options.
+
 #. Run SpPrAn from the desktop application or command line.
 #. Review population counts, hierarchy reports, and spatial maps.
