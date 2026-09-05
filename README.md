@@ -28,13 +28,46 @@ Documentation preview version is available [here](http://htmlpreview.github.io/?
 
 ### 1. Desktop application
 
-Pre-built desktop applications for **Windows** and **macOS** are available through GitHub Releases. The current software releases are maintained by [Dr. Sergio Zamora-Erazo](mailto:sergio.zamorae@gmail.com).
+Pre-built desktop applications for **Windows** and **macOS** are available through (GitHub Releases)[https://github.com/comp-epi-lee-lab/spatial_proteomics/releases]. The current software releases are maintained by [Dr. Sergio Zamora-Erazo](mailto:sergio.zamorae@gmail.com).
 
 The desktop application is intended for users who prefer not to install Python or work from the command line. It lets users create, edit, or open a configuration file, select input/output directories, launch the pipeline, and view runtime messages.
 
 The desktop application includes the **SpPrAn Configuration Builder**, which opens locally in the user's default web browser.
 
 > The Configuration Builder operates locally in the browser. Representative data files and folders selected through the builder are used only to read local column names or filenames needed for configuration; they are not uploaded to an external server.
+
+#### Download and startup
+
+Choose the build that matches your operating system and processor architecture:
+
+* **Windows — x86_64**
+  For 64-bit Intel or AMD processors.
+
+* **Windows — ARM64**
+  For ARM-based Windows devices, including Copilot+ PCs.
+
+* **macOS — Apple Silicon**
+  For Macs using M1, M2, M3, or M4 processors.
+
+### Windows
+
+1. Download the appropriate Windows ZIP file from the latest GitHub Release.
+2. Extract the contents of the ZIP file.
+3. Open the extracted folder.
+4. Double-click the SpPrAn GUI `.exe` file to launch the application.
+
+Windows may display a SmartScreen or security warning if the application is not digitally signed. Before continuing, verify that the application was downloaded from this project's official GitHub Releases page.
+
+### macOS
+
+1. Download the macOS Apple Silicon ZIP file from the latest GitHub Release.
+2. Extract the ZIP file.
+3. Open the extracted folder.
+4. Double-click the SpPrAn GUI `.app` file to launch the application.
+
+If macOS prevents the application from opening because the developer cannot be verified, open **System Settings → Privacy & Security** and choose **Open Anyway** for SpPrAn GUI.
+
+Only bypass this warning if the application was downloaded directly from this project's official GitHub Releases page.
 
 ### 2. Python / command line
 

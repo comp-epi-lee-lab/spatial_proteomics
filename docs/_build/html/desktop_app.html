@@ -47,6 +47,11 @@
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Desktop application</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#distribution">Distribution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#download-and-startup">Download and startup</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#windows-11">Windows 11</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#macos">macOS</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#main-interface">Main interface</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#configuration-builder">Configuration Builder</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#running-an-analysis">Running an analysis</a></li>
@@ -93,13 +98,63 @@
 prefer not to work from the command line.</p>
 <section id="distribution">
 <h2>Distribution<a class="headerlink" href="#distribution" title="Link to this heading"></a></h2>
-<p>Packaged Windows and macOS applications are available through GitHub
-Releases. Current supported platforms:</p>
-<ul class="simple">
+<p>Packaged Windows and macOS applications are available through <a class="reference external" href="https://github.com/comp-epi-lee-lab/spatial_proteomics/releases">GitHub
+Releases</a>. Current supported platforms:</p>
+<ul>
+<li><p><strong>v0.2.5-beta.1</strong>:</p>
+<blockquote>
+<div><ul class="simple">
 <li><p>Windows 11 (x86_64 - 64-bit Intel or AMD processors)</p></li>
 <li><p>Windows 11 (ARM64 / Copilot+ PCs)</p></li>
 <li><p>macOS 26   (Apple Silicon: M1/M2/M3/M4)</p></li>
 </ul>
+</div></blockquote>
+</li>
+</ul>
+</section>
+<section id="download-and-startup">
+<h2>Download and startup<a class="headerlink" href="#download-and-startup" title="Link to this heading"></a></h2>
+<p>Download the ZIP file corresponding to your operating system and processor architecture from the <strong>Assets</strong>
+section in GitHub Releases.</p>
+<section id="windows-11">
+<h3>Windows 11<a class="headerlink" href="#windows-11" title="Link to this heading"></a></h3>
+<ol class="arabic">
+<li><p>Download the appropriate Windows ZIP file:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Windows-x86_64 for 64-bit Intel or AMD processors</p></li>
+<li><p>Windows-ARM64 for ARM-based Windows devices</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>Extract the contents of the ZIP file to a folder.</p></li>
+<li><p>Open the extracted folder.</p></li>
+<li><p>Double-click the SpPrAn GUI executable (.exe) to start the application.</p></li>
+</ol>
+<p>Windows may display a security or SmartScreen warning because this beta build is not distributed through the
+Microsoft Store and may not be digitally signed. If this occurs, verify that you downloaded the application
+from this official GitHub Releases page before choosing to continue.</p>
+</section>
+<section id="macos">
+<h3>macOS<a class="headerlink" href="#macos" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p>Download the macOS-arm64 ZIP file.</p></li>
+<li><p>Extract the ZIP file.</p></li>
+<li><p>Open the extracted folder.</p></li>
+<li><p>Double-click the SpPrAn GUI application (.app) to start it.</p></li>
+</ol>
+<p>Because this beta build may not yet be notarized or digitally signed by Apple, macOS may prevent the application
+from opening the first time.</p>
+<p>If macOS reports that the application cannot be opened because the developer cannot be verified, you can open
+System Settings → Privacy &amp; Security, locate the message referring to SpPrAn GUI, and choose Open Anyway.</p>
+<p>Only bypass this warning if you downloaded the application directly from this project’s official GitHub Releases
+page.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The first time it is started, the application takes about 1-2 minutes to fully load on any OS due to the
+creation of cache data from the Matplotlib library. After that, the startup should take seconds.</p>
+</div>
+</section>
 </section>
 <section id="main-interface">
 <h2>Main interface<a class="headerlink" href="#main-interface" title="Link to this heading"></a></h2>
