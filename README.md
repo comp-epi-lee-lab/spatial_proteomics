@@ -18,11 +18,9 @@ SpPrAn is intended for research-grade analyses in cancer biology, tumor-microenv
 
 ## Documentation
 
-Full documentation is maintained in the `docs/` directory and is intended for publication through **Read the Docs**.
+SpPrAn documentation includes download and startup, command-line and desktop-app usage, configuration creation, use of the SpPrAn Configuration Builder, marker-based cell-type/subtype definitions, output interpretation, and Python API documentation.
 
-The documentation includes installation, command-line and desktop-app usage, configuration creation, use of the SpPrAn Configuration Builder, marker-based cell-type/subtype definitions, output interpretation, and Python API documentation.
-
-Documentation preview version is available [here](http://htmlpreview.github.io/?https://github.com/comp-epi-lee-lab/spatial_proteomics/blob/main/docs/_build/html/index.html).
+Documentation is available here: https://sppran.readthedocs.io/en/latest/.
 
 ## Ways to use SpPrAn
 
