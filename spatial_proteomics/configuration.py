@@ -38,6 +38,8 @@ CUSTOM_PLOT_TYPES = {"none", "all", "highlight", "overview",}
 # Add other supported values here if SPPRAN accepts more orientations.
 ARROWS_ORIENTATIONS = {"contains", "isContained",}
 
+ANALYSIS_TYPES = {"supervised", "unsupervised", "full",}
+
 
 class ConfigValidationError(ValueError):
     """
@@ -181,6 +183,23 @@ def _check_yaml(config: Any) -> dict:
     else:
         workspace["filetype"] = workspace["filetype"].lower().strip()
         if workspace["filetype"] not in WORKSPACE_FILETYPES: error(f"'workspace.filetype' must be either 'tsv' or 'csv', got {workspace['filetype']!r}.")
+
+    # ========== type_of_analysis ==========
+    # Older configuration files predate this setting and correspond to the
+    # supervised pipeline, so missing/invalid values fall back to supervised.
+    if "type_of_analysis" not in config or config["type_of_analysis"] is None:
+        warning("'type_of_analysis' is missing. Defaulting to 'supervised'.")
+        config["type_of_analysis"] = "supervised"
+    elif not isinstance(config["type_of_analysis"], str):
+        warning(f"'type_of_analysis' must be one of {sorted(ANALYSIS_TYPES)}, got {config['type_of_analysis']!r}. Defaulting to 'supervised'.")
+        config["type_of_analysis"] = "supervised"
+    else:
+        config["type_of_analysis"] = config["type_of_analysis"].lower().strip()
+        if config["type_of_analysis"] not in ANALYSIS_TYPES:
+            warning(f"'type_of_analysis' must be one of {sorted(ANALYSIS_TYPES)}, got {config['type_of_analysis']!r}. Defaulting to 'supervised'.")
+            config["type_of_analysis"] = "supervised"
+
+    type_of_analysis = config["type_of_analysis"]
 
     # ========== protein_markers ==========
     protein_markers = config.get("protein_markers")
@@ -357,73 +376,272 @@ def _check_yaml(config: Any) -> dict:
 
             for root in root_cell_types: validate_branch(root, set(primary_markers), [root])
 
-    # ========== spatial_plot ==========
-    spatial_plot = config.get("spatial_plot")
-
-    if spatial_plot is None: error("'spatial_plot' setting is missing.")
-    elif not isinstance(spatial_plot, dict): error(f"'spatial_plot' must be a dictionary, got {type(spatial_plot).__name__}.")
-    else:
-        # The supplied YAML uses "plot_options". "spatial_options" is
-        # accepted as a backwards-compatible alias.
-        if "plot_options" not in spatial_plot and "spatial_options" in spatial_plot:
-            spatial_plot["plot_options"] = spatial_plot.pop("spatial_options")
-            warning("'spatial_options' was renamed to 'plot_options' to match the configuration schema.")
-
-        if "plot_options" not in spatial_plot:
-            warning("'spatial_plot.plot_options' is missing. Defaulting to 'all'.")
-            spatial_plot["plot_options"] = "all"
-
-        plot_option = spatial_plot["plot_options"]
-
-        if not isinstance(plot_option, str) or plot_option not in PLOT_OPTIONS: error(f"'spatial_plot.plot_options' must be one of {sorted(PLOT_OPTIONS)}, got {plot_option!r}.")
-
-        if "custom_plot" not in spatial_plot or spatial_plot["custom_plot"] is None: spatial_plot["custom_plot"] = []
-
-        custom_plot = spatial_plot["custom_plot"]
-
-        if not isinstance(custom_plot, list): error(f"'spatial_plot.custom_plot' must be a list, got {type(custom_plot).__name__}.")
+    # ========== Unsupervised-analysis settings ==========
+    # These settings are required/validated only when the selected analysis is
+    # unsupervised. This preserves compatibility with supervised/full configs.
+    if type_of_analysis in {"unsupervised", "full"}:
+        # ---------- cell_types_to_explore ----------
+        cell_types_to_explore = config.get("cell_types_to_explore")
+        if cell_types_to_explore is None:
+            error("'cell_types_to_explore' setting is required when 'type_of_analysis' is 'unsupervised' or 'full.")
+            cell_types_to_explore = []
+        elif not isinstance(cell_types_to_explore, list):
+            error(f"'cell_types_to_explore' must be a list, got {type(cell_types_to_explore).__name__}.")
+            cell_types_to_explore = []
         else:
-            if plot_option == "custom" and not custom_plot:
-                warning("'spatial_plot.plot_options' is 'custom', but 'custom_plot' is empty. Changing plot_options to 'none'.")
-                spatial_plot["plot_options"] = "none"
-            elif plot_option != "custom" and custom_plot: warning("'spatial_plot.custom_plot' contains entries, but plot_options is not 'custom'. Custom entries will not normally be used.")
-
-            seen_files: set[str] = set()
-            filetype = workspace.get("filetype")
-
-            for index, item in enumerate(custom_plot):
-                if not isinstance(item, dict):
-                    error(f"'spatial_plot.custom_plot[{index}]' must be a dictionary, got {type(item).__name__}.")
+            if not cell_types_to_explore: error("'cell_types_to_explore' must contain at least one cell type.")
+            seen_cell_types: set[str] = set()
+            for index, cell_type in enumerate(cell_types_to_explore):
+                if not isinstance(cell_type, str):
+                    error(f"'cell_types_to_explore[{index}]' must be a string naming a key from 'cell_types', got {type(cell_type).__name__}.")
                     continue
+                if cell_type not in cell_types: error(f"Cell type {cell_type!r} in 'cell_types_to_explore' is not a key in 'cell_types'.")
+                if cell_type in seen_cell_types: error(f"Cell type {cell_type!r} appears more than once in 'cell_types_to_explore'.")
+                seen_cell_types.add(cell_type)
 
-                expected_keys = {"fileName", "type"}
-                if set(item) != expected_keys: error(f"'spatial_plot.custom_plot[{index}]' must contain exactly the keys 'fileName' and 'type'.")
+        # ---------- cell_types_to_explore_short_name ----------
+        short_cell_names = config.get("cell_types_to_explore_short_name")
+        if short_cell_names is None:
+            error("'cell_types_to_explore_short_name' setting is required when 'type_of_analysis' is 'unsupervised' or 'full.")
+            short_cell_names = []
+        elif not isinstance(short_cell_names, list):
+            error(f"'cell_types_to_explore_short_name' must be a list, got {type(short_cell_names).__name__}.")
+            short_cell_names = []
+        else:
+            normalized_short_names: list[str] = []
+            seen_short_names: set[str] = set()
+            for index, short_name in enumerate(short_cell_names):
+                if isinstance(short_name, bool) or not isinstance(short_name, (str, int, float)):
+                    error(f"'cell_types_to_explore_short_name[{index}]' must be a string, got {type(short_name).__name__}.")
+                    continue
+                short_name = str(short_name).strip()
+                if not short_name:
+                    error(f"'cell_types_to_explore_short_name[{index}]' must not be empty.")
+                    continue
+                normalized_short_names.append(short_name)
+                if short_name in seen_short_names: error(f"Short name {short_name!r} appears more than once in 'cell_types_to_explore_short_name'.")
+                seen_short_names.add(short_name)
+            if len(normalized_short_names) == len(short_cell_names): config["cell_types_to_explore_short_name"] = normalized_short_names
 
-                file_name = item.get("fileName")
-                custom_type = item.get("type")
+        if isinstance(cell_types_to_explore, list) and isinstance(short_cell_names, list) and len(cell_types_to_explore) != len(short_cell_names):
+            error("'cell_types_to_explore' and 'cell_types_to_explore_short_name' must contain the same number of elements.")
 
-                if not isinstance(file_name, str) or not file_name.strip(): error(f"'spatial_plot.custom_plot[{index}].fileName' must be a non-empty string.")
-                else:
-                    file_name = file_name.strip()
-                    if "_objects" not in Path(file_name).stem: error(f"Custom plot file {file_name!r} must contain '_objects' in its filename.")
-                    if filetype in WORKSPACE_FILETYPES:
-                        expected_extension = f".{filetype}"
-                        if Path(file_name).suffix.lower() != expected_extension: error(f"Custom plot file {file_name!r} must use {expected_extension!r} to match 'workspace.filetype'.")
-                        else:
-                            if input_dir_checked is not None and not Path(input_dir_checked / file_name).is_file(): error(f"Custom plot file {file_name!r} does not exist or is misspelled.")
-                    if file_name in seen_files: error(f"Custom plot file {file_name!r} appears more than once.")
-                    seen_files.add(file_name)
+        # ---------- want_to_plot_pie_plots ----------
+        if "want_to_plot_pie_plots" not in config or config["want_to_plot_pie_plots"] is None:
+            config["want_to_plot_pie_plots"] = False
+        elif type(config["want_to_plot_pie_plots"]) is not bool:
+            error(f"'want_to_plot_pie_plots' must be true or false, got {config['want_to_plot_pie_plots']!r}.")
 
-                if (not isinstance(custom_type, str) or custom_type not in CUSTOM_PLOT_TYPES):
-                    error(f"'spatial_plot.custom_plot[{index}].type' must be one of {sorted(CUSTOM_PLOT_TYPES)}, got {custom_type!r}.")
+        # ---------- exploratory protein markers + short names ----------
+        exploratory_markers = config.get("exploratory_protein_markers")
+        if exploratory_markers is None:
+            error("'exploratory_protein_markers' setting is required when 'type_of_analysis' is 'unsupervised' or 'full.")
+            exploratory_markers = []
+        elif not isinstance(exploratory_markers, list):
+            error(f"'exploratory_protein_markers' must be a list, got {type(exploratory_markers).__name__}.")
+            exploratory_markers = []
+        else:
+            if not exploratory_markers: error("'exploratory_protein_markers' must contain at least one protein marker.")
+            normalized_exploratory_markers: list[str] = []
+            seen_exploratory_markers: set[str] = set()
+            for index, marker in enumerate(exploratory_markers):
+                if isinstance(marker, bool) or not isinstance(marker, (str)):
+                    error(f"'exploratory_protein_markers[{index}]' must be a string, got {type(marker).__name__}.")
+                    continue
+                marker = str(marker).strip()
+                normalized_exploratory_markers.append(marker)
+                if not _valid_marker_name(marker): error(f"Exploratory protein marker {marker!r} is not valid.")
+                if marker in seen_exploratory_markers: error(f"Exploratory protein marker {marker!r} appears more than once in 'exploratory_protein_markers'.")
+                seen_exploratory_markers.add(marker)
+            if len(normalized_exploratory_markers) == len(exploratory_markers):
+                exploratory_markers = normalized_exploratory_markers
+                config["exploratory_protein_markers"] = normalized_exploratory_markers
 
-        if "dpi" in spatial_plot:
-            dpi = spatial_plot["dpi"]
-            if (isinstance(dpi, bool) or not isinstance(dpi, (int, float)) or dpi <= 0): error("'spatial_plot.dpi' must be a positive number.")
+        exploratory_short_names = config.get("exploratory_protein_markers_short_name")
+        if exploratory_short_names is None:
+            error("'exploratory_protein_markers_short_name' setting is required when 'type_of_analysis' is 'unsupervised' or 'full.")
+            exploratory_short_names = []
+        elif not isinstance(exploratory_short_names, list):
+            error(f"'exploratory_protein_markers_short_name' must be a list, got {type(exploratory_short_names).__name__}.")
+            exploratory_short_names = []
+        else:
+            normalized_marker_short_names: list[str] = []
+            seen_marker_short_names: set[str] = set()
+            for index, short_name in enumerate(exploratory_short_names):
+                if isinstance(short_name, bool) or not isinstance(short_name, (str, int, float)):
+                    error(f"'exploratory_protein_markers_short_name[{index}]' must be a string, got {type(short_name).__name__}.")
+                    continue
+                short_name = str(short_name).strip()
+                if not short_name:
+                    error(f"'exploratory_protein_markers_short_name[{index}]' must not be empty.")
+                    continue
+                normalized_marker_short_names.append(short_name)
+                if short_name in seen_marker_short_names: error(f"Short name {short_name!r} appears more than once in 'exploratory_protein_markers_short_name'.")
+                seen_marker_short_names.add(short_name)
+            if len(normalized_marker_short_names) == len(exploratory_short_names): config["exploratory_protein_markers_short_name"] = normalized_marker_short_names
 
-        if "scatter_point_size" in spatial_plot:
-            point_size = spatial_plot["scatter_point_size"]
-            if (isinstance(point_size, bool) or not isinstance(point_size, (int, float)) or point_size <= 0): error("'spatial_plot.scatter_point_size' must be a positive number.")
+        if isinstance(exploratory_markers, list) and isinstance(exploratory_short_names, list) and len(exploratory_markers) != len(exploratory_short_names):
+            error("'exploratory_protein_markers' and 'exploratory_protein_markers_short_name' must contain the same number of elements.")
+
+        # ---------- dict_ctrl / dict_trtmnt ----------
+        # None means that the optional two-group comparison is disabled. If one
+        # dictionary is populated, the other one must be populated as well.
+        comparison_dicts: dict[str, dict[str, str] | None] = {}
+        comparison_files: dict[str, set[str]] = {}
+        comparison_labels: dict[str, str | None] = {}
+        filetype = workspace.get("filetype")
+
+        # Names already carrying biological meaning should not be reused as
+        # group labels, because downstream plots/tables could become ambiguous.
+        reserved_names = {name.casefold() for name in (set(cell_types) | all_children | primary_markers) if isinstance(name, str)}
+        reserved_names.update(name.casefold() for name in config.get("cell_types_to_explore_short_name", []) if isinstance(name, str))
+        reserved_names.update(name.casefold() for name in config.get("exploratory_protein_markers_short_name", []) if isinstance(name, str))
+        reserved_names.add("other cells")
+
+        for dict_name in ("dict_ctrl", "dict_trtmnt"):
+            if dict_name not in config:
+                config[dict_name] = None
+            group_dict = config.get(dict_name)
+            if group_dict == {}:
+                warning(f"'{dict_name}' is empty. Changing it to null/None.")
+                config[dict_name] = None
+                group_dict = None
+
+            if group_dict is not None and not isinstance(group_dict, dict):
+                error(f"'{dict_name}' must be a dictionary or null, got {type(group_dict).__name__}.")
+                group_dict = None
+
+            comparison_dicts[dict_name] = group_dict
+            comparison_files[dict_name] = set()
+            comparison_labels[dict_name] = None
+
+            if isinstance(group_dict, dict):
+                labels: set[str] = set()
+                for file_name, group_label in group_dict.items():
+                    if not isinstance(file_name, str) or not file_name.strip():
+                        error(f"Keys in '{dict_name}' must be non-empty filename strings, got {file_name!r}.")
+                    else:
+                        file_name = file_name.strip()
+                        if "_objects" not in Path(file_name).stem: error(f"File {file_name!r} in '{dict_name}' must contain '_objects' in its filename.")
+                        if filetype in WORKSPACE_FILETYPES:
+                            expected_extension = f".{filetype}"
+                            if Path(file_name).suffix.lower() != expected_extension:
+                                error(f"File {file_name!r} in '{dict_name}' must use {expected_extension!r} to match 'workspace.filetype'.")
+                            elif input_dir_checked is not None and not Path(input_dir_checked / file_name).is_file():
+                                error(f"File {file_name!r} in '{dict_name}' does not exist or is misspelled.")
+                        comparison_files[dict_name].add(file_name)
+
+                    if not isinstance(group_label, str) or not group_label.strip():
+                        error(f"Values in '{dict_name}' must be the same non-empty string, got {group_label!r} for {file_name!r}.")
+                    else:
+                        group_label = group_label.strip()
+                        labels.add(group_label)
+                        if group_label.casefold() in reserved_names:
+                            error(f"Group label {group_label!r} in '{dict_name}' conflicts with a cell type, cell subtype, protein marker, or configured short name.")
+
+                if len(labels) > 1: error(f"All values in '{dict_name}' must be the same string, got {sorted(labels)}.")
+                elif len(labels) == 1: comparison_labels[dict_name] = next(iter(labels))
+
+        ctrl = comparison_dicts["dict_ctrl"]
+        trtmnt = comparison_dicts["dict_trtmnt"]
+        if (ctrl is None) != (trtmnt is None):
+            error("'dict_ctrl' and 'dict_trtmnt' must either both be null or both contain at least one sample.")
+        elif isinstance(ctrl, dict) and isinstance(trtmnt, dict):
+            overlap = comparison_files["dict_ctrl"] & comparison_files["dict_trtmnt"]
+            if overlap: error("Samples cannot appear in both 'dict_ctrl' and 'dict_trtmnt': " + ", ".join(sorted(overlap)) + ".")
+            ctrl_label = comparison_labels["dict_ctrl"]
+            trtmnt_label = comparison_labels["dict_trtmnt"]
+            if ctrl_label is not None and trtmnt_label is not None and ctrl_label.casefold() == trtmnt_label.casefold():
+                error("'dict_ctrl' and 'dict_trtmnt' must use different group labels.")
+
+        # ---------- protein_markers_for_intensity ----------
+        if "protein_markers_for_intensity" not in config or config["protein_markers_for_intensity"] is None:
+            config["protein_markers_for_intensity"] = []
+        intensity_markers = config["protein_markers_for_intensity"]
+        if not isinstance(intensity_markers, list):
+            error(f"'protein_markers_for_intensity' must be a list, got {type(intensity_markers).__name__}.")
+        else:
+            normalized_intensity_markers: list[str] = []
+            seen_intensity_markers: set[str] = set()
+            for index, marker in enumerate(intensity_markers):
+                if isinstance(marker, bool) or not isinstance(marker, (str)):
+                    error(f"'protein_markers_for_intensity[{index}]' must be a string or number, got {type(marker).__name__}.")
+                    continue
+                marker = str(marker).strip()
+                normalized_intensity_markers.append(marker)
+                if not _valid_marker_name(marker): error(f"Protein marker {marker!r} in 'protein_markers_for_intensity' is not valid.")
+                if marker in seen_intensity_markers: error(f"Protein marker {marker!r} appears more than once in 'protein_markers_for_intensity'.")
+                seen_intensity_markers.add(marker)
+            if len(normalized_intensity_markers) == len(intensity_markers): config["protein_markers_for_intensity"] = normalized_intensity_markers
+
+    # ========== spatial_plot ==========
+    if type_of_analysis in {"supervised"}:
+        spatial_plot = config.get("spatial_plot")
+
+        if spatial_plot is None: error("'spatial_plot' setting is missing.")
+        elif not isinstance(spatial_plot, dict): error(f"'spatial_plot' must be a dictionary, got {type(spatial_plot).__name__}.")
+        else:
+            # The supplied YAML uses "plot_options". "spatial_options" is
+            # accepted as a backwards-compatible alias.
+            if "plot_options" not in spatial_plot and "spatial_options" in spatial_plot:
+                spatial_plot["plot_options"] = spatial_plot.pop("spatial_options")
+                warning("'spatial_options' was renamed to 'plot_options' to match the configuration schema.")
+
+            if "plot_options" not in spatial_plot:
+                warning("'spatial_plot.plot_options' is missing. Defaulting to 'all'.")
+                spatial_plot["plot_options"] = "all"
+
+            plot_option = spatial_plot["plot_options"]
+
+            if not isinstance(plot_option, str) or plot_option not in PLOT_OPTIONS: error(f"'spatial_plot.plot_options' must be one of {sorted(PLOT_OPTIONS)}, got {plot_option!r}.")
+
+            if "custom_plot" not in spatial_plot or spatial_plot["custom_plot"] is None: spatial_plot["custom_plot"] = []
+
+            custom_plot = spatial_plot["custom_plot"]
+
+            if not isinstance(custom_plot, list): error(f"'spatial_plot.custom_plot' must be a list, got {type(custom_plot).__name__}.")
+            else:
+                if plot_option == "custom" and not custom_plot:
+                    warning("'spatial_plot.plot_options' is 'custom', but 'custom_plot' is empty. Changing plot_options to 'none'.")
+                    spatial_plot["plot_options"] = "none"
+                elif plot_option != "custom" and custom_plot: warning("'spatial_plot.custom_plot' contains entries, but plot_options is not 'custom'. Custom entries will not normally be used.")
+
+                seen_files: set[str] = set()
+                filetype = workspace.get("filetype")
+
+                for index, item in enumerate(custom_plot):
+                    if not isinstance(item, dict):
+                        error(f"'spatial_plot.custom_plot[{index}]' must be a dictionary, got {type(item).__name__}.")
+                        continue
+
+                    expected_keys = {"fileName", "type"}
+                    if set(item) != expected_keys: error(f"'spatial_plot.custom_plot[{index}]' must contain exactly the keys 'fileName' and 'type'.")
+
+                    file_name = item.get("fileName")
+                    custom_type = item.get("type")
+
+                    if not isinstance(file_name, str) or not file_name.strip(): error(f"'spatial_plot.custom_plot[{index}].fileName' must be a non-empty string.")
+                    else:
+                        file_name = file_name.strip()
+                        if "_objects" not in Path(file_name).stem: error(f"Custom plot file {file_name!r} must contain '_objects' in its filename.")
+                        if filetype in WORKSPACE_FILETYPES:
+                            expected_extension = f".{filetype}"
+                            if Path(file_name).suffix.lower() != expected_extension: error(f"Custom plot file {file_name!r} must use {expected_extension!r} to match 'workspace.filetype'.")
+                            else:
+                                if input_dir_checked is not None and not Path(input_dir_checked / file_name).is_file(): error(f"Custom plot file {file_name!r} does not exist or is misspelled.")
+                        if file_name in seen_files: error(f"Custom plot file {file_name!r} appears more than once.")
+                        seen_files.add(file_name)
+
+                    if (not isinstance(custom_type, str) or custom_type not in CUSTOM_PLOT_TYPES):
+                        error(f"'spatial_plot.custom_plot[{index}].type' must be one of {sorted(CUSTOM_PLOT_TYPES)}, got {custom_type!r}.")
+
+            if "dpi" in spatial_plot:
+                dpi = spatial_plot["dpi"]
+                if (isinstance(dpi, bool) or not isinstance(dpi, (int, float)) or dpi <= 0): error("'spatial_plot.dpi' must be a positive number.")
+
+            if "scatter_point_size" in spatial_plot:
+                point_size = spatial_plot["scatter_point_size"]
+                if (isinstance(point_size, bool) or not isinstance(point_size, (int, float)) or point_size <= 0): error("'spatial_plot.scatter_point_size' must be a positive number.")
 
     # ========== custom_colors ==========
     custom_colors = config.get("custom_colors")

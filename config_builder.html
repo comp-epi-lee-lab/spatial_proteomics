@@ -147,6 +147,31 @@ button:disabled { opacity: .55; cursor: not-allowed; }
   .fixed-button { flex-basis: 100%; }
   .subtype-list-item { margin-left: 0; }
 }
+
+.mode-selection { max-width: 980px; margin: 28px auto; }
+.mode-selection h2 { margin: 0 0 8px; text-align: center; }
+.mode-selection > p { text-align: center; color: var(--muted); margin: 0 auto 22px; max-width: 760px; }
+.mode-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.mode-card { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); padding: 26px; text-align: left; cursor: pointer; transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease; }
+.mode-card:hover { transform: translateY(-2px); border-color: #8cb9ea; box-shadow: 0 8px 30px rgba(31,35,40,.10); }
+.mode-card h3 { margin: 0 0 8px; font-size: 1.25rem; }
+.mode-card p { margin: 0; color: var(--muted); font-weight: 400; }
+.mode-card .mode-tag { display: inline-block; margin-bottom: 12px; padding: 4px 9px; border-radius: 999px; background: #ddf4ff; color: #0550ae; font-size: .78rem; font-weight: 700; }
+.mode-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 0 0 10px; padding: 13px 16px; background: #eef6ff; border: 1px solid #c9e2ff; border-radius: 12px; }
+.mode-header h2 { margin: 0; font-size: 1.15rem; }
+.mode-header p { margin: 2px 0 0; color: var(--muted); font-size: .88rem; }
+.required-star { color: var(--danger); font-weight: 800; }
+.unsup-short-grid { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(180px, .7fr); gap: 12px; align-items: center; padding: 9px 0; border-top: 1px solid var(--border-soft); }
+.unsup-short-grid:first-child { border-top: 0; }
+.unsup-cell-card { border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-top: 12px; background: #fff; }
+.unsup-cell-header { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(150px, .65fr) auto auto; gap: 10px; align-items: end; }
+.option-card { border: 1px solid var(--border); border-radius: 10px; padding: 14px; background: var(--surface-soft); }
+.option-card label { display: flex; align-items: flex-start; gap: 9px; margin: 0; cursor: pointer; }
+.option-card input[type="checkbox"] { margin-top: 4px; }
+.group-name-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 12px; }
+.unsup-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+@media (max-width: 820px) { .mode-cards, .group-name-row { grid-template-columns: 1fr; } .unsup-cell-header { grid-template-columns: 1fr; } .unsup-short-grid { grid-template-columns: 1fr; } }
+
 </style>
 </head>
 <body>
@@ -157,6 +182,29 @@ button:disabled { opacity: .55; cursor: not-allowed; }
     <p>Create, restore, and edit a configuration file for the SpPrAn spatial proteomics pipeline.</p>
   </header>
 
+
+  <section id="modeSelectionView" class="mode-selection">
+    <h2>Select analysis mode</h2>
+    <p>Choose how SpPrAn should define cell populations for this configuration. You can return to this screen later without losing the settings already entered in either mode.</p>
+    <div class="mode-cards">
+      <button type="button" class="mode-card" id="chooseSupervisedMode">
+        <span class="mode-tag">Current workflow</span>
+        <h3>Supervised mode</h3>
+        <p>User defines cell types and subtypes using protein markers.</p>
+      </button>
+      <button type="button" class="mode-card" id="chooseUnsupervisedMode">
+        <span class="mode-tag">Discovery workflow</span>
+        <h3>Unsupervised mode</h3>
+        <p>User defines major cell types using protein markers, while cell subtypes are discovered from protein-marker patterns.</p>
+      </button>
+    </div>
+  </section>
+
+  <div id="supervisedView" hidden>
+    <div class="mode-header">
+      <div><h2>Supervised mode</h2><p>Define cell types and subtypes directly from protein-marker rules.</p></div>
+      <button type="button" class="back-to-modes">← Change mode</button>
+    </div>
   <form id="mainForm" onsubmit="return false;">
     <section class="panel">
       <div class="panel-heading">
@@ -307,6 +355,123 @@ button:disabled { opacity: .55; cursor: not-allowed; }
       <pre id="yamlPreview" class="yaml-preview">(click “Preview configuration file")</pre>
     </section>
   </form>
+
+  </div>
+
+  <div id="unsupervisedView" hidden>
+    <div class="mode-header">
+      <div><h2>Unsupervised mode</h2><p>Define major cell types, then configure phenotype discovery and optional exploratory outputs.</p></div>
+      <button type="button" class="back-to-modes">← Change mode</button>
+    </div>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <div><h2>Restore or start</h2><p>Load an existing unsupervised configuration or provide a representative data file to identify all available positivity columns.</p></div>
+        <span class="step-badge">1</span>
+      </div>
+      <div class="grid">
+        <div class="field">
+          <label for="unsupYamlFile">Existing configuration file</label>
+          <input type="file" id="unsupYamlFile" accept=".yaml,.yml,text/yaml,application/x-yaml" />
+          <div id="unsupYamlImportStatus" class="status-box multiline-status" hidden aria-live="polite"></div>
+        </div>
+        <div class="field">
+          <label for="unsupMarkerFile">Representative TSV or CSV file</label>
+          <input type="file" id="unsupMarkerFile" accept=".tsv,.csv,text/tab-separated-values,text/csv" />
+          <p class="small">The file is read locally only to identify positivity-column names.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <div><h2>Workspace</h2><p>Provide paths if desired and select the common input-file format.</p></div>
+        <span class="step-badge">2</span>
+      </div>
+      <div class="grid three">
+        <div class="field"><label for="unsup_input_dir">Input directory</label><input id="unsup_input_dir" type="text" placeholder="Example: /Users/username/input_files" /></div>
+        <div class="field"><label for="unsup_output_dir">Output directory</label><input id="unsup_output_dir" type="text" placeholder="Example: /Users/username/output_files" /></div>
+        <div class="field"><label for="unsup_filetype">Input-file format</label><select id="unsup_filetype"><option value="csv">csv</option><option value="tsv">tsv</option></select></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <div><h2>Protein markers</h2><p>Select the markers used to define major cell types, and review the suggested short names for all detected positivity markers.</p></div>
+        <span class="step-badge">3</span>
+      </div>
+      <div id="unsupPrimaryMarkerSelector" class="marker-selector"></div>
+      <div id="unsupPrimaryMarkerList"></div>
+      <h3>Protein-marker short names <span class="required-star">*</span></h3>
+      <p class="help">A short name is required for every detected protein marker. Suggested names can be edited before downloading.</p>
+      <div id="unsupMarkerShortNames" class="list-item"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <div><h2>Cell types to explore</h2><p>Define the major cell types using the selected markers. Every cell type also requires a short name for downstream phenotype labels.</p></div>
+        <span class="step-badge">4</span>
+      </div>
+      <div class="row">
+        <div class="field"><label for="unsupNewCellType">Add a cell type</label><input id="unsupNewCellType" type="text" placeholder="Example: T cells" /></div>
+        <div class="fixed-button"><button id="unsupAddCellType" type="button" class="primary">Add cell type</button></div>
+      </div>
+      <div id="unsupCellTypesList"></div>
+      <div class="status-box"><div class="color-control"><label for="unsupOtherCellsColor"><h3>Other cells color</h3></label><input id="unsupOtherCellsColor" type="color" value="#a3a3a3" /></div></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <div><h2>Phenotype discovery</h2><p>Choose how broadly SpPrAn should search for marker-defined phenotypes within the cell types above.</p></div>
+        <span class="step-badge">5</span>
+      </div>
+      <div class="option-card">
+        <label><input type="checkbox" id="unsupFullPhenotype" /><span><strong>Full phenotype discovery</strong><br><span class="small">Discover all marker-defined phenotypes within each selected cell type, save them as subtypes, and then continue with the standard supervised analysis workflow.</span></span></label>
+      </div>
+      <div class="grid" style="margin-top:16px;">
+        <div class="field"><label for="unsupWantPie">Plot cell-type proportion pie plots?</label><select id="unsupWantPie"><option value="false">No</option><option value="true">Yes</option></select><p class="small">When enabled, SpPrAn will generate pie plots showing the proportion of major cell types in each sample.</p></div>
+        <div class="field"><label for="unsup_overwrite_existing_files">Overwrite existing outputs?</label><select id="unsup_overwrite_existing_files"><option value="false">No</option><option value="true">Yes</option></select></div>
+        <div class="field"><label for="unsup_locally_save_anndata_files">Save AnnData files?</label><select id="unsup_locally_save_anndata_files"><option value="true">Yes</option><option value="false">No</option></select></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <div><h2>Group-comparison analysis</h2><p>Optionally assign samples to two groups to compare discovered phenotypes between them. Samples may also remain unassigned.</p></div>
+        <span class="step-badge">6</span>
+      </div>
+      <div class="group-name-row">
+        <div class="field"><label for="unsupControlName">Group 1 name</label><input id="unsupControlName" type="text" value="Control" /></div>
+        <div class="field"><label for="unsupTreatmentName">Group 2 name</label><input id="unsupTreatmentName" type="text" value="Treatment" /></div>
+      </div>
+      <label class="small" for="unsupGroupFolder">Select input folder</label>
+      <input type="file" id="unsupGroupFolder" webkitdirectory directory multiple />
+      <p class="small">Files are read locally only to obtain matching filenames. Each file can belong to one group or remain unassigned.</p>
+      <table class="matrix-table" id="unsupGroupTable">
+        <thead><tr><th>File name</th><th id="unsupControlHeader">Control</th><th id="unsupTreatmentHeader">Treatment</th><th>Unassigned</th></tr></thead>
+        <tbody id="unsupGroupTableBody"></tbody>
+      </table>
+      <p id="unsupGroupEmpty" class="empty-message">No files selected yet.</p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <div><h2>Intensity box-plot data</h2><p>Optionally select protein markers whose intensity measurements should be exported for downstream box-plot analysis.</p></div>
+        <span class="step-badge">7</span>
+      </div>
+      <div id="unsupIntensityMarkers"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <div><h2>Configuration preview and download</h2><p>Review the unsupervised configuration before saving it.</p></div>
+        <span class="step-badge">8</span>
+      </div>
+      <div class="actions"><button id="unsupPreviewYaml" type="button">Preview configuration file</button><button id="unsupDownloadYaml" type="button" class="primary">Download configuration file</button></div>
+      <pre id="unsupYamlPreview" class="yaml-preview">(click “Preview configuration file”)</pre>
+    </section>
+  </div>
+
 </main>
 
 <script>
@@ -324,6 +489,679 @@ const state = {
   cellTypes: [],
   otherCellsColor: '#a3a3a3'
 };
+
+
+/* -------------------------------------------------------------------------- */
+/* Analysis-mode selection and unsupervised state                              */
+/* -------------------------------------------------------------------------- */
+
+let currentAnalysisMode = null;
+
+const modeSelectionView = document.getElementById('modeSelectionView');
+const supervisedView = document.getElementById('supervisedView');
+const unsupervisedView = document.getElementById('unsupervisedView');
+
+function selectAnalysisMode(mode) {
+  currentAnalysisMode = mode;
+  modeSelectionView.hidden = true;
+  supervisedView.hidden = mode !== 'supervised';
+  unsupervisedView.hidden = mode !== 'unsupervised';
+  if (mode === 'unsupervised') renderUnsupervisedAll();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showModeSelection() {
+  currentAnalysisMode = null;
+  modeSelectionView.hidden = false;
+  supervisedView.hidden = true;
+  unsupervisedView.hidden = true;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+document.getElementById('chooseSupervisedMode').addEventListener('click', () => selectAnalysisMode('supervised'));
+document.getElementById('chooseUnsupervisedMode').addEventListener('click', () => selectAnalysisMode('unsupervised'));
+document.querySelectorAll('.back-to-modes').forEach(button => button.addEventListener('click', showModeSelection));
+
+const unsupState = {
+  allProteinColumns: [],
+  allProteinRawColumns: {},
+  allProteinRawColumnsReverse: {},
+  proteinMarkers: [],
+  proteinMarkerShortNames: {},
+  cellTypes: [],
+  otherCellsColor: '#a3a3a3',
+  intensityMarkers: [],
+  groupFiles: [],
+  groupAssignments: {},
+  fullPhenotypeDiscovery: false
+};
+
+function suggestProteinMarkerShortName(cleanedMarker) {
+  let marker = String(cleanedMarker || '').trim();
+  let suffix = '';
+  if (/\((?:Cytoplasm|MV\s*-\s*CYTO)\)$/i.test(marker)) {
+    suffix = '_cy';
+    marker = marker.replace(/\s*\*?\s*\((?:Cytoplasm|MV\s*-\s*CYTO)\)$/i, '');
+  } else if (/\((?:Nucleus|MV\s*-\s*NUC)\)$/i.test(marker)) {
+    suffix = '_nu';
+    marker = marker.replace(/\s*\*?\s*\((?:Nucleus|MV\s*-\s*NUC)\)$/i, '');
+  } else if (/\((?:Cell|MV\s*Cell)\)$/i.test(marker)) {
+    suffix = '_ce';
+    marker = marker.replace(/\s*\*?\s*\((?:Cell|MV\s*Cell)\)$/i, '');
+  }
+  marker = marker.replace(/\s+/g, '_').replace(/[^A-Za-z0-9_-]/g, '');
+  return `${marker || 'marker'}${suffix}`;
+}
+
+function makeUniqueSuggestedMarkerShortNames() {
+  const used = new Set();
+  unsupState.allProteinColumns.forEach(cleanedMarker => {
+    const rawMarker = unsupState.allProteinRawColumnsReverse[cleanedMarker] || cleanedMarker;
+    if (normalizeName(unsupState.proteinMarkerShortNames[rawMarker])) {
+      used.add(unsupState.proteinMarkerShortNames[rawMarker].toLowerCase());
+      return;
+    }
+    const base = suggestProteinMarkerShortName(cleanedMarker);
+    let candidate = base;
+    let counter = 2;
+    while (used.has(candidate.toLowerCase())) {
+      candidate = `${base}_${counter}`;
+      counter += 1;
+    }
+    unsupState.proteinMarkerShortNames[rawMarker] = candidate;
+    used.add(candidate.toLowerCase());
+  });
+}
+
+function syncUnsupervisedStateWithMarkers() {
+  const validCleaned = new Set(unsupState.allProteinColumns);
+  unsupState.proteinMarkers = unsupState.proteinMarkers.filter(raw =>
+    validCleaned.has(unsupState.allProteinRawColumns[raw] || raw)
+  );
+  unsupState.intensityMarkers = unsupState.intensityMarkers.filter(raw =>
+    validCleaned.has(unsupState.allProteinRawColumns[raw] || raw)
+  );
+  makeUniqueSuggestedMarkerShortNames();
+
+  const primarySet = new Set(unsupState.proteinMarkers);
+  unsupState.cellTypes.forEach(cellType => {
+    if (!cellType.markerStates) cellType.markerStates = {};
+    unsupState.proteinMarkers.forEach(raw => {
+      if (!(raw in cellType.markerStates)) cellType.markerStates[raw] = -1;
+    });
+    Object.keys(cellType.markerStates).forEach(raw => {
+      if (!primarySet.has(raw)) delete cellType.markerStates[raw];
+    });
+  });
+}
+
+function unsupCellTypeNameUsed(name, excludedId = null) {
+  return unsupState.cellTypes.some(cellType => cellType.id !== excludedId && sameName(cellType.name, name));
+}
+
+function addUnsupervisedCellType() {
+  const input = document.getElementById('unsupNewCellType');
+  const name = normalizeName(input.value);
+  if (!name) {
+    alert('Cell type name is required.');
+    return;
+  }
+  if (unsupCellTypeNameUsed(name)) {
+    alert('Cell type names must be unique.');
+    return;
+  }
+  const markerStates = {};
+  unsupState.proteinMarkers.forEach(raw => { markerStates[raw] = -1; });
+  unsupState.cellTypes.push({
+    id: makeId(),
+    name,
+    shortName: '',
+    color: '#00aaff',
+    markerStates,
+    collapsed: false
+  });
+  input.value = '';
+  renderUnsupervisedCellTypes();
+}
+
+document.getElementById('unsupAddCellType').addEventListener('click', addUnsupervisedCellType);
+document.getElementById('unsupNewCellType').addEventListener('keydown', event => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    addUnsupervisedCellType();
+  }
+});
+
+document.getElementById('unsupOtherCellsColor').addEventListener('input', event => {
+  unsupState.otherCellsColor = event.target.value;
+});
+
+document.getElementById('unsupFullPhenotype').addEventListener('change', event => {
+  unsupState.fullPhenotypeDiscovery = event.target.checked;
+});
+
+function renderUnsupervisedPrimaryMarkers() {
+  const selector = document.getElementById('unsupPrimaryMarkerSelector');
+  const list = document.getElementById('unsupPrimaryMarkerList');
+  selector.replaceChildren();
+  list.replaceChildren();
+
+  if (unsupState.allProteinColumns.length === 0) {
+    selector.innerHTML = '<div class="empty-state">Upload a representative TSV or CSV file to identify positivity markers.</div>';
+  } else {
+    const available = unsupState.allProteinColumns.filter(cleaned => {
+      const raw = unsupState.allProteinRawColumnsReverse[cleaned];
+      return !unsupState.proteinMarkers.includes(raw);
+    });
+    if (available.length > 0) {
+      selector.appendChild(createMultiSelectMarkerGrid(
+        available,
+        selected => {
+          selected.forEach(cleaned => {
+            const raw = unsupState.allProteinRawColumnsReverse[cleaned];
+            if (raw && !unsupState.proteinMarkers.includes(raw)) unsupState.proteinMarkers.push(raw);
+          });
+          syncUnsupervisedStateWithMarkers();
+          renderUnsupervisedAll();
+        },
+        { labelText: 'Select protein markers for major cell type definitions:', addButtonText: 'Add selected protein markers' }
+      ));
+    } else {
+      selector.innerHTML = '<div class="empty-state">All detected markers are currently selected for major cell type definitions.</div>';
+    }
+  }
+
+  if (unsupState.proteinMarkers.length === 0) {
+    list.innerHTML = '<div class="empty-state">No primary protein markers added yet.</div>';
+    return;
+  }
+
+  unsupState.proteinMarkers.forEach(raw => {
+    const item = document.createElement('div');
+    item.className = 'list-item';
+    const name = document.createElement('div');
+    name.textContent = unsupState.allProteinRawColumns[raw] || raw;
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'danger';
+    remove.textContent = 'Remove';
+    remove.addEventListener('click', () => {
+      unsupState.proteinMarkers = unsupState.proteinMarkers.filter(item => item !== raw);
+      syncUnsupervisedStateWithMarkers();
+      renderUnsupervisedAll();
+    });
+    item.append(name, remove);
+    list.appendChild(item);
+  });
+}
+
+function renderUnsupervisedMarkerShortNames() {
+  const container = document.getElementById('unsupMarkerShortNames');
+  container.replaceChildren();
+  if (unsupState.allProteinColumns.length === 0) {
+    container.innerHTML = '<div class="empty-state">No protein markers have been detected yet.</div>';
+    return;
+  }
+  unsupState.allProteinColumns.forEach(cleaned => {
+    const raw = unsupState.allProteinRawColumnsReverse[cleaned] || cleaned;
+    const row = document.createElement('div');
+    row.className = 'unsup-short-grid';
+    const markerName = document.createElement('div');
+    markerName.textContent = cleaned;
+    const field = document.createElement('div');
+    const label = document.createElement('label');
+    label.className = 'small';
+    label.innerHTML = 'Short name <span class="required-star">*</span>';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = unsupState.proteinMarkerShortNames[raw] || '';
+    input.placeholder = suggestProteinMarkerShortName(cleaned);
+    input.addEventListener('input', () => { unsupState.proteinMarkerShortNames[raw] = input.value; });
+    field.append(label, input);
+    row.append(markerName, field);
+    container.appendChild(row);
+  });
+}
+
+function renderUnsupervisedCellTypes() {
+  const container = document.getElementById('unsupCellTypesList');
+  container.replaceChildren();
+  if (unsupState.cellTypes.length === 0) {
+    container.innerHTML = '<div class="empty-state">No cell types added yet.</div>';
+    return;
+  }
+
+  unsupState.cellTypes.forEach(cellType => {
+    const card = document.createElement('div');
+    card.className = 'unsup-cell-card';
+
+    const header = document.createElement('div');
+    header.className = 'unsup-cell-header';
+
+    const nameField = document.createElement('div');
+    const nameLabel = document.createElement('label');
+    nameLabel.className = 'small';
+    nameLabel.textContent = 'Cell type name';
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.value = cellType.name;
+    nameInput.addEventListener('change', () => {
+      const newName = normalizeName(nameInput.value);
+      if (!newName) {
+        alert('Cell type name is required.');
+        nameInput.value = cellType.name;
+        return;
+      }
+      if (unsupCellTypeNameUsed(newName, cellType.id)) {
+        alert('Cell type names must be unique.');
+        nameInput.value = cellType.name;
+        return;
+      }
+      cellType.name = newName;
+    });
+    nameField.append(nameLabel, nameInput);
+
+    const shortField = document.createElement('div');
+    const shortLabel = document.createElement('label');
+    shortLabel.className = 'small';
+    shortLabel.innerHTML = 'Short name <span class="required-star">*</span>';
+    const shortInput = document.createElement('input');
+    shortInput.type = 'text';
+    shortInput.value = cellType.shortName || '';
+    shortInput.placeholder = 'Required';
+    shortInput.addEventListener('input', () => { cellType.shortName = shortInput.value; });
+    shortField.append(shortLabel, shortInput);
+
+    const colorField = document.createElement('div');
+    const colorLabel = document.createElement('label');
+    colorLabel.className = 'small';
+    colorLabel.textContent = 'Color';
+    const colorInput = document.createElement('input');
+    colorInput.type = 'color';
+    colorInput.value = cellType.color || '#00aaff';
+    colorInput.addEventListener('input', () => { cellType.color = colorInput.value; });
+    colorField.append(colorLabel, colorInput);
+
+    const actionField = document.createElement('div');
+    const collapse = document.createElement('button');
+    collapse.type = 'button';
+    collapse.className = 'compact-button';
+    collapse.textContent = cellType.collapsed ? 'Expand' : 'Collapse';
+    collapse.addEventListener('click', () => { cellType.collapsed = !cellType.collapsed; renderUnsupervisedCellTypes(); });
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'danger compact-button';
+    remove.textContent = 'Remove';
+    remove.addEventListener('click', () => {
+      unsupState.cellTypes = unsupState.cellTypes.filter(item => item.id !== cellType.id);
+      renderUnsupervisedCellTypes();
+    });
+    actionField.append(collapse, remove);
+    header.append(nameField, shortField, colorField, actionField);
+    card.appendChild(header);
+
+    if (!cellType.collapsed) {
+      const grid = document.createElement('div');
+      grid.className = 'marker-grid';
+      if (unsupState.proteinMarkers.length === 0) {
+        grid.innerHTML = '<div class="empty-state">Add primary protein markers before defining this cell type.</div>';
+      } else {
+        unsupState.proteinMarkers.forEach(raw => {
+          const row = document.createElement('div');
+          row.className = 'marker-row';
+          const label = document.createElement('div');
+          label.className = 'marker-name';
+          label.textContent = unsupState.allProteinRawColumns[raw] || raw;
+          row.append(label, createPresenceStateControl(cellType.markerStates[raw], value => { cellType.markerStates[raw] = value; }));
+          grid.appendChild(row);
+        });
+      }
+      card.appendChild(grid);
+    }
+    container.appendChild(card);
+  });
+}
+
+function renderUnsupervisedIntensityMarkers() {
+  const container = document.getElementById('unsupIntensityMarkers');
+  container.replaceChildren();
+  if (unsupState.allProteinColumns.length === 0) {
+    container.innerHTML = '<div class="empty-state">Upload a representative data file to make protein markers available.</div>';
+    return;
+  }
+  const grid = document.createElement('div');
+  grid.style.display = 'grid';
+  grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(210px, 1fr))';
+  grid.style.gap = '8px';
+  unsupState.allProteinColumns.forEach(cleaned => {
+    const raw = unsupState.allProteinRawColumnsReverse[cleaned] || cleaned;
+    const item = document.createElement('label');
+    item.style.display = 'flex';
+    item.style.alignItems = 'center';
+    item.style.gap = '8px';
+    item.style.padding = '8px';
+    item.style.border = '1px solid var(--border)';
+    item.style.borderRadius = '8px';
+    item.style.margin = '0';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = unsupState.intensityMarkers.includes(raw);
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) {
+        if (!unsupState.intensityMarkers.includes(raw)) unsupState.intensityMarkers.push(raw);
+      } else {
+        unsupState.intensityMarkers = unsupState.intensityMarkers.filter(item => item !== raw);
+      }
+    });
+    item.append(checkbox, document.createTextNode(cleaned));
+    grid.appendChild(item);
+  });
+  container.appendChild(grid);
+}
+
+const unsupGroupFolder = document.getElementById('unsupGroupFolder');
+const unsupGroupTableBody = document.getElementById('unsupGroupTableBody');
+const unsupGroupEmpty = document.getElementById('unsupGroupEmpty');
+
+function updateUnsupervisedGroupHeaders() {
+  document.getElementById('unsupControlHeader').textContent = normalizeName(document.getElementById('unsupControlName').value) || 'Control';
+  document.getElementById('unsupTreatmentHeader').textContent = normalizeName(document.getElementById('unsupTreatmentName').value) || 'Treatment';
+}
+
+document.getElementById('unsupControlName').addEventListener('input', updateUnsupervisedGroupHeaders);
+document.getElementById('unsupTreatmentName').addEventListener('input', updateUnsupervisedGroupHeaders);
+document.getElementById('unsup_filetype').addEventListener('change', () => {
+  unsupState.groupFiles = [];
+  unsupState.groupAssignments = {};
+  unsupGroupFolder.value = '';
+  renderUnsupervisedGroupTable();
+});
+
+unsupGroupFolder.addEventListener('change', event => {
+  const extension = document.getElementById('unsup_filetype').value;
+  unsupState.groupFiles = Array.from(event.target.files)
+    .filter(file => file.name.toLowerCase().endsWith(`.${extension}`))
+    .map(file => file.name);
+  const valid = new Set(unsupState.groupFiles);
+  Object.keys(unsupState.groupAssignments).forEach(name => { if (!valid.has(name)) delete unsupState.groupAssignments[name]; });
+  renderUnsupervisedGroupTable();
+});
+
+function renderUnsupervisedGroupTable() {
+  unsupGroupTableBody.replaceChildren();
+  updateUnsupervisedGroupHeaders();
+  if (unsupState.groupFiles.length === 0) {
+    unsupGroupEmpty.style.display = 'block';
+    unsupGroupEmpty.textContent = 'No files selected yet.';
+    return;
+  }
+  unsupGroupEmpty.style.display = 'none';
+  unsupState.groupFiles.forEach((fileName, index) => {
+    const row = document.createElement('tr');
+    const fileCell = document.createElement('td');
+    fileCell.textContent = fileName;
+    row.appendChild(fileCell);
+    ['control', 'treatment', 'none'].forEach(group => {
+      const cell = document.createElement('td');
+      const radio = document.createElement('input');
+      radio.type = 'radio';
+      radio.name = `unsup_group_${index}`;
+      radio.value = group;
+      radio.checked = (unsupState.groupAssignments[fileName] || 'none') === group;
+      radio.addEventListener('change', () => {
+        unsupState.groupAssignments[fileName] = group;
+      });
+      cell.appendChild(radio);
+      row.appendChild(cell);
+    });
+    unsupGroupTableBody.appendChild(row);
+  });
+}
+
+function renderUnsupervisedAll() {
+  syncUnsupervisedStateWithMarkers();
+  renderUnsupervisedPrimaryMarkers();
+  renderUnsupervisedMarkerShortNames();
+  renderUnsupervisedCellTypes();
+  renderUnsupervisedIntensityMarkers();
+  renderUnsupervisedGroupTable();
+  document.getElementById('unsupOtherCellsColor').value = unsupState.otherCellsColor || '#a3a3a3';
+  document.getElementById('unsupFullPhenotype').checked = !!unsupState.fullPhenotypeDiscovery;
+}
+
+async function handleUnsupervisedMarkerFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  try {
+    const fileContent = await file.text();
+    const columnNames = getDelimitedColumnNames(fileContent, file.name);
+    const positivityRawColumns = columnNames.filter(isProteinMarkerColumn).map(raw => ({ value: raw, label: cleanProteinMarkerColumn(raw) }));
+    if (positivityRawColumns.length === 0) throw new Error('No columns beginning with "Positivity - " were found.');
+    unsupState.allProteinColumns = [...new Set(positivityRawColumns.map(item => item.label))];
+    unsupState.allProteinRawColumns = Object.fromEntries(positivityRawColumns.map(item => [item.value, item.label]));
+    unsupState.allProteinRawColumnsReverse = Object.fromEntries(positivityRawColumns.map(item => [item.label, item.value]));
+    syncUnsupervisedStateWithMarkers();
+    renderUnsupervisedAll();
+  } catch (error) {
+    console.error(error);
+    alert(`Unable to read the marker file: ${error.message}`);
+  }
+}
+
+document.getElementById('unsupMarkerFile').addEventListener('change', handleUnsupervisedMarkerFileUpload);
+
+function buildUnsupervisedCellTypesMap() {
+  const result = {};
+  unsupState.cellTypes.forEach(cellType => {
+    result[cellType.name] = unsupState.proteinMarkers.map(raw => presenceToYamlValue(cellType.markerStates[raw]));
+  });
+  return result;
+}
+
+function buildUnsupervisedColorsMap() {
+  const result = {};
+  unsupState.cellTypes.forEach(cellType => { result[cellType.name] = cellType.color; });
+  result['Other cells'] = unsupState.otherCellsColor || '#a3a3a3';
+  return result;
+}
+
+function buildUnsupervisedGroupDictionaries() {
+  const controlName = normalizeName(document.getElementById('unsupControlName').value) || 'Control';
+  const treatmentName = normalizeName(document.getElementById('unsupTreatmentName').value) || 'Treatment';
+  const dict_ctrl = {};
+  const dict_trtmnt = {};
+  unsupState.groupFiles.forEach(fileName => {
+    const assignment = unsupState.groupAssignments[fileName] || 'none';
+    if (assignment === 'control') dict_ctrl[fileName] = controlName;
+    if (assignment === 'treatment') dict_trtmnt[fileName] = treatmentName;
+  });
+  return { dict_ctrl, dict_trtmnt };
+}
+
+function collectUnsupervisedFormData() {
+  const exploratoryRaw = unsupState.allProteinColumns.map(cleaned => unsupState.allProteinRawColumnsReverse[cleaned] || cleaned);
+  const exploratoryShort = exploratoryRaw.map(raw => normalizeName(unsupState.proteinMarkerShortNames[raw]));
+  const { dict_ctrl, dict_trtmnt } = buildUnsupervisedGroupDictionaries();
+  return {
+    type_of_analysis: unsupState.fullPhenotypeDiscovery ? 'full' : 'unsupervised',
+    workspace: {
+      input_dir: document.getElementById('unsup_input_dir').value || '',
+      output_dir: document.getElementById('unsup_output_dir').value || '',
+      filetype: document.getElementById('unsup_filetype').value || 'csv'
+    },
+    protein_markers: [...unsupState.proteinMarkers],
+    cell_types: buildUnsupervisedCellTypesMap(),
+    custom_colors: buildUnsupervisedColorsMap(),
+    locally_save_anndata_files: getBool('unsup_locally_save_anndata_files', true),
+    overwrite_existing_files: getBool('unsup_overwrite_existing_files', false),
+    cell_types_to_explore: unsupState.cellTypes.map(cellType => cellType.name),
+    cell_types_to_explore_short_name: unsupState.cellTypes.map(cellType => normalizeName(cellType.shortName)),
+    exploratory_protein_markers: exploratoryRaw,
+    exploratory_protein_markers_short_name: exploratoryShort,
+    want_to_plot_pie_plots: getBool('unsupWantPie', false),
+    dict_ctrl,
+    dict_trtmnt,
+    protein_markers_for_intensity: [...unsupState.intensityMarkers]
+  };
+}
+
+function validateUnsupervisedRequiredFields(data) {
+  const errors = [];
+  if (data.protein_markers.length === 0) errors.push('at least one primary protein marker is required');
+  if (Object.keys(data.cell_types).length === 0) errors.push('at least one cell type is required');
+  if (data.cell_types_to_explore_short_name.some(name => !normalizeName(name))) errors.push('every cell type requires a short name');
+  if (data.exploratory_protein_markers.length === 0) errors.push('a representative file with protein markers is required');
+  if (data.exploratory_protein_markers_short_name.some(name => !normalizeName(name))) errors.push('every exploratory protein marker requires a short name');
+
+  const duplicateCellShortNames = data.cell_types_to_explore_short_name.map(name => name.toLowerCase());
+  if (new Set(duplicateCellShortNames).size !== duplicateCellShortNames.length) errors.push('cell type short names must be unique');
+  const duplicateMarkerShortNames = data.exploratory_protein_markers_short_name.map(name => name.toLowerCase());
+  if (new Set(duplicateMarkerShortNames).size !== duplicateMarkerShortNames.length) errors.push('protein marker short names must be unique');
+
+  const ctrlCount = Object.keys(data.dict_ctrl).length;
+  const trtCount = Object.keys(data.dict_trtmnt).length;
+  if ((ctrlCount > 0 && trtCount === 0) || (trtCount > 0 && ctrlCount === 0)) {
+    errors.push('if one comparison group contains samples, the other group must contain at least one sample');
+  }
+  const controlName = normalizeName(document.getElementById('unsupControlName').value);
+  const treatmentName = normalizeName(document.getElementById('unsupTreatmentName').value);
+  if ((ctrlCount > 0 || trtCount > 0) && (!controlName || !treatmentName)) errors.push('both comparison groups require names when group assignments are used');
+  if ((ctrlCount > 0 || trtCount > 0) && sameName(controlName, treatmentName)) errors.push('comparison group names must be different');
+
+  if (errors.length > 0) {
+    alert(`Cannot download:\n- ${errors.join('\n- ')}`);
+    return false;
+  }
+  return true;
+}
+
+document.getElementById('unsupPreviewYaml').addEventListener('click', () => {
+  document.getElementById('unsupYamlPreview').textContent = toYAML(collectUnsupervisedFormData());
+});
+
+document.getElementById('unsupDownloadYaml').addEventListener('click', () => {
+  const data = collectUnsupervisedFormData();
+  if (!validateUnsupervisedRequiredFields(data)) return;
+  const yaml = `${toYAML(data)}\n`;
+  const blob = new Blob([yaml], { type: 'text/yaml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = 'config.yaml';
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+});
+
+function showUnsupervisedImportStatus(message, isError = false) {
+  const status = document.getElementById('unsupYamlImportStatus');
+  status.hidden = false;
+  status.textContent = message;
+  status.style.borderColor = isError ? '#b42318' : '';
+  status.style.color = isError ? '#b42318' : '';
+}
+
+function importUnsupervisedParsedConfig(config, fileName = 'configuration file') {
+  const warnings = [];
+  const workspace = isPlainObject(config.workspace) ? config.workspace : {};
+  document.getElementById('unsup_input_dir').value = String(workspace.input_dir || '');
+  document.getElementById('unsup_output_dir').value = String(workspace.output_dir || '');
+  document.getElementById('unsup_filetype').value = ['csv', 'tsv'].includes(String(workspace.filetype || '').toLowerCase()) ? String(workspace.filetype).toLowerCase() : 'csv';
+  document.getElementById('unsup_overwrite_existing_files').value = String(config.overwrite_existing_files === true || String(config.overwrite_existing_files).toLowerCase() === 'true');
+  document.getElementById('unsup_locally_save_anndata_files').value = String(config.locally_save_anndata_files === undefined ? true : (config.locally_save_anndata_files === true || String(config.locally_save_anndata_files).toLowerCase() === 'true'));
+  document.getElementById('unsupWantPie').value = String(config.want_to_plot_pie_plots === true || String(config.want_to_plot_pie_plots).toLowerCase() === 'true');
+
+  const analysisType = String(config.type_of_analysis || 'unsupervised').toLowerCase();
+  unsupState.fullPhenotypeDiscovery = analysisType === 'full';
+
+  const primaryMarkers = Array.isArray(config.protein_markers) ? config.protein_markers.map(normalizeName).filter(Boolean) : [];
+  const exploratoryMarkers = Array.isArray(config.exploratory_protein_markers)
+    ? config.exploratory_protein_markers.map(normalizeName).filter(Boolean)
+    : [...primaryMarkers];
+  const intensityMarkers = Array.isArray(config.protein_markers_for_intensity)
+    ? config.protein_markers_for_intensity.map(normalizeName).filter(Boolean)
+    : [];
+  const allRawMarkers = [...new Set([...exploratoryMarkers, ...primaryMarkers, ...intensityMarkers])];
+  unsupState.allProteinColumns = [];
+  unsupState.allProteinRawColumns = {};
+  unsupState.allProteinRawColumnsReverse = {};
+  allRawMarkers.forEach(raw => {
+    let cleaned = cleanProteinMarkerColumn(raw) || raw;
+    if (unsupState.allProteinRawColumnsReverse[cleaned] && unsupState.allProteinRawColumnsReverse[cleaned] !== raw) cleaned = raw;
+    unsupState.allProteinColumns.push(cleaned);
+    unsupState.allProteinRawColumns[raw] = cleaned;
+    unsupState.allProteinRawColumnsReverse[cleaned] = raw;
+  });
+  unsupState.proteinMarkers = primaryMarkers.filter(raw => allRawMarkers.includes(raw));
+  unsupState.intensityMarkers = intensityMarkers.filter(raw => allRawMarkers.includes(raw));
+
+  unsupState.proteinMarkerShortNames = {};
+  const markerShortNames = Array.isArray(config.exploratory_protein_markers_short_name) ? config.exploratory_protein_markers_short_name : [];
+  exploratoryMarkers.forEach((raw, index) => {
+    unsupState.proteinMarkerShortNames[raw] = normalizeName(markerShortNames[index]);
+  });
+  makeUniqueSuggestedMarkerShortNames();
+
+  const cellDefinitions = isPlainObject(config.cell_types) ? config.cell_types : {};
+  const exploreNames = Array.isArray(config.cell_types_to_explore) && config.cell_types_to_explore.length > 0
+    ? config.cell_types_to_explore.map(normalizeName).filter(Boolean)
+    : Object.keys(cellDefinitions);
+  const shortNames = Array.isArray(config.cell_types_to_explore_short_name) ? config.cell_types_to_explore_short_name : [];
+  const colors = isPlainObject(config.custom_colors) ? config.custom_colors : {};
+  unsupState.cellTypes = exploreNames.map((name, index) => {
+    const definition = cellDefinitions[name];
+    const markerStates = {};
+    unsupState.proteinMarkers.forEach((raw, markerIndex) => {
+      let value = -1;
+      if (Array.isArray(definition)) value = definition[markerIndex];
+      else if (isPlainObject(definition)) value = Object.prototype.hasOwnProperty.call(definition, raw) ? definition[raw] : definition[unsupState.allProteinRawColumns[raw]];
+      markerStates[raw] = value === 1 || value === '1' || value === true ? 1 : (value === 0 || value === '0' || value === false ? 0 : -1);
+    });
+    return {
+      id: makeId(), name, shortName: normalizeName(shortNames[index]), color: /^#[0-9a-f]{6}$/i.test(String(colors[name] || '')) ? String(colors[name]).toLowerCase() : '#00aaff', markerStates, collapsed: false
+    };
+  });
+  unsupState.otherCellsColor = /^#[0-9a-f]{6}$/i.test(String(colors['Other cells'] || '')) ? String(colors['Other cells']).toLowerCase() : '#a3a3a3';
+
+  const dictCtrl = isPlainObject(config.dict_ctrl) ? config.dict_ctrl : {};
+  const dictTrt = isPlainObject(config.dict_trtmnt) ? config.dict_trtmnt : {};
+  const ctrlName = Object.values(dictCtrl)[0] || 'Control';
+  const trtName = Object.values(dictTrt)[0] || 'Treatment';
+  document.getElementById('unsupControlName').value = String(ctrlName);
+  document.getElementById('unsupTreatmentName').value = String(trtName);
+  unsupState.groupFiles = [...new Set([...Object.keys(dictCtrl), ...Object.keys(dictTrt)])];
+  unsupState.groupAssignments = {};
+  Object.keys(dictCtrl).forEach(file => { unsupState.groupAssignments[file] = 'control'; });
+  Object.keys(dictTrt).forEach(file => {
+    if (unsupState.groupAssignments[file] === 'control') warnings.push(`Sample "${file}" appeared in both comparison groups; Control was kept.`);
+    else unsupState.groupAssignments[file] = 'treatment';
+  });
+
+  syncUnsupervisedStateWithMarkers();
+  renderUnsupervisedAll();
+  document.getElementById('unsupYamlPreview').textContent = toYAML(collectUnsupervisedFormData());
+  selectAnalysisMode('unsupervised');
+  showUnsupervisedImportStatus(`Loaded ${fileName}.${warnings.length ? `\nWarnings:\n- ${warnings.join('\n- ')}` : ''}`, false);
+}
+
+document.getElementById('unsupYamlFile').addEventListener('change', async event => {
+  const file = event.target.files[0];
+  if (!file) return;
+  try {
+    const parsed = parseConfigYaml(await file.text());
+    const type = String(parsed.type_of_analysis || '').toLowerCase();
+    if (type === 'supervised') {
+      selectAnalysisMode('supervised');
+      alert('This configuration is supervised. It has been opened in Supervised mode; use the Supervised restore control to load its complete settings.');
+      return;
+    }
+    importUnsupervisedParsedConfig(parsed, file.name);
+  } catch (error) {
+    console.error(error);
+    showUnsupervisedImportStatus(`Could not load ${file.name}: ${error.message}`, true);
+  }
+});
 
 document.getElementById('plot_options').addEventListener('change', function() {
   const selectedValue = this.value;
@@ -599,6 +1437,11 @@ async function handleYamlFileUpload(event) {
   try {
     const yamlText = await file.text();
     const parsedConfig = parseConfigYaml(yamlText);
+    const importedAnalysisType = String(parsedConfig.type_of_analysis || 'supervised').toLowerCase();
+    if (importedAnalysisType === 'unsupervised' || importedAnalysisType === 'full') {
+      importUnsupervisedParsedConfig(parsedConfig, file.name);
+      return;
+    }
     const { importedState, formValues, warnings } = buildImportedConfiguration(parsedConfig);
 
     state.allProteinColumns = importedState.allProteinColumns;
@@ -989,7 +1832,7 @@ function buildImportedConfiguration(config) {
 
   const warnings = [];
   const knownTopLevelKeys = new Set([
-    'workspace', 'protein_markers', 'cell_types', 'sub_cell_types',
+    'type_of_analysis', 'workspace', 'protein_markers', 'cell_types', 'sub_cell_types',
     'custom_colors', 'overwrite_existing_files',
     'locally_save_anndata_files', 'spatial_plot'
   ]);
@@ -2218,6 +3061,7 @@ function buildCustomColorsMap() {
 
 function collectFormData() {
   return {
+    type_of_analysis: 'supervised',
     workspace: {
       input_dir: document.getElementById('input_dir').value || '',
       output_dir: document.getElementById('output_dir').value || '',
@@ -2319,6 +3163,8 @@ function renderAll() {
 }
 
 renderAll();
+renderUnsupervisedAll();
+showModeSelection();
 </script>
 </body>
 </html>

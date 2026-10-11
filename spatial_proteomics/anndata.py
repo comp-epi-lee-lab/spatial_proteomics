@@ -1,7 +1,7 @@
 import pandas as pd
 import scanpy as sc
 from anndata import AnnData
-from spatial_proteomics.utils import plot_general_cell_hierarchy, plot_digraph, order_sub_cell_types
+from spatial_proteomics.utils import plot_general_cell_hierarchy, plot_digraph, order_sub_cell_types, save_anndata_files
 import logging
 
 logger = logging.getLogger(__name__)
@@ -187,7 +187,7 @@ def cleaned_data(file_names, output_dir, protein_markers, cell_subtype_dict, fil
         results_path.mkdir(parents=True, exist_ok=True)
         df.to_csv(results_path / "Samples Id.csv", index=False)
         
-        df = pd.DataFrame({"Positivity column names": list(data[pos_cols].columns)})
+        df = pd.DataFrame({"Positivity column names": list(data[pos_cols].columns), "Name appearing in anndata file": intensities_columns})
         df.to_csv(results_path/ "Positivity column names.csv", index=False)
     else: 
         data_dicts = {}
@@ -289,7 +289,7 @@ def fill_n_order_df_by_total_none_values(df, idx_name, order_dicc):
     df_og = df_og[list(reversed([val for cols in order_dicc.values() for val in cols if val in df_og.columns]))]
     return df, df_og
 
-def sets_and_subsets_cell_types(cell_type_dict, sub_cell_type_dict, protein_markers, output_dir, custom_colors, arrows_orientation="contains"):
+def sets_and_subsets_cell_types(cell_type_dict, sub_cell_type_dict, protein_markers, output_dir, custom_colors, arrows_orientation="contains", type_of_analysis = 'supervised'):
     """
     Determine hierarchical subset relationships among marker-defined phenotypes.
 
@@ -379,8 +379,7 @@ def sets_and_subsets_cell_types(cell_type_dict, sub_cell_type_dict, protein_mark
     list_final_subsets = {}
     list_sub_cell_types = {}
     list_bigger_cell_types = {}
-    plot_general_cell_hierarchy(protein_markers,cell_type_dict,sub_cell_type_dict,custom_colors,save_path = output_dir / "plots" , arrows_orientation=arrows_orientation)
-    # raise Exception ("clJust need to see the new plot")
+    if type_of_analysis == 'supervised': plot_general_cell_hierarchy(protein_markers,cell_type_dict,sub_cell_type_dict,custom_colors,save_path = output_dir / "plots" , arrows_orientation=arrows_orientation)
     list_final_subsets["General"], list_sub_cell_types["General"], list_bigger_cell_types["General"], custom_colors = plot_digraph(ct_df, protein_markers, output_dir, "General", dicc_temp, custom_colors) 
     for sct, df in sct_dfs.items():
         list_final_subsets[sct], list_sub_cell_types[sct], list_bigger_cell_types[sct], custom_colors = plot_digraph(df, list(df.index), output_dir, sct, dicc_temp, custom_colors)
@@ -467,26 +466,7 @@ def get_all_children(celltype, dicc, visited=None):
     
     return children
 
-def save_anndata_files(adata_dicts, adata_dir):
-    """
-    Save per-sample AnnData objects as H5AD files.
-
-    Parameters
-    ----------
-    adata_dicts : dict of str to anndata.AnnData
-        Per-sample annotated data matrices.
-    adata_dir : pathlib.Path
-        Destination directory.
-
-    Returns
-    -------
-    None
-        Files are written as ``Sample_<sample>.h5ad``.
-    """
-    for k, adata in adata_dicts.items():
-        adata.write(adata_dir / f"Sample_{k}.h5ad")
-
-def labeling_cell_types(data_dicts, adata_dicts, cell_type_dict, sub_cell_type_dict, protein_markers, output_dir, custom_colors, save_anndata=True, arrows_orientation="contains"):
+def labeling_cell_types(data_dicts, adata_dicts, cell_type_dict, sub_cell_type_dict, protein_markers, output_dir, custom_colors, save_anndata=True, arrows_orientation="contains", type_of_analysis = 'supervised'):
     """
     Assign primary and hierarchical phenotype labels to AnnData objects.
 
@@ -523,7 +503,7 @@ def labeling_cell_types(data_dicts, adata_dicts, cell_type_dict, sub_cell_type_d
     Hierarchical subtype annotations are stored in additional observation
     columns associated with their parent phenotype.
     """
-    list_final_subsets, list_cell_types, list_bigger_cell_types, custom_colors = sets_and_subsets_cell_types(cell_type_dict, sub_cell_type_dict, protein_markers, output_dir, custom_colors,arrows_orientation=arrows_orientation)
+    list_final_subsets, list_cell_types, list_bigger_cell_types, custom_colors = sets_and_subsets_cell_types(cell_type_dict, sub_cell_type_dict, protein_markers, output_dir, custom_colors,arrows_orientation=arrows_orientation, type_of_analysis = type_of_analysis)
 
     for (k_data, data), (k, adata) in zip(data_dicts.items(), adata_dicts.items()):
         list_folder_names = ['General']
@@ -606,6 +586,26 @@ def labeling_cell_types(data_dicts, adata_dicts, cell_type_dict, sub_cell_type_d
         save_anndata_files(adata_dicts,adata_dir=adata_path)
     return adata_dicts
 
+def _anndata_generator(config, output_dir):
+    logger.warning("Generating anndata files for analysis...")
+    file_names = filenames(config['workspace']['input_dir'], config['workspace']['filetype'])
+    cell_type_dict = create_cell_type_dict(config['protein_markers'], config['cell_types'])
+    sub_cell_type_dict = config['sub_cell_types'] if 'sub_cell_types' in config.keys() else {}
+    data_dicts, adata_dicts = cleaned_data(
+        file_names        = file_names, 
+        output_dir        = output_dir, 
+        protein_markers   = config['protein_markers'],
+        cell_subtype_dict = sub_cell_type_dict,
+        filetype          = config['workspace']['filetype'],
+    )
+    if len(adata_dicts)==0: raise ValueError("No anndata files were generated. Please review the configuration file.")
+    logger.warning("Anndata generated!")
+    adata_dicts = labeling_cell_types(data_dicts, adata_dicts, cell_type_dict, sub_cell_type_dict, config['protein_markers'], output_dir, config['custom_colors'], save_anndata = config['locally_save_anndata_files'], arrows_orientation=config['arrows_orientation'], type_of_analysis = config['type_of_analysis'])
+    logger.warning("Cells labeled by cell types/subtypes: DONE.")
+    if config['locally_save_anndata_files']: logger.warning("Anndata saved!")
+    else: logger.warning("Anndata not saved by user decision.")
+    return adata_dicts
+
 def create_or_load_anndata(config):
     """
     Load cached AnnData objects or generate them from source tables.
@@ -629,23 +629,6 @@ def create_or_load_anndata(config):
     output_dir = config['workspace']['output_dir']
     if not config['overwrite_existing_files']: adata_dicts = load_anndata_files(output_dir)
     else: adata_dicts = {}
-    if any(v is None for v in adata_dicts.values()) or not adata_dicts:
-        logger.warning("Generating anndata files for analysis...")
-        file_names = filenames(config['workspace']['input_dir'], config['workspace']['filetype'])
-        cell_type_dict = create_cell_type_dict(config['protein_markers'], config['cell_types'])
-        sub_cell_type_dict = config['sub_cell_types'] if 'sub_cell_types' in config.keys() else {}
-        data_dicts, adata_dicts = cleaned_data(
-            file_names        = file_names, 
-            output_dir        = output_dir, 
-            protein_markers   = config['protein_markers'],
-            cell_subtype_dict = sub_cell_type_dict,
-            filetype          = config['workspace']['filetype'],
-        )
-        if len(adata_dicts)==0: raise ValueError("No anndata files were generated. Please review the configuration file.")
-        logger.warning("Anndata generated!")
-        adata_dicts = labeling_cell_types(data_dicts, adata_dicts, cell_type_dict, sub_cell_type_dict, config['protein_markers'], output_dir, config['custom_colors'], save_anndata = config['locally_save_anndata_files'], arrows_orientation=config['arrows_orientation'])
-        logger.warning("Cells labeled by cell types/subtypes: DONE.")
-        if config['locally_save_anndata_files']: logger.warning("Anndata saved!")
-        else: logger.warning("Anndata not saved by user decision.")
+    if any(v is None for v in adata_dicts.values()) or not adata_dicts: adata_dicts = _anndata_generator(config, output_dir)
     else: logger.warning("Anndata loaded!")
     return adata_dicts

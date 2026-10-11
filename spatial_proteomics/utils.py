@@ -438,11 +438,12 @@ def _plot_cell_hierarchy(
         luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue
         return "black" if luminance > 0.55 else "white"
     
+    max_depth = max(abs(attributes["level"]) for _, attributes in graph.nodes(data=True))
+    if max_depth ==0: return None
     positions = _forest_layout(graph, horizontal_spacing=horizontal_spacing, vertical_spacing=vertical_spacing,)
     custom_colors = graph.graph.get("custom_colors", {})
     parent_to_child = graph.reverse(copy=False)
     leaves = [node for node in graph if parent_to_child.out_degree(node) == 0]
-    max_depth = max(abs(attributes["level"]) for _, attributes in graph.nodes(data=True))
     if figsize is None: figsize = (max(16.0, 1.8 * len(leaves)), max(7.0, 2.6 * (max_depth + 1)),)
     if arrows_orientation == "contains" : arrowstyle="<|-"
     else: arrowstyle="-|>"
@@ -680,3 +681,26 @@ def export_legend_png(ax,output_path,handles, labels, horizontal=False, dpi=300)
     fig.canvas.draw()
     fig.savefig(output_path, dpi=dpi, bbox_inches="tight", bbox_extra_artists=[legend], pad_inches=0.05, transparent=transparent,)
     plt.close(fig)
+
+def median_iqr(values):
+    q1, q3 = np.percentile(values, [25, 75])
+    return np.median(values), q1, q3
+
+def save_anndata_files(adata_dicts, adata_dir):
+    """
+    Save per-sample AnnData objects as H5AD files.
+
+    Parameters
+    ----------
+    adata_dicts : dict of str to anndata.AnnData
+        Per-sample annotated data matrices.
+    adata_dir : pathlib.Path
+        Destination directory.
+
+    Returns
+    -------
+    None
+        Files are written as ``Sample_<sample>.h5ad``.
+    """
+    for k, adata in adata_dicts.items():
+        adata.write(adata_dir / f"Sample_{k}.h5ad")

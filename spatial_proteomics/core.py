@@ -1,7 +1,8 @@
 from spatial_proteomics.configuration import load_config
 from spatial_proteomics.anndata import create_or_load_anndata
-from spatial_proteomics.spatial_plot import plot_spatial
-from spatial_proteomics.cell_proportions import calculate_cell_proportions
+from spatial_proteomics.supervised_mode import _apply_supervised_mode
+from spatial_proteomics.unsupervised_mode import _apply_unsupervised_mode
+from spatial_proteomics.full_mode import _apply_full_mode
 import argparse
 import sys
 
@@ -28,24 +29,9 @@ def sppran_steps(config):
     plotting, and calculation of cell-population counts and proportions.
     """
     adata_dicts = create_or_load_anndata(config)
-    if config['spatial_plot']['plot_options'] != 'none':
-        plot_spatial(
-            adata_dicts              = adata_dicts,
-            custom_colors            = config['custom_colors'],
-            output_dir               = config['workspace']['output_dir'],
-            plot_options             = config['spatial_plot']['plot_options'],
-            custom_plot              = config['spatial_plot']['custom_plot'],
-            dpi                      = config['spatial_plot']['dpi'],
-            size                     = config['spatial_plot']['scatter_point_size'],
-            overwrite_existing_files = config['overwrite_existing_files']
-        )
-    calculate_cell_proportions(
-        adata_dicts              = adata_dicts,
-        custom_colors            = config['custom_colors'],
-        output_dir               = config['workspace']['output_dir'],
-        overwrite_existing_files = config['overwrite_existing_files'],
-        sub_cell_types           = config['sub_cell_types'] if 'sub_cell_types' in config.keys() else {}
-    )
+    if config['type_of_analysis'] == 'supervised': _apply_supervised_mode(adata_dicts,config)
+    if config['type_of_analysis'] == 'unsupervised': _apply_unsupervised_mode(adata_dicts,config)
+    if config['type_of_analysis'] == 'full': _apply_full_mode(adata_dicts,config)
 
 def spatial_proteomics_pipeline(config_path):
     """

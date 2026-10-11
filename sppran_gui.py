@@ -9,7 +9,7 @@ The module is also used as the entry point for packaged macOS and Windows
 desktop distributions.
 """
 
-# Version 0.2.5
+# Version 0.3.0
 
 import os
 import sys
