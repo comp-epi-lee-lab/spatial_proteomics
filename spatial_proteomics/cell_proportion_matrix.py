@@ -9,13 +9,41 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def _pct_dists(len_sizes):            # function for obtaining an equally distributed spaces for percentages in slices of pie plot
+def _pct_dists(len_sizes):
+    """
+    Calculate radial positions for pie plot percentage labels.
+
+    Parameters
+    ----------
+    len_sizes : int
+        Number of pie plot slices. Intended for values greater than one.
+
+    Returns
+    -------
+    list of float
+        Radial scaling factors used to separate percentage labels.
+    """
     splitting_number = (1.05-(1/len_sizes))/(len_sizes-1)
     distances_list = np.round(np.arange(1/len_sizes, 1.05+.01,splitting_number),2).tolist()
     just_because = len(distances_list)
     return [distances_list[just_because-1-idx] for idx in range(just_because)]
 
-def _move_pct(t, d):                  # function for moving the percentages according to the previous distributions
+def _move_pct(t, d):
+    """
+    Move a Matplotlib pie plot percentage label radially.
+
+    Parameters
+    ----------
+    t : matplotlib.text.Text
+        Percentage label created by ``Axes.pie``.
+    d : float
+        Radial scaling factor.
+
+    Returns
+    -------
+    None
+        The text object is modified in place.
+    """
     xi, yi = t.get_position()
     ri = np.sqrt(xi**2 + yi**2)
     phi = np.arctan2(yi, xi)
@@ -24,6 +52,29 @@ def _move_pct(t, d):                  # function for moving the percentages acco
     t.set_position((x, y))
 
 def _plot_pie_plots(sum_dict,custom_colors,title_name,unique_values,ct_name,save_namefile):
+    """
+    Save a pie plot showing cell population composition for one sample.
+
+    Parameters
+    ----------
+    sum_dict : dict
+        Cell counts keyed by phenotype; must include ``"Total cells"``.
+    custom_colors : dict of str to str
+        Phenotype-to-color mapping.
+    title_name : str
+        Figure title.
+    unique_values : list of str
+        Populations represented in the sample.
+    ct_name : str
+        Focal population placed first in the pie plot.
+    save_namefile : pathlib.Path
+        Output image path.
+
+    Returns
+    -------
+    None
+        The figure is written below the ``Statistics`` output directory.
+    """
     fig, ax = plt.subplots(figsize=(8, 8), constrained_layout=True)
     
     k1=ct_name
@@ -64,6 +115,30 @@ def _plot_pie_plots(sum_dict,custom_colors,title_name,unique_values,ct_name,save
 
 
 def calculate_cell_proportion_matrix(adata_dicts, output_dir, custom_colors, focus_ct_name_list, pie_plot=False,overwrite_existing_files=False):
+    """
+    Build sample-by-phenotype proportion matrices and optional pie plots.
+
+    Parameters
+    ----------
+    adata_dicts : dict of str to anndata.AnnData
+        Per-sample annotated data.
+    output_dir : str or pathlib.Path
+        SpPrAn output directory.
+    custom_colors : dict of str to str
+        Phenotype-to-color mapping.
+    focus_ct_name_list : list of str
+        Major cell types prioritized as focal populations in pie plots.
+    pie_plot : bool, default=False
+        Whether sample-level composition pie plots should be generated.
+    overwrite_existing_files : bool, default=False
+        Whether existing outputs may be replaced.
+
+    Returns
+    -------
+    None
+        Proportion matrices and optional pie plots are written below the
+        ``Statistics`` output directory.
+    """
     output_dir = Path(output_dir)
     results_dir = output_dir / "results"
     results_dir.mkdir(parents=True, exist_ok=True)

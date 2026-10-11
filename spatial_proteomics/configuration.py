@@ -755,6 +755,11 @@ def load_config(config_path: str | Path) -> dict:
         If the YAML is syntactically valid but contains invalid settings.
     ValueError
         If the YAML file cannot be parsed.
+
+    Notes
+    -----
+    Configurations from before v0.3.0 that omit ``type_of_analysis`` are
+    normalized to ``"supervised"`` for backward compatibility.
     """
     config_path = Path(config_path).expanduser()
     if not config_path.exists(): raise FileNotFoundError(f"Configuration file not found: '{config_path}'.")
@@ -772,12 +777,6 @@ def load_config(config_path: str | Path) -> dict:
     output_dir = _resolve_workspace_path(config["workspace"]["output_dir"], config_path,)
     config["workspace"]["input_dir"] = input_dir
     config["workspace"]["output_dir"] = output_dir
-    # if not input_dir.exists(): raise FileNotFoundError(f"Input directory '{input_dir}' does not exist or is misspelled.")
-    # if not input_dir.is_dir(): raise NotADirectoryError(f"Input path '{input_dir}' exists, but it is not a directory.")
-
-    # # The output directory is intentionally user-defined and is not created automatically. This keeps result organization explicit and predictable.
-    # if not output_dir.exists(): raise FileNotFoundError(f"Output directory '{output_dir}' does not exist or is misspelled. Please create the desired output directory and specify it in the configuration file.")
-    # if not output_dir.is_dir(): raise NotADirectoryError(f"Output path '{output_dir}' exists, but it is not a directory.")
     return config
 
 __all__ = ["ConfigValidationError", "load_config",]

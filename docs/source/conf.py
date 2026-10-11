@@ -6,18 +6,18 @@ sys.path.insert(0, str(ROOT))
 
 project = "SpPrAn"
 author = "Sergio Zamora-Erazo"
+release = "0.3.0"
 
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
-    "sphinx_rtd_theme",
 ]
 
 autodoc_mock_imports = [
     "anndata", "matplotlib", "networkx", "numpy", "pandas", "pyarrow",
-    "scanpy", "scipy", "seaborn", "squidpy", "statsmodels", "yaml",
+    "scanpy", "scipy", "seaborn", "squidpy", "statsmodels",
 ]
 
 autodoc_default_options = {
@@ -31,4 +31,6 @@ napoleon_numpy_docstring = True
 templates_path = ["_templates"]
 exclude_patterns = []
 html_theme = "sphinx_rtd_theme"
-intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None)
+}

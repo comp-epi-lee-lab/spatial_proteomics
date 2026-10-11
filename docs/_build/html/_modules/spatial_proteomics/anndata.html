@@ -1,0 +1,805 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>spatial_proteomics.anndata &mdash; SpPrAn 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            SpPrAn
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../desktop_app.html">Desktop application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../analysis_modes.html">Analysis modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../config_builder.html">SpPrAn Configuration Builder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../workflow.html">Analysis workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../configuration.html">Configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Running SpPrAn</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../outputs.html">Outputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release notes</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">Python API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">SpPrAn</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">spatial_proteomics.anndata</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for spatial_proteomics.anndata</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">scanpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sc</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">anndata</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnnData</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">spatial_proteomics.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_general_cell_hierarchy</span><span class="p">,</span> <span class="n">plot_digraph</span><span class="p">,</span> <span class="n">order_sub_cell_types</span><span class="p">,</span> <span class="n">save_anndata_files</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<div class="viewcode-block" id="load_anndata_files">
+<a class="viewcode-back" href="../../api.html#spatial_proteomics.anndata.load_anndata_files">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_anndata_files</span><span class="p">(</span><span class="n">output_dir</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Load previously generated AnnData objects for all known samples.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    output_dir : pathlib.Path</span>
+<span class="sd">        SpPrAn output directory containing the ``results`` and ``adata``</span>
+<span class="sd">        subdirectories.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict of str to anndata.AnnData or None</span>
+<span class="sd">        Mapping from sample identifier to loaded AnnData object. A missing</span>
+<span class="sd">        sample file is represented by ``None``. An empty dictionary is</span>
+<span class="sd">        returned when the sample index file is unavailable.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Sample identifiers are read from ``results/Samples Id.csv`` and AnnData</span>
+<span class="sd">    files are expected at ``adata/Sample_&lt;sample&gt;.h5ad``.</span>
+<span class="sd">    """</span>
+    <span class="n">filepath</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"results"</span> <span class="o">/</span> <span class="s2">"Samples Id.csv"</span>
+    <span class="k">if</span> <span class="n">filepath</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="n">sample_names</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">str</span><span class="p">)[</span><span class="s1">'Samples Id'</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">adata_dicts</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">sample_names</span><span class="p">:</span>
+            <span class="n">sample</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span>                                                                                             <span class="c1"># Ensuring we can deal with numbers as identifiers.</span>
+            <span class="n">adata_path</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"adata"</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"Sample_</span><span class="si">{</span><span class="n">sample</span><span class="si">}</span><span class="s2">.h5ad"</span>
+            <span class="k">if</span> <span class="n">adata_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="n">adata_dicts</span><span class="p">[</span><span class="n">sample</span><span class="p">]</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">read_h5ad</span><span class="p">(</span><span class="n">adata_path</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"WARNING: Anndata loading cannot be completed. Sample_</span><span class="si">{</span><span class="n">sample</span><span class="si">}</span><span class="s2">.h5ad doesn't exist or it's missing."</span><span class="p">)</span> <span class="c1"># An None value is saved in the dictionary.</span>
+                <span class="n">adata_dicts</span><span class="p">[</span><span class="n">sample</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">adata_dicts</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"WARNING: Anndata loading cannot be completed. File '</span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2">' doesn't exist or it's missing."</span><span class="p">)</span>                <span class="c1"># An empty dictionary is returned.</span>
+    <span class="k">return</span> <span class="p">{}</span></div>
+
+
+<div class="viewcode-block" id="filenames">
+<a class="viewcode-back" href="../../api.html#spatial_proteomics.anndata.filenames">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">filenames</span><span class="p">(</span><span class="n">input_dir</span><span class="p">,</span> <span class="n">filetype</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Find SpPrAn object-level input files.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    input_dir : pathlib.Path</span>
+<span class="sd">        Directory containing Visiopharm object-level exports.</span>
+<span class="sd">    filetype : {"tsv", "csv"}</span>
+<span class="sd">        Input-file extension.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    list of pathlib.Path</span>
+<span class="sd">        Files matching ``*_objects.&lt;filetype&gt;``.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    FileNotFoundError</span>
+<span class="sd">        If ``input_dir`` does not exist.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Hidden files and macOS ``._`` resource-fork files are excluded.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">input_dir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="n">entries</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">input_dir</span><span class="o">.</span><span class="n">iterdir</span><span class="p">())</span>
+        <span class="n">filenames</span> <span class="o">=</span> <span class="p">[</span><span class="n">entry</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">entries</span> <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">is_file</span><span class="p">()</span> <span class="ow">and</span> <span class="n">entry</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">f</span><span class="s2">"*_objects.</span><span class="si">{</span><span class="n">filetype</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">entry</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"._"</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">entry</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"."</span><span class="p">)]</span>  <span class="c1"># Exclude hidden files and macOS resource forks</span>
+        <span class="k">return</span> <span class="n">filenames</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Input directory '</span><span class="si">{</span><span class="n">input_dir</span><span class="si">}</span><span class="s2">' doesn't exists or it's misspelled."</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="cleaned_data">
+<a class="viewcode-back" href="../../api.html#spatial_proteomics.anndata.cleaned_data">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">cleaned_data</span><span class="p">(</span><span class="n">file_names</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">protein_markers</span><span class="p">,</span> <span class="n">cell_subtype_dict</span><span class="p">,</span> <span class="n">filetype</span><span class="o">=</span><span class="s1">'tsv'</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Clean object-level spatial proteomics tables and create AnnData objects.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    file_names : list of pathlib.Path</span>
+<span class="sd">        Object-level input files to process.</span>
+<span class="sd">    output_dir : pathlib.Path</span>
+<span class="sd">        Directory where SpPrAn result metadata will be written.</span>
+<span class="sd">    protein_markers : list of str</span>
+<span class="sd">        Primary positivity-column names used for cell-type classification.</span>
+<span class="sd">    cell_subtype_dict : dict</span>
+<span class="sd">        Hierarchical subtype definitions. Subtype marker columns are retained</span>
+<span class="sd">        when required for downstream classification.</span>
+<span class="sd">    filetype : {"tsv", "csv"}, default="tsv"</span>
+<span class="sd">        Input table format.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    data_dicts : dict of str to pandas.DataFrame</span>
+<span class="sd">        Cleaned per-sample tables used for phenotype assignment.</span>
+<span class="sd">    adata_dicts : dict of str to anndata.AnnData</span>
+<span class="sd">        Per-sample AnnData objects containing cell-level measurements and</span>
+<span class="sd">        spatial information.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    When the DAPI positivity column is available, rows lacking nuclear DAPI</span>
+<span class="sd">    positivity are removed. SpPrAn also records sample identifiers and the</span>
+<span class="sd">    detected positivity-column names in the output directory.</span>
+
+<span class="sd">    The resulting AnnData objects represent individual segmented cells, not</span>
+<span class="sd">    aggregated tissue regions.</span>
+<span class="sd">    """</span>
+    <span class="n">adata_dicts</span>    <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">data_dicts</span>     <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">filename_dicts</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">file_names</span><span class="p">)</span><span class="o">!=</span><span class="mi">0</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">file_names</span><span class="p">:</span>
+            <span class="n">separator</span> <span class="o">=</span> <span class="s1">'</span><span class="se">\t</span><span class="s1">'</span> <span class="k">if</span> <span class="n">filetype</span><span class="o">==</span><span class="s1">'tsv'</span> <span class="k">else</span> <span class="s1">','</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="n">separator</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="s1">'Positivity - DAPI (MV - NUC)'</span><span class="p">])</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="s1">'Positivity - DAPI (MV - NUC)'</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span><span class="p">]</span>                                                           <span class="c1"># filter out cells without nucleus</span>
+            <span class="k">else</span><span class="p">:</span> <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"WARNING: This pipeline uses 'Positivity - DAPI' for filtering out cells without nucleus. However, such column was not found. Continue without filtering..."</span><span class="p">)</span>
+            <span class="n">name_of_file</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">filename</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'/'</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'</span><span class="se">\\</span><span class="s1">'</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">name_of_file</span><span class="p">[:</span><span class="mi">11</span><span class="p">]</span><span class="o">==</span><span class="s1">'COMET_6x6 ('</span><span class="p">:</span>
+                <span class="n">data</span><span class="p">[</span><span class="s1">'Name'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">s</span><span class="p">[</span><span class="mi">11</span><span class="p">]</span><span class="si">}{</span><span class="n">s</span><span class="p">[</span><span class="mi">14</span><span class="p">]</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">i</span><span class="si">:</span><span class="s2">05</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">s</span><span class="p">,</span><span class="n">i</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="n">name_of_file</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span><span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="p">)]</span>   <span class="c1"># retain letter and number for identifying samples</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">data</span><span class="p">[</span><span class="s1">'Name'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">s</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">i</span><span class="si">:</span><span class="s2">05</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">s</span><span class="p">,</span><span class="n">i</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="n">name_of_file</span><span class="p">[:</span><span class="o">-</span><span class="mi">12</span><span class="p">]]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span><span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="p">)]</span>        <span class="c1"># retain filename for identifying samples</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">"Name"</span><span class="p">:</span><span class="s2">"cellID"</span><span class="p">},</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            
+            <span class="n">pos_cols</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">[(</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s1">'Positivity'</span><span class="p">))</span><span class="o">&amp;</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s1">'MV'</span><span class="p">))]</span>               <span class="c1"># identify columns that says if protein marker is present (1) or abscent (0)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pos_cols</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> 
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"WARNING: No protein marker valid name was found in Sample </span><span class="si">{</span><span class="n">name_of_file</span><span class="p">[</span><span class="o">-</span><span class="mi">14</span><span class="p">:</span><span class="o">-</span><span class="mi">12</span><span class="p">]</span><span class="si">}</span><span class="s2">. Skipping this sample from analysis..."</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="n">pm_extended</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">protein_markers</span> <span class="o">+</span> <span class="p">[</span><span class="n">pm_e</span> <span class="k">for</span> <span class="n">v1_temp</span> <span class="ow">in</span> <span class="n">cell_subtype_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">for</span> <span class="n">v2_temp</span> <span class="ow">in</span> <span class="n">v1_temp</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">for</span> <span class="n">pm_e</span> <span class="ow">in</span> <span class="n">v2_temp</span><span class="o">.</span><span class="n">keys</span><span class="p">()]))</span>
+            <span class="k">for</span> <span class="n">pm_test</span> <span class="ow">in</span> <span class="n">pm_extended</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">pm_test</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">pos_cols</span><span class="p">:</span> <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"WARNING: Protein marker '</span><span class="si">{</span><span class="n">pm_test</span><span class="si">}</span><span class="s2">' was not found in Sample </span><span class="si">{</span><span class="n">name_of_file</span><span class="p">[</span><span class="o">-</span><span class="mi">14</span><span class="p">:</span><span class="o">-</span><span class="mi">12</span><span class="p">]</span><span class="si">}</span><span class="s2">. Skipping this sample from analysis..."</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="n">pm_extended</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">pos_cols</span><span class="p">):</span> <span class="k">continue</span>
+
+            <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="o">~</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">pos_cols</span><span class="p">]</span><span class="o">.</span><span class="n">eq</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))]</span>                                                                  <span class="c1"># filter out those cells that does contain a NaN value (-1) in the previous columns</span>
+            <span class="n">columns_nuc</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span>                                                                                        <span class="c1"># keep columns with protein intensity in the nucleus</span>
+                <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="s1">'cellID'</span><span class="p">]))</span><span class="o">|</span>
+                <span class="p">((</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">"MV - NUC - "</span><span class="p">))</span><span class="o">&amp;</span><span class="p">(</span><span class="o">~</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">"Type"</span><span class="p">)))</span>
+            <span class="p">]</span>
+            <span class="n">columns_cyto</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span>                                                                                        <span class="c1"># keep columns with protein intensity in the cytoplasm</span>
+                <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="s1">'cellID'</span><span class="p">]))</span><span class="o">|</span>
+                <span class="p">((</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">"MV - CYTO - "</span><span class="p">))</span><span class="o">&amp;</span><span class="p">(</span><span class="o">~</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">"Type"</span><span class="p">)))</span>
+            <span class="p">]</span>
+            <span class="n">columns_cell</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span>                                                                                        <span class="c1"># keep columns with protein intensity in the cell</span>
+                <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="s1">'cellID'</span><span class="p">]))</span><span class="o">|</span>
+                <span class="p">((</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">"MV Cell - "</span><span class="p">))</span><span class="o">&amp;</span><span class="p">(</span><span class="o">~</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">"Type"</span><span class="p">)))</span>
+            <span class="p">]</span>
+            <span class="n">intensities_columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">new_col_check</span>
+                <span class="k">for</span> <span class="n">column_check</span> <span class="ow">in</span> <span class="n">pos_cols</span>
+                <span class="k">for</span> <span class="n">val_check</span><span class="p">,</span><span class="n">where_check</span> <span class="ow">in</span> <span class="p">{</span><span class="s1">'CYTO'</span><span class="p">:</span><span class="n">columns_cyto</span><span class="p">,</span><span class="s1">'NUC'</span><span class="p">:</span><span class="n">columns_nuc</span><span class="p">,</span><span class="s1">'Cell'</span><span class="p">:</span><span class="n">columns_cell</span><span class="p">}</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">val_check</span> <span class="ow">in</span> <span class="n">column_check</span>
+                <span class="k">for</span> <span class="n">new_col_check</span> <span class="ow">in</span> <span class="n">where_check</span>
+                <span class="k">if</span> <span class="n">column_check</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"DAPI"</span><span class="p">,</span> <span class="s2">"DAPI,"</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"Positivity - "</span><span class="p">,</span><span class="s2">","</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"*"</span><span class="p">,</span><span class="s2">"*,"</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">" (MV"</span><span class="p">,</span> <span class="s2">", (MV"</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">new_col_check</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">" - "</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">intensities_columns</span><span class="p">)</span><span class="o">!=</span><span class="nb">len</span><span class="p">(</span><span class="n">pos_cols</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">column_check</span><span class="p">,</span><span class="n">new_col_check</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pos_cols</span><span class="p">,</span><span class="n">intensities_columns</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">column_check</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"DAPI"</span><span class="p">,</span> <span class="s2">"DAPI,"</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"Positivity - "</span><span class="p">,</span><span class="s2">","</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"*"</span><span class="p">,</span><span class="s2">"*,"</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">" (MV"</span><span class="p">,</span> <span class="s2">", (MV"</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">new_col_check</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">" - "</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+                        <span class="n">intensities_columns</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">pos_cols</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">column_check</span><span class="p">),</span><span class="n">column_check</span><span class="p">)</span>
+
+            <span class="n">columns_pos</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="s1">'cellID'</span><span class="p">,</span> <span class="s1">'X-coordinate'</span><span class="p">,</span> <span class="s1">'Y-coordinate'</span><span class="p">])]</span>                          <span class="c1"># keep spatial columns</span>
+            <span class="n">data_temp</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">intensities_columns</span><span class="p">]</span><span class="c1">#.iloc[:,1:]</span>
+            <span class="n">adata</span> <span class="o">=</span> <span class="n">AnnData</span><span class="p">(</span>                                                                                                   <span class="c1"># generate AnnData file to include spatial data</span>
+                <span class="n">data_temp</span><span class="o">.</span><span class="n">set_index</span><span class="p">((</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">data_temp</span><span class="o">.</span><span class="n">index</span><span class="p">)),</span>
+                <span class="n">obsm</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">"spatial"</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="n">columns_pos</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span>
+                    <span class="s2">"ID_cell"</span><span class="p">:</span><span class="n">data</span><span class="p">[[</span><span class="s1">'cellID'</span><span class="p">]]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span>
+                    <span class="s2">"Positivity"</span><span class="p">:</span><span class="n">data</span><span class="p">[</span><span class="n">pos_cols</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+                <span class="p">},</span>
+                <span class="n">uns</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">"spatial"</span><span class="p">:{</span><span class="s2">"unique"</span><span class="p">:{}},</span>
+                    <span class="s2">"filename_id"</span><span class="p">:{</span><span class="n">name_of_file</span><span class="p">:</span> <span class="n">name_of_file</span><span class="p">[</span><span class="o">-</span><span class="mi">14</span><span class="p">:</span><span class="o">-</span><span class="mi">12</span><span class="p">]}</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+
+            <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[[</span><span class="s2">"cellID"</span><span class="p">]</span><span class="o">+</span><span class="n">pos_cols</span><span class="o">.</span><span class="n">tolist</span><span class="p">()]</span>
+            <span class="n">adata_dicts</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">][</span><span class="o">-</span><span class="mi">8</span><span class="p">:</span><span class="o">-</span><span class="mi">6</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span> <span class="o">=</span> <span class="n">adata</span>
+            <span class="n">data_dicts</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">][</span><span class="o">-</span><span class="mi">8</span><span class="p">:</span><span class="o">-</span><span class="mi">6</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+            <span class="n">filename_dicts</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">][</span><span class="o">-</span><span class="mi">8</span><span class="p">:</span><span class="o">-</span><span class="mi">6</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span> <span class="o">=</span> <span class="n">name_of_file</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">"Samples Id"</span><span class="p">:</span><span class="n">filename_dicts</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="s2">"Samples filename"</span><span class="p">:</span><span class="n">filename_dicts</span><span class="o">.</span><span class="n">values</span><span class="p">()})</span>
+        <span class="n">results_path</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"results"</span>
+        <span class="n">results_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">results_path</span> <span class="o">/</span> <span class="s2">"Samples Id.csv"</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">"Positivity column names"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">pos_cols</span><span class="p">]</span><span class="o">.</span><span class="n">columns</span><span class="p">),</span> <span class="s2">"Name appearing in anndata file"</span><span class="p">:</span> <span class="n">intensities_columns</span><span class="p">})</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">results_path</span><span class="o">/</span> <span class="s2">"Positivity column names.csv"</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span> 
+        <span class="n">data_dicts</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">adata_dicts</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">return</span> <span class="n">data_dicts</span><span class="p">,</span> <span class="n">adata_dicts</span></div>
+
+
+<div class="viewcode-block" id="create_cell_type_dict">
+<a class="viewcode-back" href="../../api.html#spatial_proteomics.anndata.create_cell_type_dict">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_cell_type_dict</span><span class="p">(</span><span class="n">protein_markers</span><span class="p">,</span> <span class="n">cell_types</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Convert ordered cell-type rules into marker-to-state dictionaries.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    protein_markers : list of str</span>
+<span class="sd">        Ordered positivity-column names.</span>
+<span class="sd">    cell_types : dict of str to list</span>
+<span class="sd">        Cell-type definitions containing ``1`` for positive, ``0`` for</span>
+<span class="sd">        negative, and ``None`` for unconstrained markers.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict of str to dict</span>
+<span class="sd">        Marker-based phenotype rules keyed by cell-type name.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Unconstrained markers are omitted from the returned rule dictionary.</span>
+<span class="sd">    """</span>
+    <span class="n">cell_type_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">cell_type</span><span class="p">,</span> <span class="n">rule</span> <span class="ow">in</span> <span class="n">cell_types</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">cell_type_dict</span><span class="p">[</span><span class="n">cell_type</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">protein_markers</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span><span class="n">rule</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">rule</span><span class="p">))</span> <span class="k">if</span> <span class="n">rule</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">cell_type_dict</span></div>
+
+
+
+
+
+
+<div class="viewcode-block" id="get_index_nones">
+<a class="viewcode-back" href="../../api.html#spatial_proteomics.anndata.get_index_nones">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_index_nones</span><span class="p">(</span><span class="n">cell_types</span><span class="p">,</span> <span class="n">protein_markers</span><span class="p">,</span> <span class="n">sub_protein_markers</span><span class="p">,</span> <span class="n">sub_cell_types</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Identify unconstrained marker positions for each phenotype.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    cell_types : dict</span>
+<span class="sd">        Primary marker-based phenotype definitions.</span>
+<span class="sd">    protein_markers : list of str</span>
+<span class="sd">        Primary marker names.</span>
+<span class="sd">    sub_protein_markers : dict</span>
+<span class="sd">        Subtype marker names grouped by parent population.</span>
+<span class="sd">    sub_cell_types : dict</span>
+<span class="sd">        Hierarchical subtype definitions.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict of str to list of int</span>
+<span class="sd">        Marker positions that are not constrained for each phenotype.</span>
+<span class="sd">    """</span>
+    <span class="n">none_dicc</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">total_markers</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">protein_markers</span><span class="p">)</span>
+    <span class="c1"># none_subindices = [index+total_markers for index in range(len(sub_protein_markers['all']))]</span>
+    <span class="k">for</span> <span class="n">cell_type</span> <span class="ow">in</span> <span class="n">cell_types</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">none_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">index</span> <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">protein_markers</span><span class="p">)</span> <span class="k">if</span> <span class="n">value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cell_types</span><span class="p">[</span><span class="n">cell_type</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+        <span class="n">none_dicc</span><span class="p">[</span><span class="n">cell_type</span><span class="p">]</span><span class="o">=</span><span class="n">none_indices</span>
+    <span class="k">for</span> <span class="n">cell_type</span> <span class="ow">in</span> <span class="n">sub_cell_types</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="c1"># none_indices_temp = none_dicc[cell_type]+none_subindices</span>
+        <span class="k">for</span> <span class="n">subcell_type</span> <span class="ow">in</span> <span class="n">sub_cell_types</span><span class="p">[</span><span class="n">cell_type</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="c1"># none_indices = [index for index in none_indices_temp if index not in [total_markers + sub_protein_markers['all'].index(val) for val in sub_cell_types[cell_type][subcell_type].keys()]]</span>
+            <span class="n">none_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">total_markers</span> <span class="o">+</span> <span class="n">sub_protein_markers</span><span class="p">[</span><span class="s1">'all'</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">sub_protein_markers</span><span class="p">[</span><span class="n">cell_type</span><span class="p">]</span> <span class="k">if</span> <span class="n">val</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sub_cell_types</span><span class="p">[</span><span class="n">cell_type</span><span class="p">][</span><span class="n">subcell_type</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+            <span class="n">none_dicc</span><span class="p">[</span><span class="n">subcell_type</span><span class="p">]</span><span class="o">=</span><span class="n">none_indices</span>
+    <span class="k">return</span> <span class="n">none_dicc</span></div>
+
+
+<div class="viewcode-block" id="fill_n_order_df_by_total_none_values">
+<a class="viewcode-back" href="../../api.html#spatial_proteomics.anndata.fill_n_order_df_by_total_none_values">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fill_n_order_df_by_total_none_values</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">idx_name</span><span class="p">,</span> <span class="n">order_dicc</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Expand unconstrained marker states and order phenotype columns.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df : pandas.DataFrame</span>
+<span class="sd">        Marker-by-phenotype rule table.</span>
+<span class="sd">    idx_name : str</span>
+<span class="sd">        Name assigned to the DataFrame index.</span>
+<span class="sd">    order_dicc : dict</span>
+<span class="sd">        Phenotype ordering grouped by specificity/dependency.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    expanded_df : pandas.DataFrame</span>
+<span class="sd">        Rule table in which unconstrained states are represented as both</span>
+<span class="sd">        possible binary states.</span>
+<span class="sd">    original_df : pandas.DataFrame</span>
+<span class="sd">        Ordered copy retaining the original unconstrained values.</span>
+<span class="sd">    """</span>
+    <span class="n">df_og</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">mask</span><span class="p">,</span> <span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span> <span class="o">*</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="n">index</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">mask</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">idx_name</span>
+    <span class="n">df_og</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">idx_name</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">([</span><span class="n">val</span> <span class="k">for</span> <span class="n">cols</span> <span class="ow">in</span> <span class="n">order_dicc</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">cols</span> <span class="k">if</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">]))]</span>
+    <span class="n">df_og</span> <span class="o">=</span> <span class="n">df_og</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">([</span><span class="n">val</span> <span class="k">for</span> <span class="n">cols</span> <span class="ow">in</span> <span class="n">order_dicc</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">cols</span> <span class="k">if</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">df_og</span><span class="o">.</span><span class="n">columns</span><span class="p">]))]</span>
+    <span class="k">return</span> <span class="n">df</span><span class="p">,</span> <span class="n">df_og</span></div>
+
+
+<div class="viewcode-block" id="sets_and_subsets_cell_types">
+<a class="viewcode-back" href="../../api.html#spatial_proteomics.anndata.sets_and_subsets_cell_types">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">sets_and_subsets_cell_types</span><span class="p">(</span><span class="n">cell_type_dict</span><span class="p">,</span> <span class="n">sub_cell_type_dict</span><span class="p">,</span> <span class="n">protein_markers</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">custom_colors</span><span class="p">,</span> <span class="n">arrows_orientation</span><span class="o">=</span><span class="s2">"contains"</span><span class="p">,</span> <span class="n">type_of_analysis</span> <span class="o">=</span> <span class="s1">'supervised'</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Determine hierarchical subset relationships among marker-defined phenotypes.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    cell_type_dict : dict</span>
+<span class="sd">        Primary marker-based cell-type definitions.</span>
+<span class="sd">    sub_cell_type_dict : dict</span>
+<span class="sd">        User-defined hierarchical subtype definitions.</span>
+<span class="sd">    protein_markers : list of str</span>
+<span class="sd">        Primary marker names.</span>
+<span class="sd">    output_dir : pathlib.Path</span>
+<span class="sd">        Output directory used for hierarchy visualizations and related files.</span>
+<span class="sd">    custom_colors : dict of str to str</span>
+<span class="sd">        Hexadecimal color assigned to each phenotype.</span>
+<span class="sd">    arrows_orientation : {"contains", "isContained"}, default="contains"</span>
+<span class="sd">        Direction used to display relationships in hierarchy diagrams.</span>
+<span class="sd">    type_of_analysis : {"supervised", "unsupervised", "full"}, default="supervised"</span>
+<span class="sd">        Active analysis mode. The user-defined hierarchy figure is generated only</span>
+<span class="sd">        for the supervised workflow at this stage.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    final_subsets : dict</span>
+<span class="sd">        Final subset relationships for each hierarchy level.</span>
+<span class="sd">    subtype_definitions : dict</span>
+<span class="sd">        Marker definitions associated with resolved phenotype subsets.</span>
+<span class="sd">    larger_groups : dict</span>
+<span class="sd">        Parent or less-specific phenotype groups identified during hierarchy</span>
+<span class="sd">        resolution.</span>
+<span class="sd">    custom_colors : dict</span>
+<span class="sd">        Color mapping including any colors generated for intersecting</span>
+<span class="sd">        phenotypes.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Cell populations are compared as sets defined by marker positivity rules.</span>
+<span class="sd">    These subset relationships describe the logical phenotype definitions used</span>
+<span class="sd">    by SpPrAn and should not automatically be interpreted as developmental</span>
+<span class="sd">    lineage relationships.</span>
+<span class="sd">    """</span>
+    <span class="n">sub_protein_markers</span> <span class="o">=</span> <span class="p">{</span><span class="n">cell_type</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">cell_type</span> <span class="ow">in</span> <span class="n">sub_cell_type_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()}</span>
+    <span class="n">all_temp</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">cell_types</span> <span class="ow">in</span> <span class="n">sub_cell_type_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">sublist_temp</span> <span class="o">=</span> <span class="p">[</span><span class="n">subprotein_marker</span> <span class="k">for</span> <span class="n">sub_cell_type</span> <span class="ow">in</span> <span class="n">sub_cell_type_dict</span><span class="p">[</span><span class="n">cell_types</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">for</span> <span class="n">subprotein_marker</span> <span class="ow">in</span> <span class="n">sub_cell_type_dict</span><span class="p">[</span><span class="n">cell_types</span><span class="p">][</span><span class="n">sub_cell_type</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+        <span class="n">sub_protein_markers</span><span class="p">[</span><span class="n">cell_types</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">sublist_temp</span><span class="p">))</span>
+        <span class="n">all_temp</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">sub_protein_markers</span><span class="p">[</span><span class="n">cell_types</span><span class="p">])</span>
+    <span class="n">sub_protein_markers</span><span class="p">[</span><span class="s1">'all'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">all_temp</span><span class="p">))</span>
+    <span class="n">none_dicc</span> <span class="o">=</span> <span class="n">get_index_nones</span><span class="p">(</span><span class="n">cell_type_dict</span><span class="p">,</span> <span class="n">protein_markers</span><span class="p">,</span> <span class="n">sub_protein_markers</span><span class="p">,</span> <span class="n">sub_cell_type_dict</span><span class="p">)</span>
+    
+    <span class="c1"># Reordering cell types based on the number of None values in their definitions</span>
+    <span class="n">max_N</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">N_pos</span><span class="p">)</span> <span class="k">for</span> <span class="n">N_pos</span> <span class="ow">in</span> <span class="n">none_dicc</span><span class="o">.</span><span class="n">values</span><span class="p">()])</span>
+    <span class="n">dicc_temp</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">max_N</span><span class="o">+</span><span class="mi">1</span><span class="p">)):</span> <span class="n">dicc_temp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">cell_type</span><span class="p">,</span> <span class="n">N_pos</span> <span class="ow">in</span> <span class="n">none_dicc</span><span class="o">.</span><span class="n">items</span><span class="p">():</span> <span class="n">dicc_temp</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">N_pos</span><span class="p">)]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cell_type</span><span class="p">)</span>
+
+    <span class="c1"># Creating DataFrames for cell types and sub cell types</span>
+    <span class="n">ct_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">cell_type_dict</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">protein_markers</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
+    <span class="n">ct_df</span><span class="p">,</span> <span class="n">ct_df_og</span> <span class="o">=</span> <span class="n">fill_n_order_df_by_total_none_values</span><span class="p">(</span><span class="n">ct_df</span><span class="p">,</span> <span class="s1">'Protein Marker'</span><span class="p">,</span> <span class="n">dicc_temp</span><span class="p">)</span>
+    <span class="n">sct_dfs</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="c1"># sct_dfs_og = {}</span>
+    <span class="k">for</span> <span class="n">sct</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">sub_cell_type_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">sct</span> <span class="ow">in</span> <span class="n">cell_type_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">full_index</span> <span class="o">=</span> <span class="n">protein_markers</span> <span class="o">+</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">sub_protein_markers</span><span class="p">[</span><span class="n">sct</span><span class="p">]</span> <span class="k">if</span> <span class="n">p</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">protein_markers</span><span class="p">]</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">full_index</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">prot</span> <span class="ow">in</span> <span class="n">protein_markers</span><span class="p">:</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">prot</span><span class="p">]</span> <span class="o">=</span> <span class="n">cell_type_dict</span><span class="p">[</span><span class="n">sct</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">prot</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">whole_protein_markers</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">hold_temp</span> <span class="o">=</span> <span class="p">[</span><span class="n">sct</span><span class="p">]</span>
+            <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">hold_temp</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">hold_temp</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">cell_type_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="n">whole_protein_markers</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">cell_type_dict</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+                        <span class="n">hold_temp</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                        <span class="k">break</span>
+                    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">sub_cell_type_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="n">k</span><span class="o">==</span><span class="n">key</span><span class="p">:</span> <span class="k">continue</span>
+                        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">sub_cell_type_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                            <span class="n">hold_temp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+                            <span class="n">whole_protein_markers</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">sub_cell_type_dict</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">key</span><span class="p">])</span>
+                    <span class="n">hold_temp</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="n">full_pm</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">whole_protein_markers</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+            <span class="n">full_index</span> <span class="o">=</span> <span class="n">full_pm</span> <span class="o">+</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">sub_protein_markers</span><span class="p">[</span><span class="n">sct</span><span class="p">]</span> <span class="k">if</span> <span class="n">p</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">full_pm</span><span class="p">]</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">full_index</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">prot</span> <span class="ow">in</span> <span class="n">full_pm</span><span class="p">:</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">prot</span><span class="p">]</span> <span class="o">=</span> <span class="n">whole_protein_markers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">prot</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">,</span> <span class="n">df_og</span> <span class="o">=</span> <span class="n">fill_n_order_df_by_total_none_values</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s1">'Protein Marker'</span><span class="p">,</span> <span class="n">dicc_temp</span><span class="p">)</span>
+        <span class="n">sct_dfs</span><span class="p">[</span><span class="n">sct</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span>
+        <span class="c1"># sct_dfs_og[sct] = df_og</span>
+
+    <span class="n">list_final_subsets</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">list_sub_cell_types</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">list_bigger_cell_types</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">type_of_analysis</span> <span class="o">==</span> <span class="s1">'supervised'</span><span class="p">:</span> <span class="n">plot_general_cell_hierarchy</span><span class="p">(</span><span class="n">protein_markers</span><span class="p">,</span><span class="n">cell_type_dict</span><span class="p">,</span><span class="n">sub_cell_type_dict</span><span class="p">,</span><span class="n">custom_colors</span><span class="p">,</span><span class="n">save_path</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"plots"</span> <span class="p">,</span> <span class="n">arrows_orientation</span><span class="o">=</span><span class="n">arrows_orientation</span><span class="p">)</span>
+    <span class="n">list_final_subsets</span><span class="p">[</span><span class="s2">"General"</span><span class="p">],</span> <span class="n">list_sub_cell_types</span><span class="p">[</span><span class="s2">"General"</span><span class="p">],</span> <span class="n">list_bigger_cell_types</span><span class="p">[</span><span class="s2">"General"</span><span class="p">],</span> <span class="n">custom_colors</span> <span class="o">=</span> <span class="n">plot_digraph</span><span class="p">(</span><span class="n">ct_df</span><span class="p">,</span> <span class="n">protein_markers</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="s2">"General"</span><span class="p">,</span> <span class="n">dicc_temp</span><span class="p">,</span> <span class="n">custom_colors</span><span class="p">)</span> 
+    <span class="k">for</span> <span class="n">sct</span><span class="p">,</span> <span class="n">df</span> <span class="ow">in</span> <span class="n">sct_dfs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">list_final_subsets</span><span class="p">[</span><span class="n">sct</span><span class="p">],</span> <span class="n">list_sub_cell_types</span><span class="p">[</span><span class="n">sct</span><span class="p">],</span> <span class="n">list_bigger_cell_types</span><span class="p">[</span><span class="n">sct</span><span class="p">],</span> <span class="n">custom_colors</span> <span class="o">=</span> <span class="n">plot_digraph</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">),</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">sct</span><span class="p">,</span> <span class="n">dicc_temp</span><span class="p">,</span> <span class="n">custom_colors</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">list_final_subsets</span><span class="p">,</span> <span class="n">list_sub_cell_types</span><span class="p">,</span> <span class="n">list_bigger_cell_types</span><span class="p">,</span> <span class="n">custom_colors</span></div>
+
+
+<div class="viewcode-block" id="assign_cell_types_vectorized">
+<a class="viewcode-back" href="../../api.html#spatial_proteomics.anndata.assign_cell_types_vectorized">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">assign_cell_types_vectorized</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">cell_type_dict</span><span class="p">,</span> <span class="n">container</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Assign marker-defined phenotype labels to cells using vectorized comparisons.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : pandas.DataFrame</span>
+<span class="sd">        Cell-level table containing the positivity columns referenced by the</span>
+<span class="sd">        phenotype rules.</span>
+<span class="sd">    cell_type_dict : dict</span>
+<span class="sd">        Mapping from phenotype names to marker-state rules.</span>
+<span class="sd">    container : str</span>
+<span class="sd">        Name of the parent population being subdivided. Use ``"General"`` for</span>
+<span class="sd">        primary cell typing.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.Series</span>
+<span class="sd">        Phenotype label for every row in ``data``.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Cells are assigned in dictionary iteration order and only previously</span>
+<span class="sd">    unassigned cells are evaluated for subsequent phenotypes. Cells not</span>
+<span class="sd">    matching any rule are labeled ``"Other cells"`` at the general level.</span>
+<span class="sd">    """</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="s2">"Other cells"</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+    <span class="n">unassigned</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">cell_type</span><span class="p">,</span> <span class="n">rule</span> <span class="ow">in</span> <span class="n">cell_type_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">unassigned</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">marker</span><span class="p">,</span> <span class="n">expected</span> <span class="ow">in</span> <span class="n">rule</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">expected</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="nb">set</span><span class="p">)):</span> <span class="n">mask</span> <span class="o">&amp;=</span> <span class="n">data</span><span class="p">[</span><span class="n">marker</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">expected</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span> <span class="n">mask</span> <span class="o">&amp;=</span> <span class="n">data</span><span class="p">[</span><span class="n">marker</span><span class="p">]</span> <span class="o">==</span> <span class="n">expected</span>
+        <span class="n">labels</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">cell_type</span> <span class="k">if</span> <span class="n">cell_type</span><span class="o">!=</span><span class="n">container</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">"Other </span><span class="si">{</span><span class="n">cell_type</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">unassigned</span> <span class="o">&amp;=</span> <span class="o">~</span><span class="n">mask</span>
+    <span class="k">return</span> <span class="n">labels</span></div>
+
+
+<div class="viewcode-block" id="get_all_children">
+<a class="viewcode-back" href="../../api.html#spatial_proteomics.anndata.get_all_children">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_all_children</span><span class="p">(</span><span class="n">celltype</span><span class="p">,</span> <span class="n">dicc</span><span class="p">,</span> <span class="n">visited</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Return all descendants of a cell type from a nested hierarchy.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    -----</span>
+<span class="sd">    celltype : str</span>
+<span class="sd">        The cell type for which to find all children.</span>
+<span class="sd">    dicc : Dict[str:List]</span>
+<span class="sd">        Dictionary containing cell types and their corresponding children.</span>
+<span class="sd">    visited : set (Optional)</span>
+<span class="sd">        Set of already visited cell types to avoid infinite recursion. </span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ------</span>
+<span class="sd">    set</span>
+<span class="sd">       Set containing all children of the given cell type.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">visited</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">visited</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    
+    <span class="k">if</span> <span class="n">celltype</span> <span class="ow">in</span> <span class="n">visited</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">set</span><span class="p">()</span>
+    
+    <span class="n">visited</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">celltype</span><span class="p">)</span>
+    <span class="n">node</span> <span class="o">=</span> <span class="n">dicc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">celltype</span><span class="p">,</span> <span class="p">[])</span>
+    <span class="n">children</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">node</span><span class="p">:</span>
+            <span class="n">children</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span><span class="nb">dict</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">child</span><span class="p">,</span> <span class="n">descendants</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">children</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">descendants</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+                <span class="n">children</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">descendants</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">descendants</span><span class="p">,</span><span class="nb">dict</span><span class="p">):</span>
+                <span class="n">children</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">get_all_children</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">visited</span><span class="p">))</span>
+    <span class="c1"># for child in dicc.get(celltype, []):</span>
+    <span class="c1">#     children |= get_all_children(child, dicc, visited.copy())</span>
+    
+    <span class="k">return</span> <span class="n">children</span></div>
+
+
+<div class="viewcode-block" id="labeling_cell_types">
+<a class="viewcode-back" href="../../api.html#spatial_proteomics.anndata.labeling_cell_types">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">labeling_cell_types</span><span class="p">(</span><span class="n">data_dicts</span><span class="p">,</span> <span class="n">adata_dicts</span><span class="p">,</span> <span class="n">cell_type_dict</span><span class="p">,</span> <span class="n">sub_cell_type_dict</span><span class="p">,</span> <span class="n">protein_markers</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">custom_colors</span><span class="p">,</span> <span class="n">save_anndata</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">arrows_orientation</span><span class="o">=</span><span class="s2">"contains"</span><span class="p">,</span> <span class="n">type_of_analysis</span> <span class="o">=</span> <span class="s1">'supervised'</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Assign primary and hierarchical phenotype labels to AnnData objects.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data_dicts : dict of str to pandas.DataFrame</span>
+<span class="sd">        Cleaned cell-level tables used for marker comparisons.</span>
+<span class="sd">    adata_dicts : dict of str to anndata.AnnData</span>
+<span class="sd">        Corresponding per-sample AnnData objects.</span>
+<span class="sd">    cell_type_dict : dict</span>
+<span class="sd">        Primary marker-based phenotype definitions.</span>
+<span class="sd">    sub_cell_type_dict : dict</span>
+<span class="sd">        Hierarchical subtype definitions.</span>
+<span class="sd">    protein_markers : list of str</span>
+<span class="sd">        Primary protein-marker positivity columns.</span>
+<span class="sd">    output_dir : pathlib.Path</span>
+<span class="sd">        SpPrAn output directory.</span>
+<span class="sd">    custom_colors : dict of str to str</span>
+<span class="sd">        Phenotype color mapping.</span>
+<span class="sd">    save_anndata : bool, default=True</span>
+<span class="sd">        Whether updated AnnData objects should be written to disk.</span>
+<span class="sd">    arrows_orientation : {"contains", "isContained"}, default="contains"</span>
+<span class="sd">        Orientation used for hierarchy diagrams.</span>
+<span class="sd">    type_of_analysis : {"supervised", "unsupervised", "full"}, default="supervised"</span>
+<span class="sd">        Active analysis mode propagated to hierarchy-processing logic.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict of str to anndata.AnnData</span>
+<span class="sd">        AnnData objects containing primary labels, hierarchical subtype</span>
+<span class="sd">        annotations, colors, and plotting metadata.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Primary population labels are stored in ``adata.obs["clusters"]``.</span>
+<span class="sd">    Hierarchical subtype annotations are stored in additional observation</span>
+<span class="sd">    columns associated with their parent phenotype.</span>
+<span class="sd">    """</span>
+    <span class="n">list_final_subsets</span><span class="p">,</span> <span class="n">list_cell_types</span><span class="p">,</span> <span class="n">list_bigger_cell_types</span><span class="p">,</span> <span class="n">custom_colors</span> <span class="o">=</span> <span class="n">sets_and_subsets_cell_types</span><span class="p">(</span><span class="n">cell_type_dict</span><span class="p">,</span> <span class="n">sub_cell_type_dict</span><span class="p">,</span> <span class="n">protein_markers</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">custom_colors</span><span class="p">,</span><span class="n">arrows_orientation</span><span class="o">=</span><span class="n">arrows_orientation</span><span class="p">,</span> <span class="n">type_of_analysis</span> <span class="o">=</span> <span class="n">type_of_analysis</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="n">k_data</span><span class="p">,</span> <span class="n">data</span><span class="p">),</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">adata</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">data_dicts</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">adata_dicts</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+        <span class="n">list_folder_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'General'</span><span class="p">]</span>
+        <span class="n">new_obs_cols</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># clusters = data.apply(assign_cell_type, axis=1, args=(cell_type_dict,)).tolist()</span>
+        <span class="n">clusters</span> <span class="o">=</span> <span class="n">assign_cell_types_vectorized</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">cell_type_dict</span><span class="p">,</span> <span class="s2">"General"</span><span class="p">)</span>
+        <span class="n">new_obs_cols</span><span class="p">[</span><span class="s1">'clusters'</span><span class="p">]</span> <span class="o">=</span> <span class="n">clusters</span>
+        <span class="c1"># dict_vl = {}</span>
+        <span class="k">for</span> <span class="n">cell_type</span> <span class="ow">in</span> <span class="n">cell_type_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="c1"># new_obs_cols[f"only {cell_type}"] = [t if t==cell_type else "Other cells" for t in clusters]</span>
+            <span class="n">new_obs_cols</span><span class="p">[</span><span class="sa">f</span><span class="s2">"Only </span><span class="si">{</span><span class="n">cell_type</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span> <span class="o">=</span> <span class="n">clusters</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">clusters</span> <span class="o">==</span> <span class="n">cell_type</span><span class="p">,</span> <span class="s2">"Other cells"</span><span class="p">)</span>
+        
+            <span class="c1"># if cell_type in list_final_subsets.keys():</span>
+            <span class="k">if</span> <span class="n">cell_type</span> <span class="ow">in</span> <span class="n">sub_cell_type_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">list_folder_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cell_type</span><span class="p">)</span>
+                <span class="n">valid_labels</span> <span class="o">=</span> <span class="p">{</span><span class="n">cell_type</span><span class="p">}</span> <span class="o">|</span> <span class="n">get_all_children</span><span class="p">(</span><span class="n">cell_type</span><span class="p">,</span> <span class="n">list_final_subsets</span><span class="p">)</span>
+                <span class="n">dict_to_pass</span> <span class="o">=</span> <span class="n">list_cell_types</span><span class="p">[</span><span class="n">cell_type</span><span class="p">]</span><span class="o">|</span><span class="p">{</span><span class="n">cell_type</span><span class="p">:</span><span class="n">list_cell_types</span><span class="p">[</span><span class="s1">'General'</span><span class="p">][</span><span class="n">cell_type</span><span class="p">]}</span>
+                <span class="n">protein_m_to_check</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">pm_to_check</span> <span class="k">for</span> <span class="n">ct_key</span><span class="p">,</span><span class="n">ct_rule</span> <span class="ow">in</span> <span class="n">dict_to_pass</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">for</span> <span class="n">pm_to_check</span> <span class="ow">in</span> <span class="n">ct_rule</span><span class="o">.</span><span class="n">keys</span><span class="p">()]))</span>
+                <span class="c1"># dict_vl[cell_type] = valid_labels</span>
+                <span class="c1"># subtype_values = data.apply(assign_cell_type, axis=1, args=(list_cell_types[cell_type]|{cell_type:list_cell_types['General'][cell_type]},)).tolist()</span>
+                <span class="n">subtype_values</span> <span class="o">=</span> <span class="n">assign_cell_types_vectorized</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">dict_to_pass</span><span class="p">,</span> <span class="n">cell_type</span><span class="p">)</span>
+                <span class="n">subtype_col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Subtypes of </span><span class="si">{</span><span class="n">cell_type</span><span class="si">}</span><span class="s2">"</span>
+                <span class="n">new_obs_cols</span><span class="p">[</span><span class="n">subtype_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">subtype_values</span>
+                <span class="k">for</span> <span class="n">subcell_type</span> <span class="ow">in</span> <span class="n">valid_labels</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">subcell_type</span><span class="o">==</span><span class="n">cell_type</span><span class="p">:</span> <span class="k">continue</span>
+                    <span class="c1"># new_obs_cols[f"only {subcell_type}"] = [t if t==subcell_type else "Other cells" for t in subtype_values]</span>
+                    <span class="c1"># new_obs_cols[f"only {subcell_type}"] = subtype_values.where(subtype_values == subcell_type, "Other cells")</span>
+                    <span class="n">sct_temp</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="s2">"Other cells"</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">subtype_values</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+                    <span class="n">sct_temp</span> <span class="o">=</span> <span class="n">sct_temp</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="n">subtype_values</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">valid_labels</span><span class="p">),</span><span class="sa">f</span><span class="s2">"Other </span><span class="si">{</span><span class="n">cell_type</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+                    <span class="n">new_obs_cols</span><span class="p">[</span><span class="sa">f</span><span class="s2">"only </span><span class="si">{</span><span class="n">subcell_type</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span> <span class="o">=</span> <span class="n">sct_temp</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="n">subtype_values</span><span class="o">==</span><span class="n">subcell_type</span><span class="p">,</span><span class="n">subtype_values</span><span class="p">)</span>
+                <span class="n">custom_colors</span><span class="p">[</span><span class="sa">f</span><span class="s2">"Other </span><span class="si">{</span><span class="n">cell_type</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span> <span class="o">=</span> <span class="n">custom_colors</span><span class="p">[</span><span class="n">cell_type</span><span class="p">]</span>
+        <span class="n">matches</span> <span class="o">=</span> <span class="p">{</span><span class="n">parent_key</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">child_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">sub_cell_type_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+            <span class="k">for</span> <span class="n">parent_key</span><span class="p">,</span> <span class="n">child_dict</span> <span class="ow">in</span> <span class="n">sub_cell_type_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">child_dict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="n">matches</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">matches</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span><span class="p">}</span>
+        <span class="n">ordered_keys</span> <span class="o">=</span> <span class="n">order_sub_cell_types</span><span class="p">(</span><span class="n">sub_cell_type_dict</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">cell_type</span> <span class="ow">in</span> <span class="n">ordered_keys</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">cell_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cell_type_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">list_folder_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cell_type</span><span class="p">)</span>
+                <span class="n">valid_labels</span> <span class="o">=</span> <span class="p">{</span><span class="n">cell_type</span><span class="p">}</span> <span class="o">|</span> <span class="n">get_all_children</span><span class="p">(</span><span class="n">cell_type</span><span class="p">,</span> <span class="n">list_final_subsets</span><span class="p">)</span>
+                <span class="n">key_to_look</span> <span class="o">=</span> <span class="s2">""</span>
+                <span class="k">for</span> <span class="n">key1</span><span class="p">,</span><span class="n">value1</span> <span class="ow">in</span> <span class="n">list_cell_types</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">for</span> <span class="n">key2</span> <span class="ow">in</span> <span class="n">value1</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="n">key2</span><span class="o">==</span><span class="n">cell_type</span><span class="p">:</span>
+                            <span class="n">key_to_look</span> <span class="o">=</span> <span class="n">key1</span>
+                            <span class="k">break</span>
+                <span class="n">dict_to_pass</span> <span class="o">=</span> <span class="n">list_cell_types</span><span class="p">[</span><span class="n">cell_type</span><span class="p">]</span><span class="o">|</span><span class="p">{</span><span class="n">cell_type</span><span class="p">:</span><span class="n">list_cell_types</span><span class="p">[</span><span class="n">key_to_look</span><span class="p">][</span><span class="n">cell_type</span><span class="p">]}</span>
+                <span class="n">subtype_values</span> <span class="o">=</span> <span class="n">assign_cell_types_vectorized</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">dict_to_pass</span><span class="p">,</span> <span class="n">cell_type</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">type_of_cell</span> <span class="ow">in</span> <span class="n">matches</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">cell_type</span> <span class="ow">in</span> <span class="n">matches</span><span class="p">[</span><span class="n">type_of_cell</span><span class="p">]:</span>
+                        <span class="k">if</span> <span class="n">type_of_cell</span> <span class="ow">in</span> <span class="n">cell_type_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                            <span class="n">temp_for_only</span> <span class="o">=</span> <span class="n">new_obs_cols</span><span class="p">[</span><span class="sa">f</span><span class="s2">"only </span><span class="si">{</span><span class="n">cell_type</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="n">new_obs_cols</span><span class="p">[</span><span class="sa">f</span><span class="s2">"only </span><span class="si">{</span><span class="n">cell_type</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span><span class="o">.</span><span class="n">ne</span><span class="p">(</span><span class="n">cell_type</span><span class="p">),</span> <span class="s2">"Other cells"</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">temp_for_only</span> <span class="o">=</span> <span class="n">new_obs_cols</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">type_of_cell</span><span class="si">}</span><span class="s2"> - only </span><span class="si">{</span><span class="n">cell_type</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="n">new_obs_cols</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">type_of_cell</span><span class="si">}</span><span class="s2"> - only </span><span class="si">{</span><span class="n">cell_type</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span><span class="o">.</span><span class="n">ne</span><span class="p">(</span><span class="n">cell_type</span><span class="p">),</span> <span class="s2">"Other cells"</span><span class="p">)</span>
+                <span class="n">new_obs_cols</span><span class="p">[</span><span class="sa">f</span><span class="s2">"Subtypes of </span><span class="si">{</span><span class="n">cell_type</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span> <span class="o">=</span> <span class="n">subtype_values</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="n">temp_for_only</span><span class="o">.</span><span class="n">eq</span><span class="p">(</span><span class="s2">"Other cells"</span><span class="p">),</span> <span class="s2">"Other cells"</span><span class="p">)</span>
+                <span class="n">new_obs_cols</span><span class="p">[</span><span class="sa">f</span><span class="s2">"Only </span><span class="si">{</span><span class="n">cell_type</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span> <span class="o">=</span> <span class="n">subtype_values</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">subtype_values</span> <span class="o">==</span> <span class="s2">"Other cells"</span><span class="p">,</span> <span class="n">cell_type</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">subcell_type</span> <span class="ow">in</span> <span class="n">valid_labels</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">subcell_type</span><span class="o">==</span><span class="n">cell_type</span><span class="p">:</span> <span class="k">continue</span>
+                    <span class="n">sct_temp</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="s2">"Other cells"</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">subtype_values</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+                    <span class="n">sct_temp</span> <span class="o">=</span> <span class="n">sct_temp</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="n">subtype_values</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">valid_labels</span><span class="p">),</span><span class="sa">f</span><span class="s2">"Other </span><span class="si">{</span><span class="n">cell_type</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+                    <span class="n">new_obs_cols</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">cell_type</span><span class="si">}</span><span class="s2"> - only </span><span class="si">{</span><span class="n">subcell_type</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span> <span class="o">=</span> <span class="n">sct_temp</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="n">subtype_values</span><span class="o">==</span><span class="n">subcell_type</span><span class="p">,</span><span class="n">subtype_values</span><span class="p">)</span>
+                <span class="n">custom_colors</span><span class="p">[</span><span class="sa">f</span><span class="s2">"Other </span><span class="si">{</span><span class="n">cell_type</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span> <span class="o">=</span> <span class="n">custom_colors</span><span class="p">[</span><span class="n">cell_type</span><span class="p">]</span>
+        <span class="c1"># raise Exception (f"Debugging {k_data}:", print(adata.obs["clusters"].dtype), print(type(adata.obs["clusters"].iloc[0])), print(adata.obs["clusters"].head()), )</span>
+        <span class="n">new_obs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">new_obs_cols</span><span class="p">)</span>
+        <span class="n">new_obs</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">new_obs</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+        <span class="n">adata</span><span class="o">.</span><span class="n">obs</span> <span class="o">=</span> <span class="n">new_obs</span> <span class="k">if</span> <span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">empty</span> <span class="k">else</span> <span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">new_obs</span><span class="p">)</span>
+        <span class="c1"># for cell_type in final_subsets:</span>
+        <span class="c1">#     valid_labels = {cell_type} | get_all_children(cell_type, final_subsets)</span>
+        <span class="c1">#     adata.obs[f"{cell_type}"] = [t if t in valid_labels else "Other cells" for t in adata.obs['clusters']]</span>
+        <span class="c1"># reverse_map = {t:bg for bg in bigger_cell_types for t in dict_vl[bg]}</span>
+        <span class="c1"># adata.obs['bigger_cell_types'] = [t if t in bigger_cell_types else reverse_map.get(t) for t in adata.obs['clusters']]</span>
+        <span class="n">adata</span><span class="o">.</span><span class="n">uns</span><span class="p">[</span><span class="s1">'color_keys'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">cell_type_name</span> <span class="k">for</span> <span class="n">cell_type_name</span> <span class="ow">in</span> <span class="n">custom_colors</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+        <span class="n">adata</span><span class="o">.</span><span class="n">uns</span><span class="p">[</span><span class="s1">'color_vals'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">custom_colors</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">adata</span><span class="o">.</span><span class="n">uns</span><span class="p">[</span><span class="s1">'color_keys'</span><span class="p">]]</span>
+        <span class="n">adata</span><span class="o">.</span><span class="n">uns</span><span class="p">[</span><span class="s1">'folder_names'</span><span class="p">]</span> <span class="o">=</span> <span class="n">list_folder_names</span>
+        <span class="n">adata_dicts</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">adata</span>
+    <span class="k">if</span> <span class="n">save_anndata</span><span class="p">:</span>
+        <span class="n">adata_path</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"adata"</span>
+        <span class="n">adata_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">save_anndata_files</span><span class="p">(</span><span class="n">adata_dicts</span><span class="p">,</span><span class="n">adata_dir</span><span class="o">=</span><span class="n">adata_path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">adata_dicts</span></div>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_anndata_generator</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Generate and annotate AnnData objects from configured input files.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    config : dict</span>
+<span class="sd">        Validated SpPrAn configuration.</span>
+<span class="sd">    output_dir : pathlib.Path</span>
+<span class="sd">        Output directory used for generated metadata and optional AnnData files.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict of str to anndata.AnnData</span>
+<span class="sd">        Newly generated and protein marker annotated samples.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If no AnnData objects can be generated from the configured input files.</span>
+<span class="sd">    """</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Generating anndata files for analysis..."</span><span class="p">)</span>
+    <span class="n">file_names</span> <span class="o">=</span> <span class="n">filenames</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">'workspace'</span><span class="p">][</span><span class="s1">'input_dir'</span><span class="p">],</span> <span class="n">config</span><span class="p">[</span><span class="s1">'workspace'</span><span class="p">][</span><span class="s1">'filetype'</span><span class="p">])</span>
+    <span class="n">cell_type_dict</span> <span class="o">=</span> <span class="n">create_cell_type_dict</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">'protein_markers'</span><span class="p">],</span> <span class="n">config</span><span class="p">[</span><span class="s1">'cell_types'</span><span class="p">])</span>
+    <span class="n">sub_cell_type_dict</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'sub_cell_types'</span><span class="p">]</span> <span class="k">if</span> <span class="s1">'sub_cell_types'</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">else</span> <span class="p">{}</span>
+    <span class="n">data_dicts</span><span class="p">,</span> <span class="n">adata_dicts</span> <span class="o">=</span> <span class="n">cleaned_data</span><span class="p">(</span>
+        <span class="n">file_names</span>        <span class="o">=</span> <span class="n">file_names</span><span class="p">,</span> 
+        <span class="n">output_dir</span>        <span class="o">=</span> <span class="n">output_dir</span><span class="p">,</span> 
+        <span class="n">protein_markers</span>   <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'protein_markers'</span><span class="p">],</span>
+        <span class="n">cell_subtype_dict</span> <span class="o">=</span> <span class="n">sub_cell_type_dict</span><span class="p">,</span>
+        <span class="n">filetype</span>          <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'workspace'</span><span class="p">][</span><span class="s1">'filetype'</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">adata_dicts</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"No anndata files were generated. Please review the configuration file."</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Anndata generated!"</span><span class="p">)</span>
+    <span class="n">adata_dicts</span> <span class="o">=</span> <span class="n">labeling_cell_types</span><span class="p">(</span><span class="n">data_dicts</span><span class="p">,</span> <span class="n">adata_dicts</span><span class="p">,</span> <span class="n">cell_type_dict</span><span class="p">,</span> <span class="n">sub_cell_type_dict</span><span class="p">,</span> <span class="n">config</span><span class="p">[</span><span class="s1">'protein_markers'</span><span class="p">],</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">config</span><span class="p">[</span><span class="s1">'custom_colors'</span><span class="p">],</span> <span class="n">save_anndata</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'locally_save_anndata_files'</span><span class="p">],</span> <span class="n">arrows_orientation</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s1">'arrows_orientation'</span><span class="p">],</span> <span class="n">type_of_analysis</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'type_of_analysis'</span><span class="p">])</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Cells labeled by cell types/subtypes: DONE."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">'locally_save_anndata_files'</span><span class="p">]:</span> <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Anndata saved!"</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span> <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Anndata not saved by user decision."</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">adata_dicts</span>
+
+<div class="viewcode-block" id="create_or_load_anndata">
+<a class="viewcode-back" href="../../api.html#spatial_proteomics.anndata.create_or_load_anndata">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_or_load_anndata</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Load cached AnnData objects or generate them from source tables.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    config : dict</span>
+<span class="sd">        Validated SpPrAn configuration dictionary.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict of str to anndata.AnnData</span>
+<span class="sd">        Per-sample annotated data matrices.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Existing H5AD files are reused when allowed by the configuration. If files</span>
+<span class="sd">    are missing, incomplete, or overwrite mode is enabled, SpPrAn rebuilds the</span>
+<span class="sd">    AnnData objects from the original object-level input files.</span>
+<span class="sd">    """</span>
+    <span class="n">output_dir</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'workspace'</span><span class="p">][</span><span class="s1">'output_dir'</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="p">[</span><span class="s1">'overwrite_existing_files'</span><span class="p">]:</span> <span class="n">adata_dicts</span> <span class="o">=</span> <span class="n">load_anndata_files</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span> <span class="n">adata_dicts</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">adata_dicts</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">adata_dicts</span><span class="p">:</span> <span class="n">adata_dicts</span> <span class="o">=</span> <span class="n">_anndata_generator</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span> <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Anndata loaded!"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">adata_dicts</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

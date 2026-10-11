@@ -6,20 +6,20 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Outputs &mdash; SpPrAn  documentation</title>
+  <title>Outputs &mdash; SpPrAn 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/documentation_options.js?v=e259d695"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Python API" href="api.html" />
+    <link rel="next" title="Release notes" href="release_notes.html" />
     <link rel="prev" title="Running SpPrAn" href="usage.html" /> 
 </head>
 
@@ -46,11 +46,20 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="desktop_app.html">Desktop application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analysis_modes.html">Analysis modes</a></li>
 <li class="toctree-l1"><a class="reference internal" href="config_builder.html">SpPrAn Configuration Builder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="workflow.html">Analysis workflow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration file</a></li>
 <li class="toctree-l1"><a class="reference internal" href="usage.html">Running SpPrAn</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Outputs</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Outputs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#shared-outputs">Shared outputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#supervised-outputs">Supervised outputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#unsupervised-outputs">Unsupervised outputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#full-mode-outputs">Full-mode outputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#interpretation">Interpretation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="release_notes.html">Release notes</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Developer reference</span></p>
 <ul>
@@ -83,13 +92,64 @@
              
   <section id="outputs">
 <h1>Outputs<a class="headerlink" href="#outputs" title="Link to this heading"></a></h1>
-<p>Depending on configuration, SpPrAn can generate per-sample AnnData files,
-primary and subtype annotations, count/proportion tables, phenotype hierarchy
-information, spatial overview plots, highlighted population plots, and
-hierarchy visualizations.</p>
-<p>Reported phenotypes are operational marker-based definitions and should be
-interpreted together with tissue quality, segmentation, staining, imaging, and
-positivity thresholds.</p>
+<p>Outputs depend on the analysis mode.</p>
+<section id="shared-outputs">
+<h2>Shared outputs<a class="headerlink" href="#shared-outputs" title="Link to this heading"></a></h2>
+<p>AnnData objects can retain major cell-type labels together with spatial and
+intensity data.</p>
+</section>
+<section id="supervised-outputs">
+<h2>Supervised outputs<a class="headerlink" href="#supervised-outputs" title="Link to this heading"></a></h2>
+<p>These can include:</p>
+<ul class="simple">
+<li><p>primary and subtype annotations;</p></li>
+<li><p>cell-count/proportion tables;</p></li>
+<li><p>percentages relative to parent populations and all cells;</p></li>
+<li><p>phenotype-definition tables;</p></li>
+<li><p>hierarchy visualizations; and</p></li>
+<li><p>spatial overview, highlight, or custom plots.</p></li>
+</ul>
+</section>
+<section id="unsupervised-outputs">
+<h2>Unsupervised outputs<a class="headerlink" href="#unsupervised-outputs" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>Cell-type proportion matrices</dt><dd><p>Sample-by-population tables summarizing major cell-type proportions.</p>
+</dd>
+<dt>Pie plots</dt><dd><p>Optional sample-level visual summaries of population composition.</p>
+</dd>
+<dt>Discovered phenotype tables</dt><dd><p>Protein-marker-pattern phenotypes observed within selected parent populations,
+together with within-parent cell counts and proportions.</p>
+</dd>
+<dt>Phenotype-proportion matrices</dt><dd><p>Sample-by-phenotype tables for each explored parent.</p>
+</dd>
+<dt>AnnData phenotype annotations</dt><dd><p>Discovered phenotype host names are stored in <code class="docutils literal notranslate"><span class="pre">adata.obs</span></code> and pattern
+definitions in <code class="docutils literal notranslate"><span class="pre">adata.uns</span></code>.</p>
+</dd>
+<dt>Two-group comparison</dt><dd><p>When two groups are configured, SpPrAn reports common and group-specific
+phenotypes and descriptive abundance summaries.</p>
+</dd>
+<dt>Statistical results</dt><dd><p>Common phenotype proportions can be compared with two-sided Mann–Whitney U
+and Welch t-tests. Benjamini–Hochberg FDR-adjusted p-values are exported.</p>
+</dd>
+<dt>Intensity outputs</dt><dd><p>For selected markers, SpPrAn exports per-phenotype Tukey box-plot summaries
+and outlier values.</p>
+</dd>
+</dl>
+</section>
+<section id="full-mode-outputs">
+<h2>Full-mode outputs<a class="headerlink" href="#full-mode-outputs" title="Link to this heading"></a></h2>
+<p>Full mode produces exploratory outputs and then adds hierarchy-oriented
+supervised outputs based on the discovered phenotype definitions.</p>
+</section>
+<section id="interpretation">
+<h2>Interpretation<a class="headerlink" href="#interpretation" title="Link to this heading"></a></h2>
+<p>Phenotype proportions are conditional on the parent population used for
+discovery. For example, a phenotype representing 20% of T cells does not necessarily
+represent 20% of all cells in the tumor.</p>
+<p>Statistical results should be interpreted together with detection frequency,
+effect magnitude, biological sample size, multiple-testing adjustment, and
+study design.</p>
+</section>
 </section>
 
 
@@ -97,7 +157,7 @@ positivity thresholds.</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="usage.html" class="btn btn-neutral float-left" title="Running SpPrAn" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="api.html" class="btn btn-neutral float-right" title="Python API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="release_notes.html" class="btn btn-neutral float-right" title="Release notes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

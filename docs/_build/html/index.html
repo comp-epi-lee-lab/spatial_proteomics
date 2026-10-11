@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SpPrAn documentation &mdash; SpPrAn  documentation</title>
+  <title>SpPrAn documentation &mdash; SpPrAn 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/documentation_options.js?v=e259d695"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -45,11 +45,13 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="desktop_app.html">Desktop application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analysis_modes.html">Analysis modes</a></li>
 <li class="toctree-l1"><a class="reference internal" href="config_builder.html">SpPrAn Configuration Builder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="workflow.html">Analysis workflow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration file</a></li>
 <li class="toctree-l1"><a class="reference internal" href="usage.html">Running SpPrAn</a></li>
 <li class="toctree-l1"><a class="reference internal" href="outputs.html">Outputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release_notes.html">Release notes</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Developer reference</span></p>
 <ul>
@@ -88,11 +90,16 @@ classified using user-defined protein-marker rules and can be organized into
 hierarchical cell populations and subtypes.</p>
 <p>SpPrAn can be run from Python/the command line or from a packaged desktop
 application for users who prefer a graphical workflow.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>SpPrAn assigns marker-defined phenotypes. Biological specificity depends on
-the antibody panel, tissue context, segmentation strategy, staining
-performance, and upstream positivity thresholds.</p>
+<section id="version-0-3-0">
+<h2>Version 0.3.0<a class="headerlink" href="#version-0-3-0" title="Link to this heading"></a></h2>
+<p>SpPrAn 0.3.0 introduces separate supervised and unsupervised analysis
+workflows, plus an optional full phenotype-discovery workflow that connects
+exploratory phenotype discovery with the established supervised analysis.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>SpPrAn phenotypes are protein-marker-defined operational annotations. Their
+biological meaning depends on the antibody panel, tissue context,
+segmentation strategy, staining performance, and positivity thresholds.</p>
 </div>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
@@ -110,32 +117,79 @@ performance, and upstream positivity thresholds.</p>
 <li class="toctree-l2"><a class="reference internal" href="desktop_app.html#running-an-analysis">Running an analysis</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="analysis_modes.html">Analysis modes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="analysis_modes.html#supervised-mode">Supervised mode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="analysis_modes.html#unsupervised-mode">Unsupervised mode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="analysis_modes.html#full-phenotype-discovery">Full phenotype discovery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="analysis_modes.html#biological-interpretation">Biological interpretation</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="config_builder.html">SpPrAn Configuration Builder</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="config_builder.html#choose-an-analysis-mode">Choose an analysis mode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config_builder.html#shared-setup">Shared setup</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config_builder.html#settings-1-restore-or-start">Settings 1. Restore or start</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config_builder.html#settings-2-workspace">Settings 2. Workspace</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config_builder.html#settings-3-protein-markers">Settings 3. Protein markers</a></li>
-<li class="toctree-l2"><a class="reference internal" href="config_builder.html#settings-4-cell-types-and-subtypes">Settings 4. Cell types and subtypes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="config_builder.html#settings-5-output-and-spatial-plotting">Settings 5. Output and spatial plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="config_builder.html#settings-6-preview-and-download">Settings 6. Preview and download</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config_builder.html#supervised-configuration">Supervised configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config_builder.html#unsupervised-configuration">Unsupervised configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config_builder.html#configuration-preview-and-download-section">“Configuration preview and download” section</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="workflow.html">Analysis workflow</a></li>
-<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">Analysis workflow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#common-preprocessing">Common preprocessing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#supervised-branch">Supervised branch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#unsupervised-branch">Unsupervised branch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#full-branch">Full branch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#questions-answered-by-each-mode">Questions answered by each mode</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration file</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#analysis-type">Analysis type</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#shared-settings">Shared settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#supervised-only-settings">Supervised-only settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#unsupervised-full-settings">Unsupervised/full settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#validation">Validation</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="usage.html">Running SpPrAn</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="usage.html#command-line">Command line</a></li>
 <li class="toctree-l2"><a class="reference internal" href="usage.html#desktop-application">Desktop application</a></li>
-<li class="toctree-l2"><a class="reference internal" href="usage.html#typical-workflow">Typical workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#choosing-a-mode">Choosing a mode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#typical-supervised-workflow">Typical supervised workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#typical-unsupervised-workflow">Typical unsupervised workflow</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="outputs.html">Outputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="outputs.html">Outputs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="outputs.html#shared-outputs">Shared outputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="outputs.html#supervised-outputs">Supervised outputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="outputs.html#unsupervised-outputs">Unsupervised outputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="outputs.html#full-mode-outputs">Full-mode outputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="outputs.html#interpretation">Interpretation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="release_notes.html">Release notes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="release_notes.html#sppran-0-3-0">SpPrAn 0.3.0</a></li>
+</ul>
+</li>
 </ul>
 </div>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Developer reference</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="api.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Python API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-spatial_proteomics.core">Core pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-spatial_proteomics.configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-spatial_proteomics.anndata">AnnData processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-spatial_proteomics.supervised_mode">Mode dispatch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-spatial_proteomics.cell_proportion_matrix">Unsupervised analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-spatial_proteomics.cell_proportions">Cell proportions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-spatial_proteomics.spatial_plot">Spatial plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-spatial_proteomics.utils">Utilities</a></li>
+</ul>
+</li>
 </ul>
 </div>
+</section>
 </section>
 
 

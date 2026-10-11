@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Configuration file &mdash; SpPrAn  documentation</title>
+  <title>Configuration file &mdash; SpPrAn 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/documentation_options.js?v=e259d695"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -46,11 +46,20 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="desktop_app.html">Desktop application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analysis_modes.html">Analysis modes</a></li>
 <li class="toctree-l1"><a class="reference internal" href="config_builder.html">SpPrAn Configuration Builder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="workflow.html">Analysis workflow</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Configuration file</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Configuration file</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#analysis-type">Analysis type</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#shared-settings">Shared settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#supervised-only-settings">Supervised-only settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#unsupervised-full-settings">Unsupervised/full settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#validation">Validation</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="usage.html">Running SpPrAn</a></li>
 <li class="toctree-l1"><a class="reference internal" href="outputs.html">Outputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release_notes.html">Release notes</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Developer reference</span></p>
 <ul>
@@ -83,13 +92,30 @@
              
   <section id="configuration-file">
 <h1>Configuration file<a class="headerlink" href="#configuration-file" title="Link to this heading"></a></h1>
-<p>SpPrAn is controlled by a YAML configuration file. Users can create it manually
-from <code class="docutils literal notranslate"><span class="pre">config/config_example.yaml</span></code> or with the <a class="reference internal" href="config_builder.html"><span class="doc">SpPrAn Configuration Builder</span></a>.</p>
-<p>The configuration controls workspace paths, file format, protein markers,
-primary cell types, hierarchical subtypes, colors, AnnData saving, overwrite
-behavior, spatial plotting, custom plotting, and hierarchy orientation.</p>
-<p><code class="docutils literal notranslate"><span class="pre">protein_markers</span></code> option is a list that contains the primary protein markers to be used in the
-cell type definitions. Protein markers name must have one of the following formats:</p>
+<p>SpPrAn is controlled by a YAML configuration file. Users can create it manually from <code class="docutils literal notranslate"><span class="pre">config/config_example.yaml</span></code>
+or with the <a class="reference internal" href="config_builder.html"><span class="doc">SpPrAn Configuration Builder</span></a>.</p>
+<section id="analysis-type">
+<h2>Analysis type<a class="headerlink" href="#analysis-type" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">type_of_analysis</span></code> accepts:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">supervised</span></code></dt><dd><p>User-defined major cell types and hierarchical subtypes.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">unsupervised</span></code></dt><dd><p>User-defined major cell types followed by exploratory marker-pattern
+discovery within selected parents.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">full</span></code></dt><dd><p>Unsupervised discovery followed by conversion of discovered patterns into
+subtype definitions and execution of the supervised workflow.</p>
+</dd>
+</dl>
+<p>Missing or invalid values default to <code class="docutils literal notranslate"><span class="pre">supervised</span></code> for backward compatibility.</p>
+</section>
+<section id="shared-settings">
+<h2>Shared settings<a class="headerlink" href="#shared-settings" title="Link to this heading"></a></h2>
+<dl>
+<dt><code class="docutils literal notranslate"><span class="pre">workspace</span></code></dt><dd><p>Input directory, output directory, and <code class="docutils literal notranslate"><span class="pre">tsv</span></code>/<code class="docutils literal notranslate"><span class="pre">csv</span></code> file type.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">protein_markers</span></code></dt><dd><p>List that contains the primary protein markers to be used in the cell type definitions. Protein
+markers name must have one of the following formats:</p>
 <blockquote>
 <div><ul class="simple">
 <li><p>“Positivity - {<code class="docutils literal notranslate"><span class="pre">protein_marker_name</span></code>} (MV Cell)”</p></li>
@@ -100,19 +126,36 @@ cell type definitions. Protein markers name must have one of the following forma
 <li><p>“Positivity - {<code class="docutils literal notranslate"><span class="pre">protein_marker_name</span></code>}* (MV - CYTO)”</p></li>
 </ul>
 </div></blockquote>
-<p><code class="docutils literal notranslate"><span class="pre">cell_types</span></code> option is a dictionary, where the keys are the cell type names and the values are
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">cell_types</span></code></dt><dd><p>Dictionary, where the keys are the cell type names and the values are
 a list with the detected intensity signal preserving the same order as <code class="docutils literal notranslate"><span class="pre">protein_markers</span></code>. Primary
 phenotype definitions inside a cell type use <code class="docutils literal notranslate"><span class="pre">1</span></code> for positive, <code class="docutils literal notranslate"><span class="pre">0</span></code> for negative, and
 <code class="docutils literal notranslate"><span class="pre">~</span></code>/<code class="docutils literal notranslate"><span class="pre">null</span></code> for unconstrained markers.</p>
-<p><code class="docutils literal notranslate"><span class="pre">sub_cell_types</span></code> option is a nested dictionary, where the first-level keys are the parent cell
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">custom_colors</span></code></dt><dd><p>Dictionary where the keys are the cell type or subtype names
+and the values are hexadecimal color codes used to represent each population in plots or other
+visual outputs. Cell type and subtype names cannot be the same.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">locally_save_anndata_files</span></code></dt><dd><p>Whether annotated AnnData objects should be saved. <code class="docutils literal notranslate"><span class="pre">true</span></code> or <code class="docutils literal notranslate"><span class="pre">false</span></code> values are only accepted.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">overwrite_existing_files</span></code></dt><dd><p>Whether existing output files may be replaced.``true`` or <code class="docutils literal notranslate"><span class="pre">false</span></code> values are only accepted.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">arrows_orientation</span></code></dt><dd><p>For the cell hierarchy plot, <code class="docutils literal notranslate"><span class="pre">arrows_orientation</span></code> will change the orientation of the arrows.
+<code class="docutils literal notranslate"><span class="pre">contains</span></code> value will show arrows from up to down, and <code class="docutils literal notranslate"><span class="pre">isContained</span></code> value will show arrows
+from down to up.</p>
+</dd>
+</dl>
+</section>
+<section id="supervised-only-settings">
+<h2>Supervised-only settings<a class="headerlink" href="#supervised-only-settings" title="Link to this heading"></a></h2>
+<dl>
+<dt><code class="docutils literal notranslate"><span class="pre">sub_cell_types</span></code></dt><dd><p>nested dictionary, where the first-level keys are the parent cell
 type and subtypes names and the values are dictionaries defining cell subtypes within that parent
 population. Each cell subtype name maps to a dictionary where the keys are protein markers and the
 values define the phenotype: <code class="docutils literal notranslate"><span class="pre">1</span></code> for positive, <code class="docutils literal notranslate"><span class="pre">0</span></code> for negative, and <code class="docutils literal notranslate"><span class="pre">~</span></code>/<code class="docutils literal notranslate"><span class="pre">null</span></code> for
 unconstrained markers. Cell type and subtype names cannot be the same.</p>
-<p><code class="docutils literal notranslate"><span class="pre">custom_colors</span></code> option is a dictionary, where the keys are the cell type or subtype names
-and the values are hexadecimal color codes used to represent each population in plots or other
-visual outputs. Cell type and subtype names cannot be the same.</p>
-<p><code class="docutils literal notranslate"><span class="pre">spatial_plot</span></code> option is a dictionary containing the parameters used to generate spatial plots.
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">spatial_plot</span></code></dt><dd><p>dictionary containing the parameters used to generate spatial plots.
 <code class="docutils literal notranslate"><span class="pre">dpi</span></code> defines the plot resolution, <code class="docutils literal notranslate"><span class="pre">scatter_point_size</span></code> controls the size of the plotted cells
 or objects, and <code class="docutils literal notranslate"><span class="pre">plot_options</span></code> specifies the plotting mode.</p>
 <p>The values for <code class="docutils literal notranslate"><span class="pre">plot_options</span></code> are <code class="docutils literal notranslate"><span class="pre">overview</span></code>, <code class="docutils literal notranslate"><span class="pre">highlight</span></code>, <code class="docutils literal notranslate"><span class="pre">all</span></code>, <code class="docutils literal notranslate"><span class="pre">none</span></code>, and <code class="docutils literal notranslate"><span class="pre">custom</span></code>.
@@ -120,10 +163,40 @@ For more information, see <a class="reference internal" href="config_builder.htm
 the <code class="docutils literal notranslate"><span class="pre">custom_plot</span></code> option is a list with the input files to plot, where each entry is a dictionary
 that defines the input <code class="docutils literal notranslate"><span class="pre">fileName</span></code> and the corresponding plot <code class="docutils literal notranslate"><span class="pre">type</span></code> similar to <code class="docutils literal notranslate"><span class="pre">plot_options</span></code>
 (except for <code class="docutils literal notranslate"><span class="pre">custom</span></code> value).</p>
-<p>An additional <code class="docutils literal notranslate"><span class="pre">arrows_orientation</span></code> option is available. For the cell hierarchy plot,
-<code class="docutils literal notranslate"><span class="pre">arrows_orientation</span></code> will change the orientation of the arrows. <code class="docutils literal notranslate"><span class="pre">contains</span></code> value
-will show arrows from up to down, and <code class="docutils literal notranslate"><span class="pre">isContained</span></code> value will show arrows from
-down to up.</p>
+</dd>
+</dl>
+</section>
+<section id="unsupervised-full-settings">
+<h2>Unsupervised/full settings<a class="headerlink" href="#unsupervised-full-settings" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">cell_types_to_explore</span></code></dt><dd><p>List with the cell types within which phenotypes should be discovered. Cell types names
+must be exactly the same as in <code class="docutils literal notranslate"><span class="pre">cell_types</span></code>, but not necessarily in the same order.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">cell_types_to_explore_short_name</span></code></dt><dd><p>List with the short names corresponding to the selected cell types in <code class="docutils literal notranslate"><span class="pre">cell_types_to_explore</span></code>. Short names
+must be different each other.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">exploratory_protein_markers</span></code></dt><dd><p>List with the protein markers used for exploratory phenotype discovery. Protein marker names
+must be exactly the same as appear in the input files.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">exploratory_protein_markers_short_name</span></code></dt><dd><p>List with the short names corresponding to the exploratory protein markers. Short names
+must be different each other.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">want_to_plot_pie_plots</span></code></dt><dd><p>Boolean controlling sample-level composition pie plots. <code class="docutils literal notranslate"><span class="pre">true</span></code> or <code class="docutils literal notranslate"><span class="pre">false</span></code> values are only accepted.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">dict_ctrl</span></code> and <code class="docutils literal notranslate"><span class="pre">dict_trtmnt</span></code></dt><dd><p>Optional filename-to-group dictionary mappings for two-group comparison. Keys are filenames in the input folder
+and values is the corresponding group name. Group names must be different between them, and each dictionary
+must not contain a similar key. Both dictionaries can be empty only at the same time.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">protein_markers_for_intensity</span></code></dt><dd><p>Optional list with the protein markers for summarized intensity measurements. Protein marker names
+must be exactly the same as appear in the input files. This list can be empty.</p>
+</dd>
+</dl>
+</section>
+<section id="validation">
+<h2>Validation<a class="headerlink" href="#validation" title="Link to this heading"></a></h2>
+<p>SpPrAn validates mode-specific settings before analysis.</p>
+<p>See <a class="reference internal" href="analysis_modes.html"><span class="doc">Analysis modes</span></a> for analytical interpretation.</p>
+</section>
 </section>
 
 

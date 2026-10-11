@@ -25,8 +25,13 @@ def sppran_steps(config):
 
     Notes
     -----
-    This function coordinates AnnData creation or loading, optional spatial
-    plotting, and calculation of cell-population counts and proportions.
+    After AnnData objects are created or loaded, execution is dispatched according
+    to ``config["type_of_analysis"]``:
+
+    * ``"supervised"`` runs the rule-defined subtype workflow.
+    * ``"unsupervised"`` runs exploratory marker-pattern discovery.
+    * ``"full"`` performs exploratory discovery and then runs the supervised
+    workflow using discovered phenotypes as subtype definitions.
     """
     adata_dicts = create_or_load_anndata(config)
     if config['type_of_analysis'] == 'supervised': _apply_supervised_mode(adata_dicts,config)

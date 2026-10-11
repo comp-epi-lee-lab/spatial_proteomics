@@ -1,0 +1,254 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>spatial_proteomics.core &mdash; SpPrAn 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            SpPrAn
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../desktop_app.html">Desktop application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../analysis_modes.html">Analysis modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../config_builder.html">SpPrAn Configuration Builder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../workflow.html">Analysis workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../configuration.html">Configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Running SpPrAn</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../outputs.html">Outputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release notes</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">Python API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">SpPrAn</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">spatial_proteomics.core</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for spatial_proteomics.core</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">spatial_proteomics.configuration</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">spatial_proteomics.anndata</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_or_load_anndata</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">spatial_proteomics.supervised_mode</span><span class="w"> </span><span class="kn">import</span> <span class="n">_apply_supervised_mode</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">spatial_proteomics.unsupervised_mode</span><span class="w"> </span><span class="kn">import</span> <span class="n">_apply_unsupervised_mode</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">spatial_proteomics.full_mode</span><span class="w"> </span><span class="kn">import</span> <span class="n">_apply_full_mode</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+
+<div class="viewcode-block" id="sppran_steps">
+<a class="viewcode-back" href="../../api.html#spatial_proteomics.core.sppran_steps">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">sppran_steps</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Run the main SpPrAn analysis steps from a validated configuration.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    config : dict</span>
+<span class="sd">        Validated SpPrAn configuration dictionary. The configuration must</span>
+<span class="sd">        contain workspace settings, plotting options, cell-type definitions,</span>
+<span class="sd">        colors, and output-control settings as produced by</span>
+<span class="sd">        :func:`spatial_proteomics.configuration.load_config`.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+<span class="sd">        Results are written to the configured output directory.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    After AnnData objects are created or loaded, execution is dispatched according</span>
+<span class="sd">    to ``config["type_of_analysis"]``:</span>
+
+<span class="sd">    * ``"supervised"`` runs the rule-defined subtype workflow.</span>
+<span class="sd">    * ``"unsupervised"`` runs exploratory marker-pattern discovery.</span>
+<span class="sd">    * ``"full"`` performs exploratory discovery and then runs the supervised</span>
+<span class="sd">    workflow using discovered phenotypes as subtype definitions.</span>
+<span class="sd">    """</span>
+    <span class="n">adata_dicts</span> <span class="o">=</span> <span class="n">create_or_load_anndata</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">'type_of_analysis'</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'supervised'</span><span class="p">:</span> <span class="n">_apply_supervised_mode</span><span class="p">(</span><span class="n">adata_dicts</span><span class="p">,</span><span class="n">config</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">'type_of_analysis'</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'unsupervised'</span><span class="p">:</span> <span class="n">_apply_unsupervised_mode</span><span class="p">(</span><span class="n">adata_dicts</span><span class="p">,</span><span class="n">config</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">'type_of_analysis'</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'full'</span><span class="p">:</span> <span class="n">_apply_full_mode</span><span class="p">(</span><span class="n">adata_dicts</span><span class="p">,</span><span class="n">config</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="spatial_proteomics_pipeline">
+<a class="viewcode-back" href="../../api.html#spatial_proteomics.core.spatial_proteomics_pipeline">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">spatial_proteomics_pipeline</span><span class="p">(</span><span class="n">config_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Run the complete SpPrAn pipeline from a YAML configuration file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    config_path : str or pathlib.Path</span>
+<span class="sd">        Path to the SpPrAn YAML configuration file.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+<span class="sd">        Analysis outputs are written to the output directory specified in the</span>
+<span class="sd">        configuration file.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    FileNotFoundError</span>
+<span class="sd">        If the configuration file or required workspace directories do not</span>
+<span class="sd">        exist.</span>
+<span class="sd">    spatial_proteomics.configuration.ConfigValidationError</span>
+<span class="sd">        If one or more configuration settings are invalid.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    The configuration is validated before any spatial proteomics analysis is</span>
+<span class="sd">    performed.</span>
+<span class="sd">    """</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span>
+    <span class="n">sppran_steps</span><span class="p">(</span><span class="n">config</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="parse_args">
+<a class="viewcode-back" href="../../api.html#spatial_proteomics.core.parse_args">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_args</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Parse command-line arguments for SpPrAn.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    argparse.Namespace</span>
+<span class="sd">        Parsed command-line arguments containing the required ``config`` path.</span>
+<span class="sd">    """</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Run the Spatial Proteomics end-to-end cell typing and quantification analysis pipeline."</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">"--config"</span><span class="p">,</span>
+        <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"Path to the YAML configuration file."</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../api.html#spatial_proteomics.core.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Run SpPrAn from the command-line interface.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    This is the console entry point used by the ``sppran`` command. Validation</span>
+<span class="sd">    or analysis errors are written to standard error and terminate the process</span>
+<span class="sd">    with a non-zero exit code.</span>
+<span class="sd">    """</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parse_args</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span> 
+        <span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
+        <span class="n">sppran_steps</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[ERROR] </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="main_gui">
+<a class="viewcode-back" href="../../api.html#spatial_proteomics.core.main_gui">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main_gui</span><span class="p">(</span><span class="n">config_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Run SpPrAn from the graphical user interface.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    config_path : str or pathlib.Path</span>
+<span class="sd">        Path to the YAML configuration selected in the desktop application.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+<span class="sd">        Analysis outputs are written to the directory specified by the</span>
+<span class="sd">        configuration file.</span>
+<span class="sd">    """</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span>
+    <span class="n">sppran_steps</span><span class="p">(</span><span class="n">config</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

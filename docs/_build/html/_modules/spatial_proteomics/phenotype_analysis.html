@@ -1,0 +1,845 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>spatial_proteomics.phenotype_analysis &mdash; SpPrAn 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            SpPrAn
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../desktop_app.html">Desktop application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../analysis_modes.html">Analysis modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../config_builder.html">SpPrAn Configuration Builder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../workflow.html">Analysis workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../configuration.html">Configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Running SpPrAn</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../outputs.html">Outputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release notes</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">Python API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">SpPrAn</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">spatial_proteomics.phenotype_analysis</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for spatial_proteomics.phenotype_analysis</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">Exploratory marker-defined phenotype analysis for SpPrAn.</span>
+
+<span class="sd">This module identifies observed binary protein marker patterns within selected</span>
+<span class="sd">major cell populations, calculates phenotype abundance, stores phenotype labels</span>
+<span class="sd">and marker definitions in AnnData objects, and optionally compares phenotype</span>
+<span class="sd">abundance between two user-defined sample groups.</span>
+
+<span class="sd">The workflow enumerates observed marker patterns rather than performing</span>
+<span class="sd">latent-space clustering.</span>
+<span class="sd">"""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">"Agg"</span><span class="p">)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ast</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">textwrap</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.patches</span><span class="w"> </span><span class="kn">import</span> <span class="n">Patch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">ttest_ind</span><span class="p">,</span> <span class="n">mannwhitneyu</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">statsmodels.stats.multitest</span><span class="w"> </span><span class="kn">import</span> <span class="n">multipletests</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">spatial_proteomics.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">median_iqr</span><span class="p">,</span> <span class="n">save_anndata_files</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_phenotypes_proportion_matrix</span><span class="p">(</span><span class="n">results_dir</span><span class="p">,</span> <span class="n">subCT_dict</span><span class="p">,</span> <span class="n">ct_short</span><span class="p">,</span> <span class="n">overwrite_existing_files</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Export a sample-by-phenotype proportion matrix for one parent population.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    results_dir : pathlib.Path</span>
+<span class="sd">        Base statistics-results directory.</span>
+<span class="sd">    subCT_dict : dict of str to pandas.DataFrame</span>
+<span class="sd">        Per-sample phenotype tables containing host names and proportions.</span>
+<span class="sd">    ct_short : str</span>
+<span class="sd">        Short name of the parent cell population.</span>
+<span class="sd">    overwrite_existing_files : bool, default=False</span>
+<span class="sd">        Whether an existing matrix may be replaced.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+<span class="sd">        The phenotype-proportion matrix is written as CSV.</span>
+<span class="sd">    """</span>
+    <span class="n">save_filepath</span> <span class="o">=</span> <span class="n">results_dir</span> <span class="o">/</span> <span class="s2">"Phenotypes proportion"</span>
+    <span class="n">save_filepath</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">save_namefile</span> <span class="o">=</span> <span class="n">save_filepath</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"Phenotypes proportion matrix - sub</span><span class="si">{</span><span class="n">ct_short</span><span class="si">}</span><span class="s2">.csv"</span>
+    <span class="k">if</span> <span class="n">save_namefile</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">overwrite_existing_files</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"File 'Phenotypes proportion matrix.csv' already exists..."</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df</span><span class="p">[[</span><span class="s1">'Host name'</span><span class="p">,</span><span class="s1">'Proportion'</span><span class="p">]]</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">'Host name'</span><span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">'Proportion'</span><span class="p">:</span><span class="n">key</span><span class="p">})</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">x</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">'%'</span><span class="p">,</span><span class="s1">''</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">))</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">df</span> <span class="ow">in</span> <span class="n">subCT_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">save_namefile</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Phenotype proportion matrix for </span><span class="si">{</span><span class="n">ct_short</span><span class="si">}</span><span class="s1"> saved!'</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_filtering_phenotypes</span><span class="p">(</span><span class="n">df_tt</span><span class="p">,</span><span class="n">subCT_dict</span><span class="p">,</span> <span class="n">dictionary</span><span class="p">,</span> <span class="n">samples_id</span><span class="p">,</span> <span class="n">subCT_OG_dict</span><span class="p">,</span> <span class="n">apply_filter</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">zeroes_for_statistics</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Summarize phenotype abundance and detection frequency across a sample group.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df_tt : pandas.DataFrame</span>
+<span class="sd">        Phenotype table indexed by phenotype host name.</span>
+<span class="sd">    subCT_dict : dict of str to pandas.DataFrame</span>
+<span class="sd">        Filtered per-sample phenotype-proportion tables.</span>
+<span class="sd">    dictionary : dict</span>
+<span class="sd">        Mapping from sample filenames to the group label.</span>
+<span class="sd">    samples_id : pandas.DataFrame</span>
+<span class="sd">        Mapping between SpPrAn sample identifiers and source filenames.</span>
+<span class="sd">    subCT_OG_dict : dict of str to pandas.DataFrame</span>
+<span class="sd">        Unfiltered per-sample phenotype tables.</span>
+<span class="sd">    apply_filter : bool, default=False</span>
+<span class="sd">        Whether detection-frequency filter columns should be added.</span>
+<span class="sd">    zeroes_for_statistics : bool, default=False</span>
+<span class="sd">        Whether non-detected samples contribute zero phenotype abundance.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        Group-level phenotype summaries including detected-only and</span>
+<span class="sd">        zero-inclusive abundance information.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Conditional summaries use only samples in which the phenotype was detected.</span>
+<span class="sd">    Zero-inclusive values answer a different biological/statistical question</span>
+<span class="sd">    and include absence of the phenotype across samples.</span>
+<span class="sd">    """</span>
+    <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Proportion Average'</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Standard deviation'</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Conditional Proportion Average'</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Conditional Standard deviation'</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Phenotype'</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"no_name"</span>
+    <span class="n">mean_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">std_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">mean_list_cond</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">std_list_cond</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">values_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">values_sample_name_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">values_list_cond</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">values_sample_name_list_cond</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">frequency_list_cond</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">how_many_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dictionary</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">df_tt</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">tolist</span><span class="p">():</span>
+        <span class="n">list_temp</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">list_temp_cond</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">list_sample_name_temp</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">list_sample_name_temp_cond</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">frequency_cond</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">df_phenotype</span> <span class="ow">in</span> <span class="n">subCT_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">samples_id</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="s1">'Samples filename'</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dictionary</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span> <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">df_phenotype</span><span class="p">[</span><span class="s1">'Host name'</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">():</span>
+                <span class="n">list_temp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">df_phenotype</span><span class="p">[</span><span class="s1">'Proportion'</span><span class="p">][</span><span class="n">df_phenotype</span><span class="p">[</span><span class="s1">'Host name'</span><span class="p">]</span><span class="o">==</span><span class="n">host</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()[</span><span class="mi">0</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">100</span><span class="p">)</span>
+                <span class="n">list_temp_cond</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">df_phenotype</span><span class="p">[</span><span class="s1">'Proportion'</span><span class="p">][</span><span class="n">df_phenotype</span><span class="p">[</span><span class="s1">'Host name'</span><span class="p">]</span><span class="o">==</span><span class="n">host</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()[</span><span class="mi">0</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">100</span><span class="p">)</span>
+                <span class="n">list_sample_name_temp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+                <span class="n">list_sample_name_temp_cond</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+                <span class="n">corresponding_pheno_list</span> <span class="o">=</span> <span class="n">df_phenotype</span><span class="p">[</span><span class="s1">'Markers name'</span><span class="p">][</span><span class="n">df_phenotype</span><span class="p">[</span><span class="s1">'Host name'</span><span class="p">]</span><span class="o">==</span><span class="n">host</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+                <span class="n">frequency_cond</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">'detected'</span><span class="p">)</span>
+                <span class="n">df_tt</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">host</span><span class="p">,</span> <span class="s1">'Phenotype'</span><span class="p">]</span> <span class="o">=</span> <span class="n">corresponding_pheno_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">df_tt</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">host</span><span class="p">,</span> <span class="s1">'Phenotype'</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"no_name"</span> <span class="k">else</span> <span class="n">df_tt</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">host</span><span class="p">,</span> <span class="s1">'Phenotype'</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">zeroes_for_statistics</span><span class="p">:</span> <span class="c1"># Adding zeroes to no-filters subSets, for statistics</span>
+                    <span class="n">list_temp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">/</span><span class="mi">100</span><span class="p">)</span>
+                    <span class="n">list_sample_name_temp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+        <span class="n">mean_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">list_temp</span><span class="p">))</span>
+        <span class="n">std_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">list_temp</span><span class="p">))</span>
+        <span class="n">mean_list_cond</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">list_temp_cond</span><span class="p">))</span>
+        <span class="n">std_list_cond</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">list_temp_cond</span><span class="p">))</span>
+        <span class="n">values_list</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">val</span><span class="o">*</span><span class="mi">100</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">list_temp</span><span class="p">])</span>
+        <span class="n">values_sample_name_list</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">list_sample_name_temp</span><span class="p">])</span>
+        <span class="n">values_list_cond</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">val</span><span class="o">*</span><span class="mi">100</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">list_temp_cond</span><span class="p">])</span>
+        <span class="n">values_sample_name_list_cond</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">list_sample_name_temp_cond</span><span class="p">])</span>
+        <span class="n">frequency_list_cond</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">frequency_cond</span><span class="p">)</span><span class="si">}</span><span class="s2"> / </span><span class="si">{</span><span class="n">how_many_samples</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Proportion Average'</span><span class="p">]</span> <span class="o">=</span> <span class="n">mean_list</span>
+    <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Standard deviation'</span><span class="p">]</span> <span class="o">=</span> <span class="n">std_list</span>
+    <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Proportions'</span><span class="p">]</span> <span class="o">=</span> <span class="n">values_list</span>
+    <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Conditional Proportions'</span><span class="p">]</span> <span class="o">=</span> <span class="n">values_list_cond</span>
+    <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Conditional Proportion Average'</span><span class="p">]</span> <span class="o">=</span> <span class="n">mean_list_cond</span>
+    <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Conditional Standard deviation'</span><span class="p">]</span> <span class="o">=</span> <span class="n">std_list_cond</span>
+    <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Conditional Sample Frequency'</span><span class="p">]</span> <span class="o">=</span> <span class="n">frequency_list_cond</span>
+    <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Sample name where proportion comes from'</span><span class="p">]</span> <span class="o">=</span> <span class="n">values_sample_name_list</span>
+    <span class="k">if</span> <span class="n">apply_filter</span><span class="p">:</span>
+        <span class="n">how_many_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dictionary</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Pass 5</span><span class="si">% f</span><span class="s1">ilter'</span><span class="p">]</span>  <span class="o">=</span> <span class="p">[</span><span class="kc">True</span> <span class="k">if</span> <span class="n">t</span><span class="o">/</span><span class="n">how_many_samples</span> <span class="o">&gt;</span> <span class="mf">0.05</span> <span class="k">else</span> <span class="kc">False</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Counts'</span><span class="p">]]</span>
+        <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Pass 10</span><span class="si">% f</span><span class="s1">ilter'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span> <span class="k">if</span> <span class="n">t</span><span class="o">/</span><span class="n">how_many_samples</span> <span class="o">&gt;</span> <span class="mf">0.1</span>  <span class="k">else</span> <span class="kc">False</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Counts'</span><span class="p">]]</span>
+        <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Pass 15</span><span class="si">% f</span><span class="s1">ilter'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span> <span class="k">if</span> <span class="n">t</span><span class="o">/</span><span class="n">how_many_samples</span> <span class="o">&gt;</span> <span class="mf">0.15</span> <span class="k">else</span> <span class="kc">False</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Counts'</span><span class="p">]]</span>
+        <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Pass 20</span><span class="si">% f</span><span class="s1">ilter'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span> <span class="k">if</span> <span class="n">t</span><span class="o">/</span><span class="n">how_many_samples</span> <span class="o">&gt;</span> <span class="mf">0.2</span>  <span class="k">else</span> <span class="kc">False</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Counts'</span><span class="p">]]</span>
+        <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Pass 25</span><span class="si">% f</span><span class="s1">ilter'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span> <span class="k">if</span> <span class="n">t</span><span class="o">/</span><span class="n">how_many_samples</span> <span class="o">&gt;</span> <span class="mf">0.25</span> <span class="k">else</span> <span class="kc">False</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Counts'</span><span class="p">]]</span>
+    <span class="n">df_tt</span> <span class="o">=</span> <span class="n">df_tt</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">"Conditional Proportion Average"</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">df_tt</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_count_phenotypes</span><span class="p">(</span><span class="n">subCT_dict</span><span class="p">,</span> <span class="n">dictionary</span><span class="p">,</span> <span class="n">results_dir</span><span class="p">,</span> <span class="n">subCT_OG_dict</span><span class="p">,</span> <span class="n">apply_filter</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">zeroes_for_statistics</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Count phenotype detections across samples in one experimental group.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        Phenotype detection counts and abundance summaries for the group.</span>
+<span class="sd">    """</span>
+    <span class="n">all_phenotypes</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">samples_id</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">results_dir</span> <span class="o">/</span> <span class="s1">'Samples Id.csv'</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+    <span class="n">samples_id</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">'Samples Id'</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">df_phenotype</span> <span class="ow">in</span> <span class="n">subCT_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">samples_id</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="s1">'Samples filename'</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dictionary</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span> <span class="k">continue</span>
+        <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">df_phenotype</span><span class="p">[</span><span class="s1">'Host name'</span><span class="p">]:</span>
+            <span class="n">all_phenotypes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">host</span><span class="p">)</span>
+    <span class="n">count_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">item</span><span class="p">:</span><span class="n">all_phenotypes</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">all_phenotypes</span><span class="p">)}</span>
+    <span class="n">df_tt</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">count_dict</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span><span class="n">index</span><span class="o">=</span><span class="n">count_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'Counts'</span><span class="p">])</span>
+    <span class="n">df_tt</span><span class="p">[</span><span class="s1">'Treatment'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dictionary</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">df_tt</span> <span class="o">=</span> <span class="n">_filtering_phenotypes</span><span class="p">(</span><span class="n">df_tt</span><span class="p">,</span> <span class="n">subCT_dict</span><span class="p">,</span> <span class="n">dictionary</span><span class="p">,</span> <span class="n">samples_id</span><span class="p">,</span> <span class="n">subCT_OG_dict</span><span class="p">,</span> <span class="n">apply_filter</span><span class="p">,</span> <span class="n">zeroes_for_statistics</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">df_tt</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_common_n_unique_phenotypes</span><span class="p">(</span><span class="n">df_phenotypes_ctrl</span><span class="p">,</span> <span class="n">name_ctrl</span><span class="p">,</span> <span class="n">df_phenotypes_trtmnt</span><span class="p">,</span> <span class="n">name_trtmnt</span><span class="p">,</span> <span class="n">short_ct_name</span><span class="p">,</span> <span class="n">results_dir</span><span class="p">,</span> <span class="n">overwrite_existing_files</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">second_filter</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Separate phenotypes into common and group-specific sets.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df_phenotypes_ctrl, df_phenotypes_trtmnt : pandas.DataFrame</span>
+<span class="sd">        Phenotype summaries for the two comparison groups.</span>
+<span class="sd">    name_ctrl, name_trtmnt : str</span>
+<span class="sd">        Display names of the groups.</span>
+<span class="sd">    short_ct_name : str</span>
+<span class="sd">        Short name of the parent population.</span>
+<span class="sd">    results_dir : pathlib.Path</span>
+<span class="sd">        Statistics-results directory.</span>
+<span class="sd">    overwrite_existing_files : bool, default=False</span>
+<span class="sd">        Whether existing outputs may be replaced.</span>
+<span class="sd">    second_filter : int or None, default=None</span>
+<span class="sd">        Optional detection-frequency filter percentage.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        Phenotypes detected in both groups and their abundance summaries.</span>
+<span class="sd">    """</span>
+    <span class="n">results_dir_to_save</span> <span class="o">=</span> <span class="n">results_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"sub</span><span class="si">{</span><span class="n">short_ct_name</span><span class="si">}</span><span class="s2"> split test analysis"</span>
+    <span class="n">results_dir_to_save</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">save_namefile_all</span> <span class="o">=</span> <span class="n">results_dir_to_save</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"Common sub</span><span class="si">{</span><span class="n">short_ct_name</span><span class="si">}</span><span class="s2">.csv"</span>
+    <span class="n">save_namefile_ctrl</span> <span class="o">=</span> <span class="n">results_dir_to_save</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"Unique sub</span><span class="si">{</span><span class="n">short_ct_name</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">name_ctrl</span><span class="si">}</span><span class="s2">.csv"</span>
+    <span class="n">save_namefile_trtmnt</span> <span class="o">=</span> <span class="n">results_dir_to_save</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"Unique sub</span><span class="si">{</span><span class="n">short_ct_name</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">name_trtmnt</span><span class="si">}</span><span class="s2">.csv"</span>
+
+    <span class="k">if</span> <span class="n">second_filter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">df_phenotypes_ctrl</span> <span class="o">=</span> <span class="n">df_phenotypes_ctrl</span><span class="p">[</span><span class="n">df_phenotypes_ctrl</span><span class="p">[</span><span class="sa">f</span><span class="s1">'Pass </span><span class="si">{</span><span class="n">second_filter</span><span class="si">}</span><span class="s1"> filter'</span><span class="p">]</span><span class="o">==</span><span class="kc">True</span><span class="p">]</span>
+        <span class="n">df_phenotypes_trtmnt</span> <span class="o">=</span> <span class="n">df_phenotypes_trtmnt</span><span class="p">[</span><span class="n">df_phenotypes_trtmnt</span><span class="p">[</span><span class="sa">f</span><span class="s1">'Pass </span><span class="si">{</span><span class="n">second_filter</span><span class="si">}</span><span class="s1"> filter'</span><span class="p">]</span><span class="o">==</span><span class="kc">True</span><span class="p">]</span>
+    <span class="n">together_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">host</span> <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">df_phenotypes_ctrl</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span> <span class="k">if</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">df_phenotypes_trtmnt</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">tolist</span><span class="p">()]</span>
+    <span class="n">list_unique_ctrl</span> <span class="o">=</span> <span class="p">[</span><span class="n">host</span> <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">df_phenotypes_ctrl</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span> <span class="k">if</span> <span class="n">host</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">together_list</span><span class="p">]</span>
+    <span class="n">list_unique_trtmnt</span> <span class="o">=</span> <span class="p">[</span><span class="n">host</span> <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">df_phenotypes_trtmnt</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span> <span class="k">if</span> <span class="n">host</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">together_list</span><span class="p">]</span>
+    
+    <span class="n">df_together</span> <span class="o">=</span> <span class="n">df_phenotypes_ctrl</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">together_list</span><span class="p">]</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">"Conditional Proportion Average"</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">df_together</span> <span class="o">=</span> <span class="n">df_together</span><span class="p">[[</span><span class="s2">"Phenotype"</span><span class="p">,</span><span class="s2">"Conditional Proportion Average"</span><span class="p">,</span> <span class="s1">'Conditional Sample Frequency'</span><span class="p">,</span> <span class="s2">"Conditional Proportions"</span><span class="p">,</span> <span class="s2">"Proportion Average"</span><span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">df_together</span> <span class="o">=</span> <span class="n">df_together</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">"Conditional Proportion Average"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Detected </span><span class="si">{</span><span class="n">name_ctrl</span><span class="si">}</span><span class="s2"> %"</span><span class="p">,</span> <span class="s2">"Conditional Sample Frequency"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Detected Sample Frequency in </span><span class="si">{</span><span class="n">name_ctrl</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"Conditional Proportions"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Detected </span><span class="si">{</span><span class="n">name_ctrl</span><span class="si">}</span><span class="s2"> Prop Values"</span><span class="p">,</span> <span class="s2">"Proportion Average"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Filtered </span><span class="si">{</span><span class="n">name_ctrl</span><span class="si">}</span><span class="s2"> %"</span><span class="p">,})</span>
+    <span class="n">df_together</span><span class="p">[</span><span class="sa">f</span><span class="s2">"Detected </span><span class="si">{</span><span class="n">name_trtmnt</span><span class="si">}</span><span class="s2"> %"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df_phenotypes_trtmnt</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">together_list</span><span class="p">][</span><span class="s2">"Conditional Proportion Average"</span><span class="p">]</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">df_together</span><span class="p">[</span><span class="sa">f</span><span class="s2">"Detected </span><span class="si">{</span><span class="n">name_trtmnt</span><span class="si">}</span><span class="s2"> Prop Values"</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_phenotypes_trtmnt</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">together_list</span><span class="p">][</span><span class="s2">"Conditional Proportions"</span><span class="p">]</span>
+    <span class="n">df_together</span><span class="p">[</span><span class="sa">f</span><span class="s2">"Filtered </span><span class="si">{</span><span class="n">name_trtmnt</span><span class="si">}</span><span class="s2"> %"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df_phenotypes_trtmnt</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">together_list</span><span class="p">][</span><span class="s2">"Proportion Average"</span><span class="p">]</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">df_together</span><span class="p">[</span><span class="sa">f</span><span class="s2">"Detected </span><span class="si">{</span><span class="n">name_ctrl</span><span class="si">}</span><span class="s2"> %"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df_together</span><span class="p">[</span><span class="sa">f</span><span class="s2">"Detected </span><span class="si">{</span><span class="n">name_ctrl</span><span class="si">}</span><span class="s2"> %"</span><span class="p">]</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">df_together</span><span class="p">[</span><span class="sa">f</span><span class="s2">"Filtered </span><span class="si">{</span><span class="n">name_ctrl</span><span class="si">}</span><span class="s2"> %"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df_together</span><span class="p">[</span><span class="sa">f</span><span class="s2">"Filtered </span><span class="si">{</span><span class="n">name_ctrl</span><span class="si">}</span><span class="s2"> %"</span><span class="p">]</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">df_together</span><span class="p">[</span><span class="sa">f</span><span class="s2">"Detected Difference </span><span class="si">{</span><span class="n">name_trtmnt</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">name_ctrl</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span> <span class="o">=</span>  <span class="n">df_together</span><span class="p">[</span><span class="sa">f</span><span class="s2">"Detected </span><span class="si">{</span><span class="n">name_trtmnt</span><span class="si">}</span><span class="s2"> %"</span><span class="p">]</span> <span class="o">-</span> <span class="n">df_together</span><span class="p">[</span><span class="sa">f</span><span class="s2">"Detected </span><span class="si">{</span><span class="n">name_ctrl</span><span class="si">}</span><span class="s2"> %"</span><span class="p">]</span>
+    <span class="n">df_together</span><span class="p">[</span><span class="s1">'Interpretation'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"Increase after </span><span class="si">{</span><span class="n">name_trtmnt</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">value</span><span class="o">&gt;</span><span class="mi">0</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">"Decrease after </span><span class="si">{</span><span class="n">name_trtmnt</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">df_together</span><span class="p">[</span><span class="sa">f</span><span class="s2">"Detected Difference </span><span class="si">{</span><span class="n">name_trtmnt</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">name_ctrl</span><span class="si">}</span><span class="s2">"</span><span class="p">]]</span>
+    <span class="n">df_together</span><span class="p">[</span><span class="sa">f</span><span class="s2">"Detected Sample Frequency in </span><span class="si">{</span><span class="n">name_trtmnt</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_phenotypes_trtmnt</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">together_list</span><span class="p">][</span><span class="s2">"Conditional Sample Frequency"</span><span class="p">]</span>
+    <span class="n">df_together</span> <span class="o">=</span> <span class="n">df_together</span><span class="p">[[</span>
+        <span class="s2">"Phenotype"</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">"Detected </span><span class="si">{</span><span class="n">name_ctrl</span><span class="si">}</span><span class="s2"> %"</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">"Detected </span><span class="si">{</span><span class="n">name_trtmnt</span><span class="si">}</span><span class="s2"> %"</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">"Detected Difference </span><span class="si">{</span><span class="n">name_trtmnt</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">name_ctrl</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="s2">"Interpretation"</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">"Detected Sample Frequency in </span><span class="si">{</span><span class="n">name_ctrl</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">"Detected Sample Frequency in </span><span class="si">{</span><span class="n">name_trtmnt</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">"Detected </span><span class="si">{</span><span class="n">name_ctrl</span><span class="si">}</span><span class="s2"> Prop Values"</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">"Detected </span><span class="si">{</span><span class="n">name_trtmnt</span><span class="si">}</span><span class="s2"> Prop Values"</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">"Filtered </span><span class="si">{</span><span class="n">name_ctrl</span><span class="si">}</span><span class="s2"> %"</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">"Filtered </span><span class="si">{</span><span class="n">name_trtmnt</span><span class="si">}</span><span class="s2"> %"</span><span class="p">,</span>
+    <span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    
+    <span class="n">df_unique_ctrl</span> <span class="o">=</span> <span class="n">df_phenotypes_ctrl</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">list_unique_ctrl</span><span class="p">]</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">"Conditional Proportion Average"</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">df_unique_ctrl</span> <span class="o">=</span> <span class="n">df_unique_ctrl</span><span class="p">[[</span><span class="s2">"Phenotype"</span><span class="p">,</span><span class="s2">"Conditional Proportion Average"</span><span class="p">,</span> <span class="s2">"Proportion Average"</span><span class="p">,</span> <span class="s2">"Treatment"</span><span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">df_unique_ctrl</span> <span class="o">=</span> <span class="n">df_unique_ctrl</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">"Conditional Proportion Average"</span><span class="p">:</span><span class="s2">"Detected %"</span><span class="p">,</span><span class="s2">"Proportion Average"</span><span class="p">:</span><span class="s2">"Filtered %"</span><span class="p">,</span><span class="s2">"Treatment"</span><span class="p">:</span><span class="s2">"Condition"</span><span class="p">})</span>
+    <span class="n">df_unique_ctrl</span><span class="p">[</span><span class="s2">"Detected %"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df_unique_ctrl</span><span class="p">[</span><span class="s2">"Detected %"</span><span class="p">]</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">df_unique_ctrl</span><span class="p">[</span><span class="s2">"Filtered %"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df_unique_ctrl</span><span class="p">[</span><span class="s2">"Filtered %"</span><span class="p">]</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">df_unique_trtmnt</span> <span class="o">=</span> <span class="n">df_phenotypes_trtmnt</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">list_unique_trtmnt</span><span class="p">]</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">"Proportion Average"</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">df_unique_trtmnt</span> <span class="o">=</span> <span class="n">df_unique_trtmnt</span><span class="p">[[</span><span class="s2">"Phenotype"</span><span class="p">,</span><span class="s2">"Conditional Proportion Average"</span><span class="p">,</span><span class="s2">"Proportion Average"</span><span class="p">,</span><span class="s2">"Treatment"</span><span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">df_unique_trtmnt</span> <span class="o">=</span> <span class="n">df_unique_trtmnt</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">"Conditional Proportion Average"</span><span class="p">:</span> <span class="s2">"Detected %"</span><span class="p">,</span> <span class="s2">"Proportion Average"</span><span class="p">:</span> <span class="s2">"Filtered %"</span><span class="p">,</span><span class="s2">"Treatment"</span><span class="p">:</span><span class="s2">"Condition"</span><span class="p">})</span>
+    <span class="n">df_unique_trtmnt</span><span class="p">[</span><span class="s2">"Detected %"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df_unique_trtmnt</span><span class="p">[</span><span class="s2">"Detected %"</span><span class="p">]</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">df_unique_trtmnt</span><span class="p">[</span><span class="s2">"Filtered %"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df_unique_trtmnt</span><span class="p">[</span><span class="s2">"Filtered %"</span><span class="p">]</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">save_namefile_all</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">overwrite_existing_files</span><span class="p">:</span> 
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"File 'Common sub</span><span class="si">{</span><span class="n">short_ct_name</span><span class="si">}</span><span class="s2">.csv' already exists..."</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">save_namefile_all</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">df_together</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">save_namefile_all</span><span class="p">)</span>
+    <span class="n">df_together</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name_ctrl</span><span class="si">}</span><span class="s2"> Prop Values"</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_phenotypes_ctrl</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">together_list</span><span class="p">]</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">"Conditional Proportion Average"</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="s2">"Proportions"</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">df_together</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name_trtmnt</span><span class="si">}</span><span class="s2"> Prop Values"</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_phenotypes_trtmnt</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">together_list</span><span class="p">][</span><span class="s2">"Proportions"</span><span class="p">]</span>
+    <span class="n">df_unique_ctrl</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">save_namefile_ctrl</span><span class="p">)</span>
+    <span class="n">df_unique_trtmnt</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">save_namefile_trtmnt</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">df_together</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_plotting_table</span><span class="p">(</span><span class="n">df_together</span><span class="p">,</span> <span class="n">name_ctrl</span><span class="p">,</span> <span class="n">name_trtmnt</span><span class="p">,</span> <span class="n">pvals</span><span class="p">,</span> <span class="n">caption_text</span><span class="p">,</span> <span class="n">short_ct_name</span><span class="p">,</span> <span class="n">plots_dir</span><span class="p">,</span> <span class="n">test_name</span><span class="o">=</span><span class="s2">"test"</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">"tight"</span><span class="p">,</span> <span class="n">filter_applied</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">second_filter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">overwrite_existing_files</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_phenotypes_per_plot</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">ctrl_values_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">trtmnt_values_column</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Plot paginated two-group phenotype-abundance comparisons.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df_together : pandas.DataFrame</span>
+<span class="sd">        Common-phenotype comparison table.</span>
+<span class="sd">    name_ctrl, name_trtmnt : str</span>
+<span class="sd">        Group labels.</span>
+<span class="sd">    pvals : array-like</span>
+<span class="sd">        Nominal p-values shown beside each phenotype.</span>
+<span class="sd">    caption_text : str</span>
+<span class="sd">        Figure-caption text.</span>
+<span class="sd">    short_ct_name : str</span>
+<span class="sd">        Short name of the parent population.</span>
+<span class="sd">    plots_dir : pathlib.Path</span>
+<span class="sd">        Destination directory.</span>
+<span class="sd">    test_name : str, default="test"</span>
+<span class="sd">        Statistical-test label used in output filenames.</span>
+<span class="sd">    dpi : int, default=300</span>
+<span class="sd">        Figure resolution.</span>
+<span class="sd">    filter_applied : bool, default=True</span>
+<span class="sd">        Whether results correspond to filtered phenotype tables.</span>
+<span class="sd">    second_filter : int or None, default=None</span>
+<span class="sd">        Optional secondary filter identifier.</span>
+<span class="sd">    overwrite_existing_files : bool, default=False</span>
+<span class="sd">        Whether existing figures may be replaced.</span>
+<span class="sd">    max_phenotypes_per_plot : int, default=12</span>
+<span class="sd">        Maximum phenotypes displayed per page.</span>
+<span class="sd">    ctrl_values_column, trtmnt_values_column : str or None</span>
+<span class="sd">        Columns containing per-sample abundance vectors.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+<span class="sd">        Plot images and phenotype-ID mappings are written below the</span>
+<span class="sd">        ``Statistics`` output directory.</span>
+<span class="sd">    """</span>
+    <span class="n">plots_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">max_phenotypes_per_plot</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"'max_phenotypes_per_plot' must be &gt;= 1. Changing to default value..."</span><span class="p">)</span>
+        <span class="n">max_phenotypes_per_plot</span> <span class="o">=</span> <span class="mi">12</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">df_together</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"No phenotypes to plot in </span><span class="si">{</span><span class="n">short_ct_name</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pvals</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">df_together</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Number of p-values does not match phenotypes in </span><span class="si">{</span><span class="n">short_ct_name</span><span class="si">}</span><span class="s2">. Skipping this plot..."</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># File names</span>
+    <span class="n">prefix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">second_filter</span><span class="si">}</span><span class="s2"> "</span> <span class="k">if</span> <span class="n">filter_applied</span> <span class="ow">and</span> <span class="n">second_filter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">""</span>
+    <span class="n">suffix</span> <span class="o">=</span> <span class="s2">""</span> <span class="k">if</span> <span class="n">filter_applied</span> <span class="k">else</span> <span class="s2">" - No filter"</span>
+    <span class="n">base_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s2">Common sub</span><span class="si">{</span><span class="n">short_ct_name</span><span class="si">}</span><span class="s2"> proportion differences analysis - Box plot - </span><span class="si">{</span><span class="n">test_name</span><span class="si">}{</span><span class="n">suffix</span><span class="si">}</span><span class="s2">"</span>
+
+    <span class="c1"># Prepare values</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_array</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span> <span class="n">values</span> <span class="o">=</span> <span class="n">ast</span><span class="o">.</span><span class="n">literal_eval</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">values</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">arr</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">arr</span><span class="p">)]</span>
+
+    <span class="n">records</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">phenotype</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">df_together</span><span class="o">.</span><span class="n">iterrows</span><span class="p">()):</span>
+        <span class="n">ctrl_raw</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="n">ctrl_values_column</span><span class="p">]</span> <span class="k">if</span> <span class="n">ctrl_values_column</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">row</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span>
+        <span class="n">trtmnt_raw</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="n">trtmnt_values_column</span><span class="p">]</span> <span class="k">if</span> <span class="n">trtmnt_values_column</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">row</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">records</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"id"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"P</span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">:</span><span class="s2">03d</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"phenotype"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">phenotype</span><span class="p">),</span> <span class="s2">"ctrl"</span><span class="p">:</span> <span class="n">to_array</span><span class="p">(</span><span class="n">ctrl_raw</span><span class="p">),</span> <span class="s2">"trtmnt"</span><span class="p">:</span> <span class="n">to_array</span><span class="p">(</span><span class="n">trtmnt_raw</span><span class="p">),</span> <span class="s2">"pval"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">pvals</span><span class="p">[</span><span class="n">i</span><span class="p">])})</span>
+
+    <span class="c1"># Save phenotype ID mapping</span>
+    <span class="n">mapping</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">"Plot ID"</span><span class="p">:</span> <span class="p">[</span><span class="n">r</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">records</span><span class="p">],</span> <span class="s2">"Phenotype"</span><span class="p">:</span> <span class="p">[</span><span class="n">r</span><span class="p">[</span><span class="s2">"phenotype"</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">records</span><span class="p">]})</span>
+    <span class="n">mapping_file</span> <span class="o">=</span> <span class="n">plots_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base_name</span><span class="si">}</span><span class="s2"> - Phenotype mapping.csv"</span>
+    <span class="k">if</span> <span class="n">overwrite_existing_files</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">mapping_file</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span> <span class="n">mapping</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">mapping_file</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="c1"># Prepare figure pages</span>
+    <span class="n">n_pages</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">records</span><span class="p">)</span> <span class="o">/</span> <span class="n">max_phenotypes_per_plot</span><span class="p">))</span>
+    <span class="n">colors</span> <span class="o">=</span> <span class="p">{</span><span class="n">name_ctrl</span><span class="p">:</span> <span class="s2">"#D9D9D9"</span><span class="p">,</span> <span class="n">name_trtmnt</span><span class="p">:</span> <span class="s2">"#A6C9EC"</span><span class="p">}</span>
+    <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">format_pvalue</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">p</span><span class="p">):</span> <span class="k">return</span> <span class="s2">"N/A"</span>
+        <span class="k">if</span> <span class="n">p</span> <span class="o">&lt;</span> <span class="mf">0.001</span><span class="p">:</span> <span class="k">return</span> <span class="s2">"&lt;0.001"</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">p</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span>
+
+    <span class="c1"># Generate plots</span>
+    <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_pages</span><span class="p">):</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">page</span> <span class="o">*</span> <span class="n">max_phenotypes_per_plot</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">start</span> <span class="o">+</span> <span class="n">max_phenotypes_per_plot</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">records</span><span class="p">))</span>
+        <span class="n">subset</span> <span class="o">=</span> <span class="n">records</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span>
+        <span class="n">n_rows</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">subset</span><span class="p">)</span>
+        
+        <span class="n">page_suffix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">" - Page </span><span class="si">{</span><span class="n">page</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">n_pages</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">""</span>
+        <span class="n">save_namefile</span> <span class="o">=</span> <span class="n">plots_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base_name</span><span class="si">}{</span><span class="n">page_suffix</span><span class="si">}</span><span class="s2">.png"</span>
+        <span class="k">if</span> <span class="n">save_namefile</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">overwrite_existing_files</span><span class="p">:</span> <span class="k">continue</span>
+
+        <span class="c1"># Smaller figures for fewer phenotypes</span>
+        <span class="n">fig_height</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">3.5</span><span class="p">,</span> <span class="mf">0.65</span> <span class="o">*</span> <span class="n">n_rows</span> <span class="o">+</span> <span class="mf">2.1</span><span class="p">)</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">fig_height</span><span class="p">))</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">left</span><span class="o">=</span><span class="mf">0.13</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="mf">0.83</span><span class="p">,</span> <span class="n">top</span><span class="o">=</span><span class="mf">0.88</span><span class="p">,</span> <span class="n">bottom</span><span class="o">=</span><span class="mf">0.23</span><span class="p">)</span>
+        <span class="n">all_values</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Plot each phenotype</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">record</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">subset</span><span class="p">):</span>
+            <span class="n">groups</span> <span class="o">=</span> <span class="p">[(</span><span class="n">record</span><span class="p">[</span><span class="s2">"ctrl"</span><span class="p">],</span> <span class="n">j</span> <span class="o">-</span> <span class="mf">0.17</span><span class="p">,</span> <span class="n">name_ctrl</span><span class="p">),</span> <span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">"trtmnt"</span><span class="p">],</span> <span class="n">j</span> <span class="o">+</span> <span class="mf">0.17</span><span class="p">,</span> <span class="n">name_trtmnt</span><span class="p">)]</span>
+            <span class="k">for</span> <span class="n">values</span><span class="p">,</span> <span class="n">position</span><span class="p">,</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">continue</span>
+                <span class="n">all_values</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+                
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span> <span class="n">bp</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">boxplot</span><span class="p">([</span><span class="n">values</span><span class="p">],</span> <span class="n">positions</span><span class="o">=</span><span class="p">[</span><span class="n">position</span><span class="p">],</span> <span class="n">widths</span><span class="o">=</span><span class="mf">0.24</span><span class="p">,</span> <span class="n">vert</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">patch_artist</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">showfliers</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">manage_ticks</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">whis</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">medianprops</span><span class="o">=</span><span class="p">{</span><span class="s2">"color"</span><span class="p">:</span> <span class="s2">"#222222"</span><span class="p">,</span> <span class="s2">"linewidth"</span><span class="p">:</span> <span class="mf">1.7</span><span class="p">},</span> <span class="n">boxprops</span><span class="o">=</span><span class="p">{</span><span class="s2">"facecolor"</span><span class="p">:</span> <span class="n">colors</span><span class="p">[</span><span class="n">group</span><span class="p">],</span> <span class="s2">"edgecolor"</span><span class="p">:</span> <span class="s2">"#666666"</span><span class="p">,</span> <span class="s2">"linewidth"</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">},</span> <span class="n">whiskerprops</span><span class="o">=</span><span class="p">{</span><span class="s2">"color"</span><span class="p">:</span> <span class="s2">"#666666"</span><span class="p">,</span> <span class="s2">"linewidth"</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">},</span> <span class="n">capprops</span><span class="o">=</span><span class="p">{</span><span class="s2">"color"</span><span class="p">:</span> <span class="s2">"#666666"</span><span class="p">,</span> <span class="s2">"linewidth"</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">})</span>
+
+                <span class="c1"># Overlay all biological samples</span>
+                <span class="n">jitter</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mf">0.035</span><span class="p">,</span> <span class="mf">0.035</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">))</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">position</span> <span class="o">+</span> <span class="n">jitter</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">28</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">group</span><span class="p">],</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s2">"#555555"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.85</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+
+            <span class="c1"># p-value labels</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">1.025</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">format_pvalue</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">"pval"</span><span class="p">]),</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">get_yaxis_transform</span><span class="p">(),</span> <span class="n">ha</span><span class="o">=</span><span class="s2">"left"</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s2">"center"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span> <span class="n">clip_on</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># Axis formatting</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_rows</span><span class="p">))</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">([</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="si">}</span><span class="s2"> (n=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">'ctrl'</span><span class="p">])</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">'trtmnt'</span><span class="p">])</span><span class="si">}</span><span class="s2">)"</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">subset</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">n_rows</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"Phenotype"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">11</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"Phenotype proportion (%)"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">11</span><span class="p">)</span>
+        <span class="n">max_value</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">all_values</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">max_value</span> <span class="o">*</span> <span class="mf">1.08</span><span class="p">))</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s2">"x"</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.25</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_axisbelow</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Legend</span>
+        <span class="n">legend_handles</span> <span class="o">=</span> <span class="p">[</span><span class="n">Patch</span><span class="p">(</span><span class="n">facecolor</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">name_ctrl</span><span class="p">],</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s2">"#666666"</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">name_ctrl</span><span class="p">),</span> <span class="n">Patch</span><span class="p">(</span><span class="n">facecolor</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">name_trtmnt</span><span class="p">],</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s2">"#666666"</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">name_trtmnt</span><span class="p">)]</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">handles</span><span class="o">=</span><span class="n">legend_handles</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">"lower right"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span> <span class="n">frameon</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Titles and annotations</span>
+        <span class="n">title</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Conditional phenotype abundance: </span><span class="si">{</span><span class="n">name_ctrl</span><span class="si">}</span><span class="s2"> vs </span><span class="si">{</span><span class="n">name_trtmnt</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">short_ct_name</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">if</span> <span class="n">n_pages</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span> <span class="n">title</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">" (Page </span><span class="si">{</span><span class="n">page</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">n_pages</span><span class="si">}</span><span class="s2">)"</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">1.025</span><span class="p">,</span> <span class="mf">1.02</span><span class="p">,</span> <span class="s2">"Nominal p"</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s2">"bold"</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s2">"left"</span><span class="p">)</span>
+
+        <span class="c1"># Caption</span>
+        <span class="n">wrapped_caption</span> <span class="o">=</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">caption_text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span> <span class="s2">" "</span><span class="p">),</span> <span class="n">width</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.13</span><span class="p">,</span> <span class="mf">0.045</span><span class="p">,</span> <span class="n">wrapped_caption</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s2">"left"</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s2">"bottom"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+
+        <span class="c1"># Save</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">save_namefile</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="n">dpi</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="n">bbox_inches</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Saved boxplot for </span><span class="si">{</span><span class="n">short_ct_name</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_common_phenotypes_differences_analysis</span><span class="p">(</span><span class="n">df_together</span><span class="p">,</span> <span class="n">name_ctrl</span><span class="p">,</span> <span class="n">name_trtmnt</span><span class="p">,</span> <span class="n">short_ct_name</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">filter_applied</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">second_filter</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">overwrite_existing_files</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Compare common phenotype abundances between two sample groups.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df_together : pandas.DataFrame</span>
+<span class="sd">        Common-phenotype table containing per-sample abundance vectors.</span>
+<span class="sd">    name_ctrl, name_trtmnt : str</span>
+<span class="sd">        Names of the two comparison groups.</span>
+<span class="sd">    short_ct_name : str</span>
+<span class="sd">        Short name of the parent population.</span>
+<span class="sd">    output_dir : pathlib.Path</span>
+<span class="sd">        SpPrAn output directory.</span>
+<span class="sd">    filter_applied : bool, default=True</span>
+<span class="sd">        Whether the analysis uses filtered phenotype tables.</span>
+<span class="sd">    second_filter : int or None, default=None</span>
+<span class="sd">        Optional secondary detection-frequency filter.</span>
+<span class="sd">    overwrite_existing_files : bool, default=False</span>
+<span class="sd">        Whether existing outputs may be replaced.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+<span class="sd">        Statistical summaries and comparison plots are written below the</span>
+<span class="sd">        ``Statistics`` output directory.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    The function performs two-sided Mann–Whitney U and Welch independent-sample</span>
+<span class="sd">    t-tests. Benjamini–Hochberg FDR-adjusted p-values are also calculated.</span>
+
+<span class="sd">    Statistical interpretation should consider biological sample size,</span>
+<span class="sd">    phenotype detection frequency, effect magnitude, and multiplicity.</span>
+<span class="sd">    """</span>
+    <span class="n">results_dir</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"Statistics"</span> <span class="o">/</span> <span class="s2">"results"</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"sub</span><span class="si">{</span><span class="n">short_ct_name</span><span class="si">}</span><span class="s2"> split test analysis"</span>
+    <span class="n">plots_dir</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"Statistics"</span> <span class="o">/</span> <span class="s2">"plots"</span> <span class="o">/</span> <span class="s2">"phenotypes differences analysis"</span>
+    <span class="n">results_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">plots_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">save_namefile</span> <span class="o">=</span> <span class="n">results_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"Common sub</span><span class="si">{</span><span class="n">short_ct_name</span><span class="si">}</span><span class="s2"> proportion differences analysis.csv"</span>
+    <span class="k">if</span> <span class="n">save_namefile</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">overwrite_existing_files</span><span class="p">:</span> 
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'proportion differences analysis' csv file already exists..."</span><span class="p">)</span>
+        <span class="n">results_table</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">save_namefile</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">pvals</span>   <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">results_table</span><span class="p">[</span><span class="s1">'Mann–Whitney p-value'</span><span class="p">])</span>
+        <span class="n">pvals_m</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">results_table</span><span class="p">[</span><span class="s1">'Raw p-value'</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">cell_types</span> <span class="o">=</span> <span class="n">df_together</span><span class="o">.</span><span class="n">index</span>  <span class="c1"># rows are cell types</span>
+        <span class="n">pvals</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">pvals_m</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">summary</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">cell_types</span><span class="p">:</span>
+            <span class="n">ctrl_vals</span> <span class="o">=</span> <span class="n">df_together</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">cell</span><span class="p">,</span><span class="sa">f</span><span class="s2">"Detected </span><span class="si">{</span><span class="n">name_ctrl</span><span class="si">}</span><span class="s2"> Prop Values"</span><span class="p">]</span>
+            <span class="n">treat_vals</span> <span class="o">=</span> <span class="n">df_together</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">cell</span><span class="p">,</span><span class="sa">f</span><span class="s2">"Detected </span><span class="si">{</span><span class="n">name_trtmnt</span><span class="si">}</span><span class="s2"> Prop Values"</span><span class="p">]</span>
+            
+            <span class="c1"># mean ± SD</span>
+            <span class="n">ctrl_mean</span><span class="p">,</span> <span class="n">ctrl_sd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ctrl_vals</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">ctrl_vals</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">treat_mean</span><span class="p">,</span> <span class="n">treat_sd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">treat_vals</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">treat_vals</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            
+            <span class="n">ctrl_med</span><span class="p">,</span> <span class="n">ctrl_q1</span><span class="p">,</span> <span class="n">ctrl_q3</span> <span class="o">=</span> <span class="n">median_iqr</span><span class="p">(</span><span class="n">ctrl_vals</span><span class="p">)</span>
+            <span class="n">treat_med</span><span class="p">,</span> <span class="n">treat_q1</span><span class="p">,</span> <span class="n">treat_q3</span> <span class="o">=</span> <span class="n">median_iqr</span><span class="p">(</span><span class="n">treat_vals</span><span class="p">)</span>
+        
+            <span class="c1"># Welch t-test</span>
+            <span class="n">sta_m</span><span class="p">,</span> <span class="n">pval_m</span> <span class="o">=</span> <span class="n">ttest_ind</span><span class="p">(</span><span class="n">ctrl_vals</span><span class="p">,</span> <span class="n">treat_vals</span><span class="p">,</span> <span class="n">equal_var</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">stat</span><span class="p">,</span> <span class="n">pval</span> <span class="o">=</span> <span class="n">mannwhitneyu</span><span class="p">(</span><span class="n">ctrl_vals</span><span class="p">,</span> <span class="n">treat_vals</span><span class="p">,</span> <span class="n">alternative</span><span class="o">=</span><span class="s2">"two-sided"</span><span class="p">)</span>
+            <span class="n">pvals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pval</span><span class="p">)</span>
+            <span class="n">pvals_m</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pval_m</span><span class="p">)</span>
+            
+            <span class="n">summary</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                <span class="s2">"Cell type"</span><span class="p">:</span> <span class="n">cell</span><span class="p">,</span>
+                <span class="s2">"Control (mean ± SD)"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ctrl_mean</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> ± </span><span class="si">{</span><span class="n">ctrl_sd</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="s2">"Treatment (mean ± SD)"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">treat_mean</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> ± </span><span class="si">{</span><span class="n">treat_sd</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="s2">"Control (median [IQR])"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ctrl_med</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> [</span><span class="si">{</span><span class="n">ctrl_q1</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">–</span><span class="si">{</span><span class="n">ctrl_q3</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">]"</span><span class="p">,</span>
+                <span class="s2">"Treatment (median [IQR])"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">treat_med</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> [</span><span class="si">{</span><span class="n">treat_q1</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">–</span><span class="si">{</span><span class="n">treat_q3</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">]"</span><span class="p">,</span>
+                <span class="s2">"Mann–Whitney p-value"</span><span class="p">:</span> <span class="n">pval</span><span class="p">,</span>
+                <span class="s2">"Raw p-value"</span><span class="p">:</span> <span class="n">pval_m</span>
+            <span class="p">})</span>
+        
+        <span class="c1"># FDR correction</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pvals</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span> <span class="n">_</span><span class="p">,</span> <span class="n">fdr_pvals</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">multipletests</span><span class="p">(</span><span class="n">pvals</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"fdr_bh"</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="n">fdr_pvals</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">summary</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pvals_m</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span> <span class="n">_</span><span class="p">,</span> <span class="n">fdr_pvals_m</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">multipletests</span><span class="p">(</span><span class="n">pvals_m</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"fdr_bh"</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="n">fdr_pvals_m</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">summary</span><span class="p">)</span>
+        
+        <span class="c1"># Add corrected p-values</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">summary</span><span class="p">):</span>
+            <span class="n">row</span><span class="p">[</span><span class="s2">"FDR-corrected M-W p-value"</span><span class="p">]</span> <span class="o">=</span> <span class="n">fdr_pvals</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">row</span><span class="p">[</span><span class="s2">"FDR-corrected RAW p-value"</span><span class="p">]</span> <span class="o">=</span> <span class="n">fdr_pvals_m</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        
+        <span class="n">results_table</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">summary</span><span class="p">)</span>
+        <span class="n">results_table</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">save_namefile</span><span class="p">)</span>
+
+    <span class="n">_plotting_table</span><span class="p">(</span><span class="n">df_together</span><span class="p">,</span> <span class="n">name_ctrl</span><span class="p">,</span> <span class="n">name_trtmnt</span><span class="p">,</span> <span class="n">pvals</span><span class="p">,</span>   <span class="n">caption_text</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span> <span class="n">short_ct_name</span><span class="o">=</span><span class="n">short_ct_name</span><span class="p">,</span> <span class="n">plots_dir</span><span class="o">=</span><span class="n">plots_dir</span><span class="p">,</span> <span class="n">test_name</span> <span class="o">=</span> <span class="s2">"Mann–Whitney"</span><span class="p">,</span> <span class="n">filter_applied</span> <span class="o">=</span> <span class="n">filter_applied</span><span class="p">,</span> <span class="n">second_filter</span> <span class="o">=</span> <span class="n">second_filter</span><span class="p">,</span> <span class="n">overwrite_existing_files</span><span class="o">=</span><span class="n">overwrite_existing_files</span><span class="p">,</span> <span class="n">ctrl_values_column</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Detected </span><span class="si">{</span><span class="n">name_ctrl</span><span class="si">}</span><span class="s2"> Prop Values"</span><span class="p">,</span> <span class="n">trtmnt_values_column</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Detected </span><span class="si">{</span><span class="n">name_trtmnt</span><span class="si">}</span><span class="s2"> Prop Values"</span><span class="p">)</span> <span class="c1"># t test</span>
+    <span class="n">_plotting_table</span><span class="p">(</span><span class="n">df_together</span><span class="p">,</span> <span class="n">name_ctrl</span><span class="p">,</span> <span class="n">name_trtmnt</span><span class="p">,</span> <span class="n">pvals_m</span><span class="p">,</span> <span class="n">caption_text</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span> <span class="n">short_ct_name</span><span class="o">=</span><span class="n">short_ct_name</span><span class="p">,</span> <span class="n">plots_dir</span><span class="o">=</span><span class="n">plots_dir</span><span class="p">,</span> <span class="n">test_name</span> <span class="o">=</span> <span class="s2">"t-test"</span><span class="p">,</span>       <span class="n">filter_applied</span> <span class="o">=</span> <span class="n">filter_applied</span><span class="p">,</span> <span class="n">second_filter</span> <span class="o">=</span> <span class="n">second_filter</span><span class="p">,</span> <span class="n">overwrite_existing_files</span><span class="o">=</span><span class="n">overwrite_existing_files</span><span class="p">,</span> <span class="n">ctrl_values_column</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Detected </span><span class="si">{</span><span class="n">name_ctrl</span><span class="si">}</span><span class="s2"> Prop Values"</span><span class="p">,</span> <span class="n">trtmnt_values_column</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Detected </span><span class="si">{</span><span class="n">name_trtmnt</span><span class="si">}</span><span class="s2"> Prop Values"</span><span class="p">)</span> <span class="c1"># Mann–Whitney</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_naming_phenotypes</span><span class="p">(</span><span class="n">CST_markers</span><span class="p">,</span> <span class="n">initials_CST</span><span class="p">,</span> <span class="n">short_ct_name</span><span class="p">,</span> <span class="n">observed_numbers</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Create names and marker patterns for observed binary phenotypes.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    CST_markers : list of str</span>
+<span class="sd">        Protein marker columns represented by the binary phenotype code.</span>
+<span class="sd">    initials_CST : list of str</span>
+<span class="sd">        Short protein marker names used in readable phenotype labels.</span>
+<span class="sd">    short_ct_name : str</span>
+<span class="sd">        Short name of the parent population.</span>
+<span class="sd">    observed_numbers : array-like of int</span>
+<span class="sd">        Integer-encoded protein marker patterns observed in the data.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        Integer codes, binary patterns, protein marker labels, and generated host names.</span>
+<span class="sd">    """</span>
+    <span class="n">n_markers</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">CST_markers</span><span class="p">)</span>
+    <span class="n">df_bin</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">"number"</span><span class="p">:</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">observed_numbers</span><span class="p">))})</span>
+    <span class="n">df_bin</span><span class="p">[</span><span class="s2">"binary"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">format</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"0</span><span class="si">{</span><span class="n">n_markers</span><span class="si">}</span><span class="s2">b"</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">df_bin</span><span class="p">[</span><span class="s2">"number"</span><span class="p">]]</span>
+    <span class="n">df_bin</span><span class="p">[</span><span class="s2">"list_pos"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">binary</span><span class="p">)</span> <span class="k">for</span> <span class="n">binary</span> <span class="ow">in</span> <span class="n">df_bin</span><span class="p">[</span><span class="s2">"binary"</span><span class="p">]]</span>
+    <span class="n">df_bin</span><span class="p">[</span><span class="s2">"Markers name"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">","</span><span class="o">.</span><span class="n">join</span><span class="p">(</span> <span class="n">initials_CST</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">bit</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">binary</span><span class="p">)</span> <span class="k">if</span> <span class="n">bit</span> <span class="o">==</span> <span class="s2">"1"</span><span class="p">)</span> <span class="k">for</span> <span class="n">binary</span> <span class="ow">in</span> <span class="n">df_bin</span><span class="p">[</span><span class="s2">"binary"</span><span class="p">]]</span>
+    <span class="n">df_bin</span><span class="p">[</span><span class="s1">'host_name'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">"Host_"</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="nb">sum</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">pos</span><span class="p">])),</span><span class="s2">"_"</span><span class="p">]</span><span class="o">+</span><span class="p">[</span><span class="n">initials_CST</span><span class="p">[</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">pos</span><span class="p">[</span><span class="n">numb_pos</span><span class="p">])</span><span class="o">*</span><span class="p">(</span><span class="n">numb_pos</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">numb_pos</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_markers</span><span class="p">)]</span> <span class="k">if</span> <span class="n">n</span><span class="o">!=</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="p">[</span><span class="sa">f</span><span class="s2">"_sub</span><span class="si">{</span><span class="n">short_ct_name</span><span class="si">}</span><span class="s2">"</span><span class="p">])</span> <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">df_bin</span><span class="p">[</span><span class="s1">'list_pos'</span><span class="p">]]</span>
+    <span class="k">return</span> <span class="n">df_bin</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_calculate_unsupervised_subCT_proportions</span><span class="p">(</span><span class="n">adata_dicts</span><span class="p">,</span> <span class="n">adata_dir</span><span class="p">,</span> <span class="n">pheno_dict</span><span class="p">,</span> <span class="n">phenotype_codes_dict</span><span class="p">,</span> <span class="n">exploratory_protein_markers</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">short_ct_name</span><span class="p">,</span> <span class="n">ct_name</span><span class="o">=</span><span class="s2">"cells"</span><span class="p">,</span> <span class="n">use_filter</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">overwrite_existing_files</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">min_proportion</span><span class="o">=</span><span class="mf">0.005</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Annotate discovered phenotypes and calculate their within-parent abundance.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    adata_dicts : dict of str to anndata.AnnData</span>
+<span class="sd">        Per-sample annotated data.</span>
+<span class="sd">    adata_dir : pathlib.Path</span>
+<span class="sd">        Directory used when updated AnnData files are saved.</span>
+<span class="sd">    pheno_dict : dict of str to pandas.DataFrame</span>
+<span class="sd">        Per-sample phenotype-code lookup tables.</span>
+<span class="sd">    phenotype_codes_dict : dict of str to numpy.ndarray</span>
+<span class="sd">        Integer phenotype code for every cell in each sample.</span>
+<span class="sd">    exploratory_protein_markers : list of str</span>
+<span class="sd">        Protein markers represented by the discovered patterns.</span>
+<span class="sd">    output_dir : pathlib.Path</span>
+<span class="sd">        SpPrAn output directory.</span>
+<span class="sd">    short_ct_name : str</span>
+<span class="sd">        Short name of the parent population.</span>
+<span class="sd">    ct_name : str, default="cells"</span>
+<span class="sd">        Parent cell type within which proportions are calculated.</span>
+<span class="sd">    use_filter : bool, default=True</span>
+<span class="sd">        Whether low-abundance phenotypes are filtered from exported tables.</span>
+<span class="sd">    overwrite_existing_files : bool, default=False</span>
+<span class="sd">        Whether existing phenotype files may be replaced.</span>
+<span class="sd">    min_proportion : float, default=0.005</span>
+<span class="sd">        Minimum within-parent proportion retained when filtering.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    subCT_dict : dict of str to pandas.DataFrame</span>
+<span class="sd">        Filtered per-sample phenotype tables.</span>
+<span class="sd">    adata_dicts : dict of str to anndata.AnnData</span>
+<span class="sd">        Updated AnnData objects containing phenotype labels/patterns.</span>
+<span class="sd">    subCT_OG_dict : dict of str to pandas.DataFrame</span>
+<span class="sd">        Unfiltered per-sample phenotype tables.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Proportions are relative to the selected parent cell type, not all cells in</span>
+<span class="sd">    the tissue sample.</span>
+<span class="sd">    """</span>
+    <span class="n">statistics_results_dir</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"Statistics"</span> <span class="o">/</span> <span class="s2">"results"</span>
+    <span class="n">save_filepath</span> <span class="o">=</span> <span class="p">(</span> <span class="n">statistics_results_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"sub</span><span class="si">{</span><span class="n">short_ct_name</span><span class="si">}</span><span class="s2"> cell proportions"</span><span class="p">)</span>
+    <span class="n">save_filepath</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">subCT_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">subCT_OG_dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="n">save_anndata_check</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="n">ct_obs_column</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Only </span><span class="si">{</span><span class="n">ct_name</span><span class="si">}</span><span class="s2">"</span>
+    <span class="n">host_column</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"sub</span><span class="si">{</span><span class="n">short_ct_name</span><span class="si">}</span><span class="s2"> phenotype"</span>
+    <span class="n">patterns_key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"sub</span><span class="si">{</span><span class="n">short_ct_name</span><span class="si">}</span><span class="s2">_patterns"</span>
+
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">adata</span> <span class="ow">in</span> <span class="n">adata_dicts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">df_bin</span> <span class="o">=</span> <span class="n">pheno_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="n">phenotype_codes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">phenotype_codes_dict</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+        
+        <span class="c1"># One phenotype code per cell</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">phenotype_codes</span><span class="p">)</span> <span class="o">!=</span> <span class="n">adata</span><span class="o">.</span><span class="n">n_obs</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Sample </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">: phenotype codes and AnnData have different numbers of cells. Skipping this sample..."</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="c1"># Map integer phenotype codes to host names, then to binary marker patterns</span>
+        <span class="n">code_to_host</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span> <span class="n">df_bin</span><span class="p">[</span><span class="s2">"number"</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint64</span><span class="p">),</span> <span class="n">df_bin</span><span class="p">[</span><span class="s2">"host_name"</span><span class="p">]))</span>
+        <span class="n">all_host_patterns</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span> <span class="n">df_bin</span><span class="p">[</span><span class="s2">"host_name"</span><span class="p">],</span> <span class="n">df_bin</span><span class="p">[</span><span class="s2">"list_pos"</span><span class="p">]))</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">exploratory_protein_markers</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span> <span class="n">df_bin</span><span class="p">[</span><span class="s2">"list_pos"</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">df_bin</span><span class="o">.</span><span class="n">empty</span> <span class="k">else</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Sample </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">: protein marker names and phenotype patterns have different lengths. Skipping this sample..."</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="c1"># Identify cells belonging to the selected cell type</span>
+        <span class="k">if</span> <span class="n">ct_obs_column</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Column '</span><span class="si">{</span><span class="n">ct_obs_column</span><span class="si">}</span><span class="s2">' not found in sample </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">. Skipping this sample..."</span><span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="n">ct_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="n">ct_obs_column</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span> <span class="o">==</span> <span class="n">ct_name</span><span class="p">)</span>
+        <span class="n">length_CT</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ct_mask</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="n">host_column</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span> <span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="n">host_column</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span> <span class="n">pd</span><span class="o">.</span><span class="n">NA</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">adata</span><span class="o">.</span><span class="n">obs_names</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">"string"</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="n">host_column</span><span class="p">]</span> <span class="o">=</span> <span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="n">host_column</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"string"</span><span class="p">)</span>
+        <span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ct_mask</span><span class="p">,</span> <span class="n">host_column</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">NA</span>
+
+        <span class="k">if</span> <span class="n">length_CT</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">phenotype_counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="n">df_bin</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+            <span class="n">adata</span><span class="o">.</span><span class="n">uns</span><span class="p">[</span><span class="n">patterns_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">save_anndata_check</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">ct_codes</span> <span class="o">=</span> <span class="n">phenotype_codes</span><span class="p">[</span><span class="n">ct_mask</span><span class="p">]</span>
+            <span class="n">unique_codes</span><span class="p">,</span> <span class="n">counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span> <span class="n">ct_codes</span><span class="p">,</span> <span class="n">return_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">count_lookup</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span> <span class="n">unique_codes</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="n">counts</span><span class="o">.</span><span class="n">tolist</span><span class="p">()))</span>
+            <span class="n">phenotype_counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span> <span class="p">[</span><span class="n">count_lookup</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">code</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">df_bin</span><span class="p">[</span><span class="s2">"number"</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+            <span class="n">cell_host_names</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span> <span class="n">code_to_host</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">code</span><span class="p">)]</span> <span class="k">for</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">ct_codes</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
+            <span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span> <span class="n">ct_mask</span><span class="p">,</span> <span class="n">host_column</span><span class="p">]</span> <span class="o">=</span> <span class="n">cell_host_names</span>
+            <span class="n">observed_hosts</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">cell_host_names</span><span class="p">)</span>
+            <span class="n">adata</span><span class="o">.</span><span class="n">uns</span><span class="p">[</span><span class="n">patterns_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">host</span><span class="p">:</span> <span class="p">{</span><span class="n">marker</span><span class="p">:</span> <span class="n">value</span> <span class="k">for</span> <span class="n">marker</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span> <span class="n">exploratory_protein_markers</span><span class="p">,</span> <span class="n">all_host_patterns</span><span class="p">[</span><span class="n">host</span><span class="p">])}</span> <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">observed_hosts</span><span class="p">}</span>
+
+        <span class="n">df_CST</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">"Host name"</span><span class="p">:</span> <span class="n">df_bin</span><span class="p">[</span><span class="s2">"host_name"</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span><span class="s2">"Total cells"</span><span class="p">:</span> <span class="n">phenotype_counts</span><span class="p">})</span>
+        <span class="k">if</span> <span class="n">length_CT</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span> <span class="n">proportions_numeric</span> <span class="o">=</span> <span class="p">(</span><span class="n">phenotype_counts</span> <span class="o">/</span> <span class="n">length_CT</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="n">proportions_numeric</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="n">phenotype_counts</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">df_CST</span><span class="p">[</span><span class="s2">"Proportion"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">p</span><span class="si">:</span><span class="s2">.4%</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">proportions_numeric</span><span class="p">]</span>
+        <span class="n">df_temp</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span> <span class="n">df_CST</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="n">df_bin</span><span class="p">[</span><span class="s2">"Markers name"</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Apply the original minimum-proportion filter (also known as "first filter")</span>
+        <span class="k">if</span> <span class="n">use_filter</span><span class="p">:</span>
+            <span class="n">keep_mask</span> <span class="o">=</span> <span class="p">((</span><span class="n">phenotype_counts</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span><span class="o">&amp;</span> <span class="p">(</span><span class="n">proportions_numeric</span> <span class="o">&gt;=</span> <span class="n">min_proportion</span><span class="p">))</span>
+            <span class="n">df_to_return</span> <span class="o">=</span> <span class="n">df_temp</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">keep_mask</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">df_to_return</span> <span class="o">=</span> <span class="n">df_temp</span>
+
+        <span class="n">title_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Sample </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">adata</span><span class="o">.</span><span class="n">n_obs</span><span class="si">}</span><span class="s2"> cells)"</span>
+        <span class="n">save_namefile_subs</span> <span class="o">=</span> <span class="n">save_filepath</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"sub</span><span class="si">{</span><span class="n">short_ct_name</span><span class="si">}</span><span class="s2"> cell proportions - </span><span class="si">{</span><span class="n">title_name</span><span class="si">}</span><span class="s2">.csv"</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">overwrite_existing_files</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">save_namefile_subs</span><span class="o">.</span><span class="n">exists</span><span class="p">()):</span> <span class="n">df_to_return</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">save_namefile_subs</span><span class="p">)</span>
+        <span class="n">subCT_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_to_return</span>
+        <span class="n">subCT_OG_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_temp</span>
+
+    <span class="k">if</span> <span class="n">save_anndata_check</span><span class="p">:</span> <span class="n">save_anndata_files</span><span class="p">(</span><span class="n">adata_dicts</span><span class="p">,</span> <span class="n">adata_dir</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">subCT_dict</span><span class="p">,</span> <span class="n">adata_dicts</span><span class="p">,</span> <span class="n">subCT_OG_dict</span>
+
+<div class="viewcode-block" id="unsupervised_phenotype_exploration_analysis">
+<a class="viewcode-back" href="../../api.html#spatial_proteomics.phenotype_analysis.unsupervised_phenotype_exploration_analysis">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">unsupervised_phenotype_exploration_analysis</span><span class="p">(</span><span class="n">adata_dicts</span><span class="p">,</span> <span class="n">adata_dir</span><span class="p">,</span> <span class="n">exploratory_protein_markers</span><span class="p">,</span> <span class="n">exploratory_protein_markers_short_name</span><span class="p">,</span> <span class="n">cell_types_to_explore</span><span class="p">,</span> <span class="n">cell_types_to_explore_short_name</span><span class="p">,</span> <span class="n">dict_ctrl</span><span class="p">,</span> <span class="n">dict_trtmnt</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span><span class="n">overwrite_existing_files</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Discover and quantify observed protein marker-defined phenotypes.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    adata_dicts : dict of str to anndata.AnnData</span>
+<span class="sd">        Samples containing major cell-type annotations and binary positivity</span>
+<span class="sd">        data.</span>
+<span class="sd">    adata_dir : pathlib.Path</span>
+<span class="sd">        Directory used to save updated AnnData objects.</span>
+<span class="sd">    exploratory_protein_markers : list of str</span>
+<span class="sd">        Positivity protein markers selected for phenotype discovery.</span>
+<span class="sd">    exploratory_protein_markers_short_name : list of str</span>
+<span class="sd">        Short names corresponding to the exploratory protein markers.</span>
+<span class="sd">    cell_types_to_explore : list of str</span>
+<span class="sd">        Major cell populations in which phenotypes are quantified.</span>
+<span class="sd">    cell_types_to_explore_short_name : list of str</span>
+<span class="sd">        Short names corresponding to the selected parent populations.</span>
+<span class="sd">    dict_ctrl, dict_trtmnt : dict or None</span>
+<span class="sd">        Optional filename-to-group mappings. Both are required for group</span>
+<span class="sd">        comparison.</span>
+<span class="sd">    output_dir : pathlib.Path</span>
+<span class="sd">        SpPrAn output directory.</span>
+<span class="sd">    overwrite_existing_files : bool</span>
+<span class="sd">        Whether existing outputs may be replaced.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict of str to anndata.AnnData</span>
+<span class="sd">        Updated AnnData objects containing discovered phenotype labels and</span>
+<span class="sd">        protein marker-pattern mappings.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Phenotypes correspond to observed binary positivity combinations rather</span>
+<span class="sd">    than clusters. When two groups are supplied, common phenotype proportions</span>
+<span class="sd">    are statistically compared and group-specific phenotypes are reported.</span>
+<span class="sd">    """</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Started unsupervised_phenotype_exploration_analysis"</span><span class="p">)</span>
+    <span class="n">adata_dicts_updated</span> <span class="o">=</span> <span class="n">adata_dicts</span>
+    <span class="n">statistics_results_dir</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"Statistics"</span> <span class="o">/</span> <span class="s2">"results"</span> 
+    <span class="n">results_og_dir</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"results"</span> 
+    <span class="n">positivity_column_names</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"results"</span> <span class="o">/</span> <span class="s2">"Positivity column names.csv"</span><span class="p">)</span>
+    <span class="n">positivity_column_names</span> <span class="o">=</span> <span class="n">positivity_column_names</span><span class="p">[</span><span class="o">~</span><span class="n">positivity_column_names</span><span class="p">[</span><span class="s2">"Positivity column names"</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">"Positivity - DAPI"</span><span class="p">,</span> <span class="n">na</span><span class="o">=</span><span class="kc">False</span><span class="p">)]</span>
+    <span class="n">epm_list</span> <span class="o">=</span> <span class="n">positivity_column_names</span><span class="p">[</span><span class="s2">"Name appearing in anndata file"</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+    <span class="n">phenotype_codes_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">observed_numbers_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">adata</span> <span class="ow">in</span> <span class="n">adata_dicts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">phenotype_patterns</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span> <span class="n">adata</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s2">"Positivity"</span><span class="p">],</span> <span class="n">columns</span><span class="o">=</span><span class="n">adata</span><span class="o">.</span><span class="n">var_names</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">adata</span><span class="o">.</span><span class="n">obs_names</span><span class="p">)[</span><span class="n">epm_list</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+        <span class="n">n_markers</span> <span class="o">=</span> <span class="n">phenotype_patterns</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="mi">1</span> <span class="o">&lt;=</span> <span class="n">n_markers</span> <span class="o">&lt;=</span> <span class="mi">64</span><span class="p">:</span> <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Sample </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">: uint64 encoding requires between 1 and 64 markers."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">phenotype_patterns</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">all</span><span class="p">():</span> <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Sample </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">: positivity matrix must contain only binary values."</span><span class="p">)</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint64</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_markers</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint64</span><span class="p">)</span>
+        <span class="n">phenotype_codes</span> <span class="o">=</span> <span class="n">phenotype_patterns</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint64</span><span class="p">)</span> <span class="o">@</span> <span class="n">weights</span>
+        <span class="n">phenotype_codes_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">phenotype_codes</span>
+        <span class="n">observed_numbers_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">phenotype_codes</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">cell_type_to_explore</span><span class="p">,</span> <span class="n">cell_type_to_explore_short_name</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">cell_types_to_explore</span><span class="p">,</span><span class="n">cell_types_to_explore_short_name</span><span class="p">):</span>
+        <span class="n">pheno_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">adata</span> <span class="ow">in</span> <span class="n">adata_dicts_updated</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">observed_numbers</span> <span class="o">=</span> <span class="n">observed_numbers_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="n">df_bin</span> <span class="o">=</span> <span class="n">_naming_phenotypes</span><span class="p">(</span> <span class="n">epm_list</span><span class="p">,</span> <span class="n">exploratory_protein_markers_short_name</span><span class="p">,</span> <span class="n">cell_type_to_explore_short_name</span><span class="p">,</span> <span class="n">observed_numbers</span><span class="p">)</span>
+            <span class="n">pheno_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_bin</span>
+
+        <span class="n">subCT_dict</span><span class="p">,</span> <span class="n">adata_dicts_updated</span><span class="p">,</span> <span class="n">subCT_OG_dict</span> <span class="o">=</span> <span class="n">_calculate_unsupervised_subCT_proportions</span><span class="p">(</span> <span class="n">adata_dicts</span><span class="o">=</span><span class="n">adata_dicts_updated</span><span class="p">,</span> <span class="n">adata_dir</span><span class="o">=</span><span class="n">adata_dir</span><span class="p">,</span> <span class="n">pheno_dict</span><span class="o">=</span><span class="n">pheno_dict</span><span class="p">,</span> <span class="n">phenotype_codes_dict</span><span class="o">=</span><span class="n">phenotype_codes_dict</span><span class="p">,</span> <span class="n">exploratory_protein_markers</span><span class="o">=</span><span class="n">exploratory_protein_markers</span><span class="p">,</span> <span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">short_ct_name</span><span class="o">=</span><span class="n">cell_type_to_explore_short_name</span><span class="p">,</span> <span class="n">ct_name</span><span class="o">=</span><span class="n">cell_type_to_explore</span><span class="p">,</span> <span class="n">use_filter</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">overwrite_existing_files</span><span class="o">=</span><span class="n">overwrite_existing_files</span><span class="p">,</span> <span class="n">min_proportion</span><span class="o">=</span><span class="mf">0.005</span><span class="p">)</span>
+        <span class="n">_phenotypes_proportion_matrix</span><span class="p">(</span><span class="n">results_dir</span><span class="o">=</span><span class="n">statistics_results_dir</span><span class="p">,</span> <span class="n">subCT_dict</span> <span class="o">=</span> <span class="n">subCT_dict</span><span class="p">,</span> <span class="n">ct_short</span> <span class="o">=</span> <span class="n">cell_type_to_explore_short_name</span><span class="p">,</span> <span class="n">overwrite_existing_files</span><span class="o">=</span><span class="n">overwrite_existing_files</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">dict_ctrl</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">dict_trtmnt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">df_phenotypes_ctrl</span> <span class="o">=</span> <span class="n">_count_phenotypes</span><span class="p">(</span><span class="n">subCT_dict</span><span class="p">,</span> <span class="n">dict_ctrl</span><span class="p">,</span> <span class="n">results_og_dir</span><span class="p">,</span> <span class="n">subCT_OG_dict</span><span class="p">,</span> <span class="n">zeroes_for_statistics</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">df_phenotypes_trtmnt</span> <span class="o">=</span> <span class="n">_count_phenotypes</span><span class="p">(</span><span class="n">subCT_dict</span><span class="p">,</span> <span class="n">dict_trtmnt</span><span class="p">,</span> <span class="n">results_og_dir</span><span class="p">,</span> <span class="n">subCT_OG_dict</span><span class="p">,</span> <span class="n">zeroes_for_statistics</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">df_together</span> <span class="o">=</span> <span class="n">_common_n_unique_phenotypes</span><span class="p">(</span><span class="n">df_phenotypes_ctrl</span> <span class="o">=</span> <span class="n">df_phenotypes_ctrl</span><span class="p">,</span> <span class="n">name_ctrl</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dict_ctrl</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">],</span> <span class="n">df_phenotypes_trtmnt</span> <span class="o">=</span> <span class="n">df_phenotypes_trtmnt</span><span class="p">,</span> <span class="n">name_trtmnt</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dict_trtmnt</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">],</span> <span class="n">short_ct_name</span><span class="o">=</span><span class="n">cell_type_to_explore_short_name</span><span class="p">,</span> <span class="n">results_dir</span><span class="o">=</span><span class="n">statistics_results_dir</span><span class="p">,</span> <span class="n">overwrite_existing_files</span><span class="o">=</span><span class="n">overwrite_existing_files</span><span class="p">)</span>
+            <span class="n">_common_phenotypes_differences_analysis</span><span class="p">(</span><span class="n">df_together</span> <span class="o">=</span> <span class="n">df_together</span><span class="p">,</span> <span class="n">name_ctrl</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dict_ctrl</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">],</span> <span class="n">name_trtmnt</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dict_trtmnt</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">],</span> <span class="n">short_ct_name</span><span class="o">=</span><span class="n">cell_type_to_explore_short_name</span><span class="p">,</span> <span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">overwrite_existing_files</span><span class="o">=</span><span class="n">overwrite_existing_files</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Phenotype analysis for </span><span class="si">{</span><span class="n">cell_type_to_explore</span><span class="si">}</span><span class="s2"> completed!"</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"All phenotype analyses completed!"</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">adata_dicts_updated</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

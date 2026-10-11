@@ -6,20 +6,20 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Python API &mdash; SpPrAn  documentation</title>
+  <title>Python API &mdash; SpPrAn 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/documentation_options.js?v=e259d695"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="Outputs" href="outputs.html" /> 
+    <link rel="prev" title="Release notes" href="release_notes.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -45,15 +45,74 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="desktop_app.html">Desktop application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analysis_modes.html">Analysis modes</a></li>
 <li class="toctree-l1"><a class="reference internal" href="config_builder.html">SpPrAn Configuration Builder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="workflow.html">Analysis workflow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration file</a></li>
 <li class="toctree-l1"><a class="reference internal" href="usage.html">Running SpPrAn</a></li>
 <li class="toctree-l1"><a class="reference internal" href="outputs.html">Outputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release_notes.html">Release notes</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Developer reference</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Python API</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Python API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-spatial_proteomics.core">Core pipeline</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.core.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.core.main_gui"><code class="docutils literal notranslate"><span class="pre">main_gui()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.core.parse_args"><code class="docutils literal notranslate"><span class="pre">parse_args()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.core.spatial_proteomics_pipeline"><code class="docutils literal notranslate"><span class="pre">spatial_proteomics_pipeline()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.core.sppran_steps"><code class="docutils literal notranslate"><span class="pre">sppran_steps()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-spatial_proteomics.configuration">Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.configuration.ConfigValidationError"><code class="docutils literal notranslate"><span class="pre">ConfigValidationError</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#spatial_proteomics.configuration.ConfigValidationError.errors"><code class="docutils literal notranslate"><span class="pre">ConfigValidationError.errors</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.configuration.load_config"><code class="docutils literal notranslate"><span class="pre">load_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-spatial_proteomics.anndata">AnnData processing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.anndata.assign_cell_types_vectorized"><code class="docutils literal notranslate"><span class="pre">assign_cell_types_vectorized()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.anndata.cleaned_data"><code class="docutils literal notranslate"><span class="pre">cleaned_data()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.anndata.create_cell_type_dict"><code class="docutils literal notranslate"><span class="pre">create_cell_type_dict()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.anndata.create_or_load_anndata"><code class="docutils literal notranslate"><span class="pre">create_or_load_anndata()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.anndata.filenames"><code class="docutils literal notranslate"><span class="pre">filenames()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.anndata.fill_n_order_df_by_total_none_values"><code class="docutils literal notranslate"><span class="pre">fill_n_order_df_by_total_none_values()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.anndata.get_all_children"><code class="docutils literal notranslate"><span class="pre">get_all_children()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.anndata.get_index_nones"><code class="docutils literal notranslate"><span class="pre">get_index_nones()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.anndata.labeling_cell_types"><code class="docutils literal notranslate"><span class="pre">labeling_cell_types()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.anndata.load_anndata_files"><code class="docutils literal notranslate"><span class="pre">load_anndata_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.anndata.sets_and_subsets_cell_types"><code class="docutils literal notranslate"><span class="pre">sets_and_subsets_cell_types()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-spatial_proteomics.supervised_mode">Mode dispatch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-spatial_proteomics.cell_proportion_matrix">Unsupervised analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.cell_proportion_matrix.calculate_cell_proportion_matrix"><code class="docutils literal notranslate"><span class="pre">calculate_cell_proportion_matrix()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.phenotype_analysis.unsupervised_phenotype_exploration_analysis"><code class="docutils literal notranslate"><span class="pre">unsupervised_phenotype_exploration_analysis()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.intensity_analysis.calculate_pm_intensity_analysis"><code class="docutils literal notranslate"><span class="pre">calculate_pm_intensity_analysis()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-spatial_proteomics.cell_proportions">Cell proportions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.cell_proportions.calculate_cell_proportions"><code class="docutils literal notranslate"><span class="pre">calculate_cell_proportions()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-spatial_proteomics.spatial_plot">Spatial plotting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.spatial_plot.plot_spatial"><code class="docutils literal notranslate"><span class="pre">plot_spatial()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.spatial_plot.plotting_helper"><code class="docutils literal notranslate"><span class="pre">plotting_helper()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-spatial_proteomics.utils">Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.utils.export_legend_png"><code class="docutils literal notranslate"><span class="pre">export_legend_png()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.utils.median_iqr"><code class="docutils literal notranslate"><span class="pre">median_iqr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.utils.order_sub_cell_types"><code class="docutils literal notranslate"><span class="pre">order_sub_cell_types()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.utils.plot_digraph"><code class="docutils literal notranslate"><span class="pre">plot_digraph()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.utils.plot_general_cell_hierarchy"><code class="docutils literal notranslate"><span class="pre">plot_general_cell_hierarchy()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.utils.save_anndata_files"><code class="docutils literal notranslate"><span class="pre">save_anndata_files()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 
         </div>
@@ -82,13 +141,825 @@
              
   <section id="python-api">
 <h1>Python API<a class="headerlink" href="#python-api" title="Link to this heading"></a></h1>
+<section id="module-spatial_proteomics.core">
+<span id="core-pipeline"></span><h2>Core pipeline<a class="headerlink" href="#module-spatial_proteomics.core" title="Link to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.core.main">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.core.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/core.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.core.main" title="Link to this definition"></a></dt>
+<dd><p>Run SpPrAn from the command-line interface.</p>
+<p class="rubric">Notes</p>
+<p>This is the console entry point used by the <code class="docutils literal notranslate"><span class="pre">sppran</span></code> command. Validation
+or analysis errors are written to standard error and terminate the process
+with a non-zero exit code.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.core.main_gui">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.core.</span></span><span class="sig-name descname"><span class="pre">main_gui</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/core.html#main_gui"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.core.main_gui" title="Link to this definition"></a></dt>
+<dd><p>Run SpPrAn from the graphical user interface.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – Path to the YAML configuration selected in the desktop application.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Analysis outputs are written to the directory specified by the
+configuration file.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.core.parse_args">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.core.</span></span><span class="sig-name descname"><span class="pre">parse_args</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/core.html#parse_args"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.core.parse_args" title="Link to this definition"></a></dt>
+<dd><p>Parse command-line arguments for SpPrAn.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Parsed command-line arguments containing the required <code class="docutils literal notranslate"><span class="pre">config</span></code> path.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/argparse.html#argparse.Namespace" title="(in Python v3.15)">argparse.Namespace</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.core.spatial_proteomics_pipeline">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.core.</span></span><span class="sig-name descname"><span class="pre">spatial_proteomics_pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/core.html#spatial_proteomics_pipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.core.spatial_proteomics_pipeline" title="Link to this definition"></a></dt>
+<dd><p>Run the complete SpPrAn pipeline from a YAML configuration file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – Path to the SpPrAn YAML configuration file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Analysis outputs are written to the output directory specified in the
+configuration file.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#FileNotFoundError" title="(in Python v3.15)"><strong>FileNotFoundError</strong></a> – If the configuration file or required workspace directories do not
+    exist.</p></li>
+<li><p><a class="reference internal" href="#spatial_proteomics.configuration.ConfigValidationError" title="spatial_proteomics.configuration.ConfigValidationError"><strong>spatial_proteomics.configuration.ConfigValidationError</strong></a> – If one or more configuration settings are invalid.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The configuration is validated before any spatial proteomics analysis is
+performed.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.core.sppran_steps">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.core.</span></span><span class="sig-name descname"><span class="pre">sppran_steps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/core.html#sppran_steps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.core.sppran_steps" title="Link to this definition"></a></dt>
+<dd><p>Run the main SpPrAn analysis steps from a validated configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Validated SpPrAn configuration dictionary. The configuration must
+contain workspace settings, plotting options, cell-type definitions,
+colors, and output-control settings as produced by
+<a class="reference internal" href="#spatial_proteomics.configuration.load_config" title="spatial_proteomics.configuration.load_config"><code class="xref py py-func docutils literal notranslate"><span class="pre">spatial_proteomics.configuration.load_config()</span></code></a>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Results are written to the configured output directory.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>After AnnData objects are created or loaded, execution is dispatched according
+to <code class="docutils literal notranslate"><span class="pre">config[&quot;type_of_analysis&quot;]</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;supervised&quot;</span></code> runs the rule-defined subtype workflow.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;unsupervised&quot;</span></code> runs exploratory marker-pattern discovery.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;full&quot;</span></code> performs exploratory discovery and then runs the supervised</p></li>
+</ul>
+<p>workflow using discovered phenotypes as subtype definitions.</p>
+</dd></dl>
+
+</section>
+<section id="module-spatial_proteomics.configuration">
+<span id="configuration"></span><h2>Configuration<a class="headerlink" href="#module-spatial_proteomics.configuration" title="Link to this heading"></a></h2>
+<p>Configuration loading and validation utilities for SpPrAn.</p>
+<p>This module is responsible for:</p>
+<ol class="arabic simple">
+<li><p>Safely parsing YAML configuration files.</p></li>
+<li><p>Rejecting duplicate YAML mapping keys.</p></li>
+<li><p>Applying configuration defaults.</p></li>
+<li><p>Validating configuration structure and cross-field rules.</p></li>
+<li><p>Converting workspace paths to <code class="docutils literal notranslate"><span class="pre">pathlib.Path</span></code> objects.</p></li>
+<li><p>Verifying that user-defined input and output directories exist.</p></li>
+</ol>
+<p>The public entry point is <a class="reference internal" href="#spatial_proteomics.configuration.load_config" title="spatial_proteomics.configuration.load_config"><code class="xref py py-func docutils literal notranslate"><span class="pre">load_config()</span></code></a>.</p>
+<dl class="py exception">
+<dt class="sig sig-object py" id="spatial_proteomics.configuration.ConfigValidationError">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spatial_proteomics.configuration.</span></span><span class="sig-name descname"><span class="pre">ConfigValidationError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">errors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/configuration.html#ConfigValidationError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.configuration.ConfigValidationError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ValueError</span></code></a></p>
+<p>Report one or more invalid SpPrAn configuration settings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>errors</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Human-readable validation messages collected while checking the YAML
+configuration.</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spatial_proteomics.configuration.ConfigValidationError.errors">
+<span class="sig-name descname"><span class="pre">errors</span></span><a class="headerlink" href="#spatial_proteomics.configuration.ConfigValidationError.errors" title="Link to this definition"></a></dt>
+<dd><p>Individual configuration errors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a> of <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.configuration.load_config">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.configuration.</span></span><span class="sig-name descname"><span class="pre">load_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><span class="pre">Path</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="_modules/spatial_proteomics/configuration.html#load_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.configuration.load_config" title="Link to this definition"></a></dt>
+<dd><p>Load, validate, and normalize a SPPRAN YAML configuration file.</p>
+<p>The function performs four steps:</p>
+<ol class="arabic simple">
+<li><p>Validate the configuration-file path.</p></li>
+<li><p>Parse YAML safely while rejecting duplicate keys.</p></li>
+<li><p>Validate and normalize the configuration schema.</p></li>
+<li><p>Convert workspace paths to <code class="docutils literal notranslate"><span class="pre">Path</span></code> objects and verify that the
+user-defined input and output directories exist.</p></li>
+</ol>
+<p>Relative <code class="docutils literal notranslate"><span class="pre">input_dir</span></code> and <code class="docutils literal notranslate"><span class="pre">output_dir</span></code> values are resolved relative
+to the YAML file’s directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>Path</em>) – Path to the YAML configuration file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Validated and normalized configuration dictionary. The returned
+<code class="docutils literal notranslate"><span class="pre">workspace.input_dir</span></code> and <code class="docutils literal notranslate"><span class="pre">workspace.output_dir</span></code> values are
+absolute <code class="docutils literal notranslate"><span class="pre">Path</span></code> objects.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#FileNotFoundError" title="(in Python v3.15)"><strong>FileNotFoundError</strong></a> – If the configuration file, input directory, or output directory
+    does not exist.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#IsADirectoryError" title="(in Python v3.15)"><strong>IsADirectoryError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">config_path</span></code> points to a directory instead of a file.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#NotADirectoryError" title="(in Python v3.15)"><strong>NotADirectoryError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">input_dir</span></code> or <code class="docutils literal notranslate"><span class="pre">output_dir</span></code> exists but is not a directory.</p></li>
+<li><p><a class="reference internal" href="#spatial_proteomics.configuration.ConfigValidationError" title="spatial_proteomics.configuration.ConfigValidationError"><strong>ConfigValidationError</strong></a> – If the YAML is syntactically valid but contains invalid settings.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the YAML file cannot be parsed.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Configurations from before v0.3.0 that omit <code class="docutils literal notranslate"><span class="pre">type_of_analysis</span></code> are
+normalized to <code class="docutils literal notranslate"><span class="pre">&quot;supervised&quot;</span></code> for backward compatibility.</p>
+</dd></dl>
+
+</section>
+<section id="module-spatial_proteomics.anndata">
+<span id="anndata-processing"></span><h2>AnnData processing<a class="headerlink" href="#module-spatial_proteomics.anndata" title="Link to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.anndata.assign_cell_types_vectorized">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.anndata.</span></span><span class="sig-name descname"><span class="pre">assign_cell_types_vectorized</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_type_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">container</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/anndata.html#assign_cell_types_vectorized"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.anndata.assign_cell_types_vectorized" title="Link to this definition"></a></dt>
+<dd><p>Assign marker-defined phenotype labels to cells using vectorized comparisons.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>pandas.DataFrame</em>) – Cell-level table containing the positivity columns referenced by the
+phenotype rules.</p></li>
+<li><p><strong>cell_type_dict</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Mapping from phenotype names to marker-state rules.</p></li>
+<li><p><strong>container</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Name of the parent population being subdivided. Use <code class="docutils literal notranslate"><span class="pre">&quot;General&quot;</span></code> for
+primary cell typing.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Phenotype label for every row in <code class="docutils literal notranslate"><span class="pre">data</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.Series</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Cells are assigned in dictionary iteration order and only previously
+unassigned cells are evaluated for subsequent phenotypes. Cells not
+matching any rule are labeled <code class="docutils literal notranslate"><span class="pre">&quot;Other</span> <span class="pre">cells&quot;</span></code> at the general level.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.anndata.cleaned_data">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.anndata.</span></span><span class="sig-name descname"><span class="pre">cleaned_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_markers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_subtype_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filetype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'tsv'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/anndata.html#cleaned_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.anndata.cleaned_data" title="Link to this definition"></a></dt>
+<dd><p>Clean object-level spatial proteomics tables and create AnnData objects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_names</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – Object-level input files to process.</p></li>
+<li><p><strong>output_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – Directory where SpPrAn result metadata will be written.</p></li>
+<li><p><strong>protein_markers</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Primary positivity-column names used for cell-type classification.</p></li>
+<li><p><strong>cell_subtype_dict</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Hierarchical subtype definitions. Subtype marker columns are retained
+when required for downstream classification.</p></li>
+<li><p><strong>filetype</strong> (<em>{&quot;tsv&quot;</em><em>, </em><em>&quot;csv&quot;}</em><em>, </em><em>default=&quot;tsv&quot;</em>) – Input table format.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>data_dicts</strong> (<em>dict of str to pandas.DataFrame</em>) – Cleaned per-sample tables used for phenotype assignment.</p></li>
+<li><p><strong>adata_dicts</strong> (<em>dict of str to anndata.AnnData</em>) – Per-sample AnnData objects containing cell-level measurements and
+spatial information.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>When the DAPI positivity column is available, rows lacking nuclear DAPI
+positivity are removed. SpPrAn also records sample identifiers and the
+detected positivity-column names in the output directory.</p>
+<p>The resulting AnnData objects represent individual segmented cells, not
+aggregated tissue regions.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.anndata.create_cell_type_dict">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.anndata.</span></span><span class="sig-name descname"><span class="pre">create_cell_type_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">protein_markers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_types</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/anndata.html#create_cell_type_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.anndata.create_cell_type_dict" title="Link to this definition"></a></dt>
+<dd><p>Convert ordered cell-type rules into marker-to-state dictionaries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>protein_markers</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Ordered positivity-column names.</p></li>
+<li><p><strong>cell_types</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> of </em><em>str to list</em>) – Cell-type definitions containing <code class="docutils literal notranslate"><span class="pre">1</span></code> for positive, <code class="docutils literal notranslate"><span class="pre">0</span></code> for
+negative, and <code class="docutils literal notranslate"><span class="pre">None</span></code> for unconstrained markers.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Marker-based phenotype rules keyed by cell-type name.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a> of str to dict</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Unconstrained markers are omitted from the returned rule dictionary.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.anndata.create_or_load_anndata">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.anndata.</span></span><span class="sig-name descname"><span class="pre">create_or_load_anndata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/anndata.html#create_or_load_anndata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.anndata.create_or_load_anndata" title="Link to this definition"></a></dt>
+<dd><p>Load cached AnnData objects or generate them from source tables.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Validated SpPrAn configuration dictionary.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Per-sample annotated data matrices.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a> of str to anndata.AnnData</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Existing H5AD files are reused when allowed by the configuration. If files
+are missing, incomplete, or overwrite mode is enabled, SpPrAn rebuilds the
+AnnData objects from the original object-level input files.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.anndata.filenames">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.anndata.</span></span><span class="sig-name descname"><span class="pre">filenames</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filetype</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/anndata.html#filenames"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.anndata.filenames" title="Link to this definition"></a></dt>
+<dd><p>Find SpPrAn object-level input files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – Directory containing Visiopharm object-level exports.</p></li>
+<li><p><strong>filetype</strong> (<em>{&quot;tsv&quot;</em><em>, </em><em>&quot;csv&quot;}</em>) – Input-file extension.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Files matching <code class="docutils literal notranslate"><span class="pre">*_objects.&lt;filetype&gt;</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a> of <a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)">pathlib.Path</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#FileNotFoundError" title="(in Python v3.15)"><strong>FileNotFoundError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">input_dir</span></code> does not exist.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Hidden files and macOS <code class="docutils literal notranslate"><span class="pre">._</span></code> resource-fork files are excluded.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.anndata.fill_n_order_df_by_total_none_values">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.anndata.</span></span><span class="sig-name descname"><span class="pre">fill_n_order_df_by_total_none_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order_dicc</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/anndata.html#fill_n_order_df_by_total_none_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.anndata.fill_n_order_df_by_total_none_values" title="Link to this definition"></a></dt>
+<dd><p>Expand unconstrained marker states and order phenotype columns.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<em>pandas.DataFrame</em>) – Marker-by-phenotype rule table.</p></li>
+<li><p><strong>idx_name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Name assigned to the DataFrame index.</p></li>
+<li><p><strong>order_dicc</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Phenotype ordering grouped by specificity/dependency.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>expanded_df</strong> (<em>pandas.DataFrame</em>) – Rule table in which unconstrained states are represented as both
+possible binary states.</p></li>
+<li><p><strong>original_df</strong> (<em>pandas.DataFrame</em>) – Ordered copy retaining the original unconstrained values.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.anndata.get_all_children">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.anndata.</span></span><span class="sig-name descname"><span class="pre">get_all_children</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">celltype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dicc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">visited</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/anndata.html#get_all_children"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.anndata.get_all_children" title="Link to this definition"></a></dt>
+<dd><p>Return all descendants of a cell type from a nested hierarchy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>celltype</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – The cell type for which to find all children.</p></li>
+<li><p><strong>dicc</strong> (<em>Dict</em><em>[</em><em>str:List</em><em>]</em>) – Dictionary containing cell types and their corresponding children.</p></li>
+<li><p><strong>visited</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#set" title="(in Python v3.15)"><em>set</em></a><em> (</em><em>Optional</em><em>)</em>) – Set of already visited cell types to avoid infinite recursion.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Set containing all children of the given cell type.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#set" title="(in Python v3.15)">set</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.anndata.get_index_nones">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.anndata.</span></span><span class="sig-name descname"><span class="pre">get_index_nones</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cell_types</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_markers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sub_protein_markers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sub_cell_types</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/anndata.html#get_index_nones"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.anndata.get_index_nones" title="Link to this definition"></a></dt>
+<dd><p>Identify unconstrained marker positions for each phenotype.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cell_types</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Primary marker-based phenotype definitions.</p></li>
+<li><p><strong>protein_markers</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Primary marker names.</p></li>
+<li><p><strong>sub_protein_markers</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Subtype marker names grouped by parent population.</p></li>
+<li><p><strong>sub_cell_types</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Hierarchical subtype definitions.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Marker positions that are not constrained for each phenotype.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a> of str to list of <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.anndata.labeling_cell_types">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.anndata.</span></span><span class="sig-name descname"><span class="pre">labeling_cell_types</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_dicts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adata_dicts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_type_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sub_cell_type_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_markers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_colors</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_anndata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arrows_orientation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'contains'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type_of_analysis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'supervised'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/anndata.html#labeling_cell_types"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.anndata.labeling_cell_types" title="Link to this definition"></a></dt>
+<dd><p>Assign primary and hierarchical phenotype labels to AnnData objects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data_dicts</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> of </em><em>str to pandas.DataFrame</em>) – Cleaned cell-level tables used for marker comparisons.</p></li>
+<li><p><strong>adata_dicts</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> of </em><em>str to anndata.AnnData</em>) – Corresponding per-sample AnnData objects.</p></li>
+<li><p><strong>cell_type_dict</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Primary marker-based phenotype definitions.</p></li>
+<li><p><strong>sub_cell_type_dict</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Hierarchical subtype definitions.</p></li>
+<li><p><strong>protein_markers</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Primary protein-marker positivity columns.</p></li>
+<li><p><strong>output_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – SpPrAn output directory.</p></li>
+<li><p><strong>custom_colors</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> of </em><em>str to str</em>) – Phenotype color mapping.</p></li>
+<li><p><strong>save_anndata</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>default=True</em>) – Whether updated AnnData objects should be written to disk.</p></li>
+<li><p><strong>arrows_orientation</strong> (<em>{&quot;contains&quot;</em><em>, </em><em>&quot;isContained&quot;}</em><em>, </em><em>default=&quot;contains&quot;</em>) – Orientation used for hierarchy diagrams.</p></li>
+<li><p><strong>type_of_analysis</strong> (<em>{&quot;supervised&quot;</em><em>, </em><em>&quot;unsupervised&quot;</em><em>, </em><em>&quot;full&quot;}</em><em>, </em><em>default=&quot;supervised&quot;</em>) – Active analysis mode propagated to hierarchy-processing logic.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>AnnData objects containing primary labels, hierarchical subtype
+annotations, colors, and plotting metadata.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a> of str to anndata.AnnData</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Primary population labels are stored in <code class="docutils literal notranslate"><span class="pre">adata.obs[&quot;clusters&quot;]</span></code>.
+Hierarchical subtype annotations are stored in additional observation
+columns associated with their parent phenotype.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.anndata.load_anndata_files">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.anndata.</span></span><span class="sig-name descname"><span class="pre">load_anndata_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_dir</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/anndata.html#load_anndata_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.anndata.load_anndata_files" title="Link to this definition"></a></dt>
+<dd><p>Load previously generated AnnData objects for all known samples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>output_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – SpPrAn output directory containing the <code class="docutils literal notranslate"><span class="pre">results</span></code> and <code class="docutils literal notranslate"><span class="pre">adata</span></code>
+subdirectories.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Mapping from sample identifier to loaded AnnData object. A missing
+sample file is represented by <code class="docutils literal notranslate"><span class="pre">None</span></code>. An empty dictionary is
+returned when the sample index file is unavailable.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a> of str to anndata.AnnData or None</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Sample identifiers are read from <code class="docutils literal notranslate"><span class="pre">results/Samples</span> <span class="pre">Id.csv</span></code> and AnnData
+files are expected at <code class="docutils literal notranslate"><span class="pre">adata/Sample_&lt;sample&gt;.h5ad</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.anndata.sets_and_subsets_cell_types">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.anndata.</span></span><span class="sig-name descname"><span class="pre">sets_and_subsets_cell_types</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cell_type_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sub_cell_type_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_markers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_colors</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arrows_orientation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'contains'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type_of_analysis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'supervised'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/anndata.html#sets_and_subsets_cell_types"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.anndata.sets_and_subsets_cell_types" title="Link to this definition"></a></dt>
+<dd><p>Determine hierarchical subset relationships among marker-defined phenotypes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cell_type_dict</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Primary marker-based cell-type definitions.</p></li>
+<li><p><strong>sub_cell_type_dict</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – User-defined hierarchical subtype definitions.</p></li>
+<li><p><strong>protein_markers</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Primary marker names.</p></li>
+<li><p><strong>output_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – Output directory used for hierarchy visualizations and related files.</p></li>
+<li><p><strong>custom_colors</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> of </em><em>str to str</em>) – Hexadecimal color assigned to each phenotype.</p></li>
+<li><p><strong>arrows_orientation</strong> (<em>{&quot;contains&quot;</em><em>, </em><em>&quot;isContained&quot;}</em><em>, </em><em>default=&quot;contains&quot;</em>) – Direction used to display relationships in hierarchy diagrams.</p></li>
+<li><p><strong>type_of_analysis</strong> (<em>{&quot;supervised&quot;</em><em>, </em><em>&quot;unsupervised&quot;</em><em>, </em><em>&quot;full&quot;}</em><em>, </em><em>default=&quot;supervised&quot;</em>) – Active analysis mode. The user-defined hierarchy figure is generated only
+for the supervised workflow at this stage.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>final_subsets</strong> (<em>dict</em>) – Final subset relationships for each hierarchy level.</p></li>
+<li><p><strong>subtype_definitions</strong> (<em>dict</em>) – Marker definitions associated with resolved phenotype subsets.</p></li>
+<li><p><strong>larger_groups</strong> (<em>dict</em>) – Parent or less-specific phenotype groups identified during hierarchy
+resolution.</p></li>
+<li><p><strong>custom_colors</strong> (<em>dict</em>) – Color mapping including any colors generated for intersecting
+phenotypes.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Cell populations are compared as sets defined by marker positivity rules.
+These subset relationships describe the logical phenotype definitions used
+by SpPrAn and should not automatically be interpreted as developmental
+lineage relationships.</p>
+</dd></dl>
+
+</section>
+<section id="module-spatial_proteomics.supervised_mode">
+<span id="mode-dispatch"></span><h2>Mode dispatch<a class="headerlink" href="#module-spatial_proteomics.supervised_mode" title="Link to this heading"></a></h2>
+</section>
+<section id="module-spatial_proteomics.cell_proportion_matrix">
+<span id="unsupervised-analysis"></span><span id="module-spatial_proteomics.full_mode"></span><span id="module-spatial_proteomics.unsupervised_mode"></span><h2>Unsupervised analysis<a class="headerlink" href="#module-spatial_proteomics.cell_proportion_matrix" title="Link to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.cell_proportion_matrix.calculate_cell_proportion_matrix">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.cell_proportion_matrix.</span></span><span class="sig-name descname"><span class="pre">calculate_cell_proportion_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">adata_dicts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_colors</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">focus_ct_name_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pie_plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite_existing_files</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/cell_proportion_matrix.html#calculate_cell_proportion_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.cell_proportion_matrix.calculate_cell_proportion_matrix" title="Link to this definition"></a></dt>
+<dd><p>Build sample-by-phenotype proportion matrices and optional pie plots.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>adata_dicts</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> of </em><em>str to anndata.AnnData</em>) – Per-sample annotated data.</p></li>
+<li><p><strong>output_dir</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – SpPrAn output directory.</p></li>
+<li><p><strong>custom_colors</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> of </em><em>str to str</em>) – Phenotype-to-color mapping.</p></li>
+<li><p><strong>focus_ct_name_list</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Major cell types prioritized as focal populations in pie plots.</p></li>
+<li><p><strong>pie_plot</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>default=False</em>) – Whether sample-level composition pie plots should be generated.</p></li>
+<li><p><strong>overwrite_existing_files</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>default=False</em>) – Whether existing outputs may be replaced.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Proportion matrices and optional pie plots are written below the
+<code class="docutils literal notranslate"><span class="pre">Statistics</span></code> output directory.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p id="module-spatial_proteomics.phenotype_analysis">Exploratory marker-defined phenotype analysis for SpPrAn.</p>
+<p>This module identifies observed binary protein marker patterns within selected
+major cell populations, calculates phenotype abundance, stores phenotype labels
+and marker definitions in AnnData objects, and optionally compares phenotype
+abundance between two user-defined sample groups.</p>
+<p>The workflow enumerates observed marker patterns rather than performing
+latent-space clustering.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.phenotype_analysis.unsupervised_phenotype_exploration_analysis">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.phenotype_analysis.</span></span><span class="sig-name descname"><span class="pre">unsupervised_phenotype_exploration_analysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">adata_dicts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adata_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exploratory_protein_markers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exploratory_protein_markers_short_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_types_to_explore</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_types_to_explore_short_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict_ctrl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict_trtmnt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite_existing_files</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/phenotype_analysis.html#unsupervised_phenotype_exploration_analysis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.phenotype_analysis.unsupervised_phenotype_exploration_analysis" title="Link to this definition"></a></dt>
+<dd><p>Discover and quantify observed protein marker-defined phenotypes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>adata_dicts</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> of </em><em>str to anndata.AnnData</em>) – Samples containing major cell-type annotations and binary positivity
+data.</p></li>
+<li><p><strong>adata_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – Directory used to save updated AnnData objects.</p></li>
+<li><p><strong>exploratory_protein_markers</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Positivity protein markers selected for phenotype discovery.</p></li>
+<li><p><strong>exploratory_protein_markers_short_name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Short names corresponding to the exploratory protein markers.</p></li>
+<li><p><strong>cell_types_to_explore</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Major cell populations in which phenotypes are quantified.</p></li>
+<li><p><strong>cell_types_to_explore_short_name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Short names corresponding to the selected parent populations.</p></li>
+<li><p><strong>dict_ctrl</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> or </em><em>None</em>) – Optional filename-to-group mappings. Both are required for group
+comparison.</p></li>
+<li><p><strong>dict_trtmnt</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> or </em><em>None</em>) – Optional filename-to-group mappings. Both are required for group
+comparison.</p></li>
+<li><p><strong>output_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – SpPrAn output directory.</p></li>
+<li><p><strong>overwrite_existing_files</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether existing outputs may be replaced.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Updated AnnData objects containing discovered phenotype labels and
+protein marker-pattern mappings.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a> of str to anndata.AnnData</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Phenotypes correspond to observed binary positivity combinations rather
+than clusters. When two groups are supplied, common phenotype proportions
+are statistically compared and group-specific phenotypes are reported.</p>
+</dd></dl>
+
+<dl class="py function" id="module-spatial_proteomics.intensity_analysis">
+<dt class="sig sig-object py" id="spatial_proteomics.intensity_analysis.calculate_pm_intensity_analysis">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.intensity_analysis.</span></span><span class="sig-name descname"><span class="pre">calculate_pm_intensity_analysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">adata_dicts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">list_ct_short_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which_pm</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/intensity_analysis.html#calculate_pm_intensity_analysis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.intensity_analysis.calculate_pm_intensity_analysis" title="Link to this definition"></a></dt>
+<dd><p>Export protein marker intensity summaries for discovered phenotypes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>adata_dicts</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> of </em><em>str to anndata.AnnData</em>) – AnnData objects containing discovered phenotype annotations.</p></li>
+<li><p><strong>list_ct_short_name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Short names of explored parent populations.</p></li>
+<li><p><strong>output_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – SpPrAn output directory.</p></li>
+<li><p><strong>which_pm</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Positivity column names whose corresponding intensity measurements
+should be summarized. An empty list disables the analysis.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Summary tables are written under the statistics/intensity output tree.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This is descriptive output for box plot visualization; the function itself
+does not perform inferential tests on marker intensity.</p>
+</dd></dl>
+
+</section>
+<section id="module-spatial_proteomics.cell_proportions">
+<span id="cell-proportions"></span><h2>Cell proportions<a class="headerlink" href="#module-spatial_proteomics.cell_proportions" title="Link to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.cell_proportions.calculate_cell_proportions">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.cell_proportions.</span></span><span class="sig-name descname"><span class="pre">calculate_cell_proportions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">adata_dicts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_colors</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sub_cell_types</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite_existing_files</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/cell_proportions.html#calculate_cell_proportions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.cell_proportions.calculate_cell_proportions" title="Link to this definition"></a></dt>
+<dd><p>Calculate and export cell-population counts and proportions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>adata_dicts</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> of </em><em>str to anndata.AnnData</em>) – Annotated spatial proteomics samples.</p></li>
+<li><p><strong>custom_colors</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> of </em><em>str to str</em>) – Phenotype color mapping.</p></li>
+<li><p><strong>output_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – SpPrAn output directory.</p></li>
+<li><p><strong>overwrite_existing_files</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>default=False</em>) – Whether existing population-report files may be replaced.</p></li>
+<li><p><strong>sub_cell_types</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em>, </em><em>optional</em>) – Hierarchical phenotype definitions.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Cell-count and proportion tables are written to the output directory.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Reports distinguish a phenotype’s percentage of its parent population from its
+percentage of all cells in the sample.</p>
+</dd></dl>
+
+</section>
+<section id="module-spatial_proteomics.spatial_plot">
+<span id="spatial-plotting"></span><h2>Spatial plotting<a class="headerlink" href="#module-spatial_proteomics.spatial_plot" title="Link to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.spatial_plot.plot_spatial">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.spatial_plot.</span></span><span class="sig-name descname"><span class="pre">plot_spatial</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">adata_dicts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_colors</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_plot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite_existing_files</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dpi</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">300</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ncol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/spatial_plot.html#plot_spatial"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.spatial_plot.plot_spatial" title="Link to this definition"></a></dt>
+<dd><p>Generate spatial phenotype maps for SpPrAn samples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>adata_dicts</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> of </em><em>str to anndata.AnnData</em>) – Annotated samples containing spatial coordinates and phenotype labels.</p></li>
+<li><p><strong>custom_colors</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> of </em><em>str to str</em>) – Hexadecimal color assigned to each phenotype.</p></li>
+<li><p><strong>output_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – SpPrAn output directory.</p></li>
+<li><p><strong>plot_options</strong> (<em>{&quot;none&quot;</em><em>, </em><em>&quot;all&quot;</em><em>, </em><em>&quot;highlight&quot;</em><em>, </em><em>&quot;overview&quot;</em><em>, </em><em>&quot;custom&quot;}</em>) – Global plotting mode.</p></li>
+<li><p><strong>custom_plot</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Per-file plotting requests used when <code class="docutils literal notranslate"><span class="pre">plot_options=&quot;custom&quot;</span></code>.</p></li>
+<li><p><strong>overwrite_existing_files</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>default=False</em>) – Whether existing plot files may be replaced.</p></li>
+<li><p><strong>dpi</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>default=300</em>) – Output resolution in dots per inch.</p></li>
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>default=50</em>) – Scatter-point size representing individual cells.</p></li>
+<li><p><strong>ncol</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><em>default=4</em>) – Number of columns used in plot legends.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Spatial plots and corresponding legends are saved below the configured
+output directory.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Spatial maps display marker-defined phenotypes and should be interpreted in
+conjunction with tissue morphology, segmentation quality, staining
+performance, and upstream positivity thresholds.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.spatial_plot.plotting_helper">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.spatial_plot.</span></span><span class="sig-name descname"><span class="pre">plotting_helper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">custom_colors</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite_existing_files</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selected_plots</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dpi</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ncol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plots_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adata</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">folder_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/spatial_plot.html#plotting_helper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.spatial_plot.plotting_helper" title="Link to this definition"></a></dt>
+<dd><p>Generate requested spatial plots for one sample and hierarchy level.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>custom_colors</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> of </em><em>str to str</em>) – Hexadecimal phenotype colors.</p></li>
+<li><p><strong>overwrite_existing_files</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether existing plot files may be replaced.</p></li>
+<li><p><strong>selected_plots</strong> (<em>collection</em><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Plot modes requested for the current sample.</p></li>
+<li><p><strong>dpi</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Resolution of saved figures.</p></li>
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Scatter-point size used for individual cells.</p></li>
+<li><p><strong>ncol</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Number of legend columns.</p></li>
+<li><p><strong>plots_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – Base directory for plot output.</p></li>
+<li><p><strong>k</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Sample identifier.</p></li>
+<li><p><strong>adata</strong> (<em>anndata.AnnData</em>) – Annotated sample containing spatial coordinates and phenotype labels.</p></li>
+<li><p><strong>folder_name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – <code class="docutils literal notranslate"><span class="pre">&quot;General&quot;</span></code> for primary populations or the parent phenotype whose
+subtypes should be plotted.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Plot and legend image files are written to disk.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Each plotted point represents an individual segmented cell at its tissue
+coordinate. Hierarchical plots visualize subtypes within a selected parent
+population.</p>
+</dd></dl>
+
+</section>
+<section id="module-spatial_proteomics.utils">
+<span id="utilities"></span><h2>Utilities<a class="headerlink" href="#module-spatial_proteomics.utils" title="Link to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.utils.export_legend_png">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.utils.</span></span><span class="sig-name descname"><span class="pre">export_legend_png</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">handles</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">horizontal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dpi</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">300</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/utils.html#export_legend_png"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.utils.export_legend_png" title="Link to this definition"></a></dt>
+<dd><p>Export a plot legend as a standalone PNG image.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>matplotlib.axes.Axes</em>) – Source axes whose legend formatting may be reused.</p></li>
+<li><p><strong>output_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – Destination image path.</p></li>
+<li><p><strong>handles</strong> (<em>sequence</em>) – Matplotlib legend handles.</p></li>
+<li><p><strong>labels</strong> (<em>sequence</em><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Legend labels.</p></li>
+<li><p><strong>horizontal</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>default=False</em>) – Arrange entries horizontally when true.</p></li>
+<li><p><strong>dpi</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><em>default=300</em>) – Output resolution.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A standalone legend image is written to plots directory.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.utils.median_iqr">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.utils.</span></span><span class="sig-name descname"><span class="pre">median_iqr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/utils.html#median_iqr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.utils.median_iqr" title="Link to this definition"></a></dt>
+<dd><p>Calculate the median and interquartile-range limits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>values</strong> (<em>array-like</em>) – Numeric observations.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>median</strong> (<em>float</em>) – Median value.</p></li>
+<li><p><strong>q1</strong> (<em>float</em>) – 25th percentile.</p></li>
+<li><p><strong>q3</strong> (<em>float</em>) – 75th percentile.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.utils.order_sub_cell_types">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.utils.</span></span><span class="sig-name descname"><span class="pre">order_sub_cell_types</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cell_subtypes</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/utils.html#order_sub_cell_types"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.utils.order_sub_cell_types" title="Link to this definition"></a></dt>
+<dd><p>Order subtype parents so ancestors are processed before descendants.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>cell_subtypes</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – User-defined subtype hierarchy.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Parent phenotype names in dependency order. Original insertion order is
+preserved when multiple nodes have the same dependency level.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a> of <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the dependency structure cannot be topologically ordered.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.utils.plot_digraph">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.utils.</span></span><span class="sig-name descname"><span class="pre">plot_digraph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ct_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_markers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_filename_identifier</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order_dicc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_colors</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/utils.html#plot_digraph"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.utils.plot_digraph" title="Link to this definition"></a></dt>
+<dd><p>Resolve phenotype subset relationships and plot their directed graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ct_df</strong> (<em>pandas.DataFrame</em>) – Marker-rule table whose columns represent phenotypes.</p></li>
+<li><p><strong>protein_markers</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Marker names represented in the rule table.</p></li>
+<li><p><strong>output_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – Base SpPrAn output directory.</p></li>
+<li><p><strong>output_filename_identifier</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Label used to identify the generated hierarchy output.</p></li>
+<li><p><strong>order_dicc</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Phenotype ordering grouped by rule specificity.</p></li>
+<li><p><strong>custom_colors</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> of </em><em>str to str</em>) – Phenotype color mapping.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>final_subsets</strong> (<em>dict</em>) – Resolved subset relationships.</p></li>
+<li><p><strong>subtype_definitions</strong> (<em>dict</em>) – Phenotype definitions generated during subset resolution.</p></li>
+<li><p><strong>larger_groups</strong> (<em>list or dict</em>) – Less-specific parent groups retained by the hierarchy.</p></li>
+<li><p><strong>custom_colors</strong> (<em>dict</em>) – Updated phenotype color mapping.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The directed graph represents logical set containment among
+marker-defined phenotypes rather than a biological developmental lineage.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.utils.plot_general_cell_hierarchy">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.utils.</span></span><span class="sig-name descname"><span class="pre">plot_general_cell_hierarchy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">protein_markers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_types</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_sub_types</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_colors</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arrows_orientation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'contains'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/utils.html#plot_general_cell_hierarchy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.utils.plot_general_cell_hierarchy" title="Link to this definition"></a></dt>
+<dd><p>Plot the user-defined primary and subtype phenotype hierarchy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>protein_markers</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Primary protein-marker positivity columns.</p></li>
+<li><p><strong>cell_types</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Primary phenotype definitions.</p></li>
+<li><p><strong>cell_sub_types</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Parent-child subtype definitions.</p></li>
+<li><p><strong>custom_colors</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> of </em><em>str to str</em>) – Phenotype color mapping.</p></li>
+<li><p><strong>save_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – Directory where the hierarchy figure is saved.</p></li>
+<li><p><strong>arrows_orientation</strong> (<em>{&quot;contains&quot;</em><em>, </em><em>&quot;isContained&quot;}</em><em>, </em><em>default=&quot;contains&quot;</em>) – Direction used for hierarchy arrows.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The hierarchy figure is saved to disk.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Nodes represent marker-defined populations. Parent-child edges describe
+nested phenotype definitions supplied by the user.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.utils.save_anndata_files">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.utils.</span></span><span class="sig-name descname"><span class="pre">save_anndata_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">adata_dicts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adata_dir</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/utils.html#save_anndata_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.utils.save_anndata_files" title="Link to this definition"></a></dt>
+<dd><p>Save per-sample AnnData objects as H5AD files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>adata_dicts</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> of </em><em>str to anndata.AnnData</em>) – Per-sample annotated data matrices.</p></li>
+<li><p><strong>adata_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – Destination directory.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Files are written as <code class="docutils literal notranslate"><span class="pre">Sample_&lt;sample&gt;.h5ad</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="outputs.html" class="btn btn-neutral float-left" title="Outputs" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="release_notes.html" class="btn btn-neutral float-left" title="Release notes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>

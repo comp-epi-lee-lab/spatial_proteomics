@@ -6,21 +6,21 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SpPrAn Configuration Builder &mdash; SpPrAn  documentation</title>
+  <title>SpPrAn Configuration Builder &mdash; SpPrAn 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/documentation_options.js?v=e259d695"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Analysis workflow" href="workflow.html" />
-    <link rel="prev" title="Desktop application" href="desktop_app.html" /> 
+    <link rel="prev" title="Analysis modes" href="analysis_modes.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -46,19 +46,33 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="desktop_app.html">Desktop application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analysis_modes.html">Analysis modes</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">SpPrAn Configuration Builder</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#choose-an-analysis-mode">Choose an analysis mode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#shared-setup">Shared setup</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#settings-1-restore-or-start">Settings 1. Restore or start</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#settings-2-workspace">Settings 2. Workspace</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#settings-3-protein-markers">Settings 3. Protein markers</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#settings-4-cell-types-and-subtypes">Settings 4. Cell types and subtypes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#settings-5-output-and-spatial-plotting">Settings 5. Output and spatial plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#settings-6-preview-and-download">Settings 6. Preview and download</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#supervised-configuration">Supervised configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#cell-types-and-subtypes-section">“Cell types and subtypes” section</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#output-and-spatial-plotting-section">“Output and spatial plotting” section</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#unsupervised-configuration">Unsupervised configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#cell-types-to-explore-section">“Cell types to explore” section</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#phenotype-discovery-section">“Phenotype discovery” section</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#group-comparison-analysis-section">“Group-comparison analysis” section</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#intensity-box-plot-data-section">“Intensity box-plot data” section</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#configuration-preview-and-download-section">“Configuration preview and download” section</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="workflow.html">Analysis workflow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration file</a></li>
 <li class="toctree-l1"><a class="reference internal" href="usage.html">Running SpPrAn</a></li>
 <li class="toctree-l1"><a class="reference internal" href="outputs.html">Outputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release_notes.html">Release notes</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Developer reference</span></p>
 <ul>
@@ -98,15 +112,43 @@ application.</p>
 <p class="admonition-title">Important</p>
 <p>Files selected in the Configuration Builder are not uploaded to an external
 service. Representative data files are read locally to identify column
-names, and folders selected for custom plotting are used locally to obtain
-filenames.</p>
+names, and folders selected are used locally to obtain filenames.</p>
 </div>
+<section id="choose-an-analysis-mode">
+<h2>Choose an analysis mode<a class="headerlink" href="#choose-an-analysis-mode" title="Link to this heading"></a></h2>
+<p>SpPrAn 0.3.0 begins with a mode-selection view.</p>
+<dl class="simple">
+<dt><strong>Supervised mode</strong></dt><dd><p>Users define cell types and subtypes directly from protein-marker rules.</p>
+</dd>
+<dt><strong>Unsupervised mode</strong></dt><dd><p>Users define major cell types using protein-marker rules, while subtypes are
+discovered from observed protein-marker patterns.</p>
+</dd>
+</dl>
+<p>See <a class="reference internal" href="analysis_modes.html"><span class="doc">Analysis modes</span></a> for the analytical distinction.</p>
+</section>
+<section id="shared-setup">
+<h2>Shared setup<a class="headerlink" href="#shared-setup" title="Link to this heading"></a></h2>
+<p>Both workflows require:</p>
+<ol class="arabic simple">
+<li><p>a representative <code class="docutils literal notranslate"><span class="pre">.tsv</span></code> or <code class="docutils literal notranslate"><span class="pre">.csv</span></code> file, or an existing YAML
+configuration;</p></li>
+<li><p>workspace input/output settings; and</p></li>
+<li><p>primary protein markers.</p></li>
+</ol>
+</section>
 <section id="settings-1-restore-or-start">
 <h2>Settings 1. Restore or start<a class="headerlink" href="#settings-1-restore-or-start" title="Link to this heading"></a></h2>
-<p>Loading an existing <code class="docutils literal notranslate"><span class="pre">.yaml</span></code>/<code class="docutils literal notranslate"><span class="pre">.yml</span></code> configuration allows users to edit an existing
-one or take it as a template for a new one.</p>
-<p>Selecting a representative <code class="docutils literal notranslate"><span class="pre">.tsv</span></code>/<code class="docutils literal notranslate"><span class="pre">.csv</span></code> file allows users to start a new
-configuration file identifying available positivity columns in their input data.</p>
+<p>Loading an existing <code class="docutils literal notranslate"><span class="pre">.yaml</span></code>/<code class="docutils literal notranslate"><span class="pre">.yml</span></code> configuration allows users to edit an existing one or take it as a
+template for a new one.</p>
+<p>Selecting a representative <code class="docutils literal notranslate"><span class="pre">.tsv</span></code>/<code class="docutils literal notranslate"><span class="pre">.csv</span></code> file allows users to start a new configuration file identifying
+available positivity columns in their input data.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<ul class="simple">
+<li><p>Configuration files from before 0.3.0 are treated as <strong>supervised mode configuration files</strong> for backward compatibility when restored.</p></li>
+<li><p>Configuration files from before 0.3.0 can be used in the unsupervised mode restoring option. However, it will restore partial information.</p></li>
+</ul>
+</div>
 </section>
 <section id="settings-2-workspace">
 <h2>Settings 2. Workspace<a class="headerlink" href="#settings-2-workspace" title="Link to this heading"></a></h2>
@@ -115,13 +157,15 @@ application users, input and output directory can be selected through the corres
 app.</p>
 <div class="admonition important">
 <p class="admonition-title">Important</p>
-<p>All the files in the input directory must be the same type. If not, SpPrAn will ignore
-those different from the selected input-file format.</p>
+<ul class="simple">
+<li><p>All the files in the input directory must be the same type. If not, SpPrAn will ignore those different from the selected input-file format.</p></li>
+<li><p>Input file names must end with the suffix “<strong>_objects.{``filetype``}</strong>” to be analyzed by SpPrAn. Otherwise, code will not continue with the analysis.</p></li>
+</ul>
 </div>
-<div class="admonition important">
-<p class="admonition-title">Important</p>
-<p>Input file names must end with the suffix “<strong>_objects.{``filetype``}</strong>” to be analyzed
-by SpPrAn. Otherwise, code will not continue with the analysis.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We strongly recommend to only have the files to be analized inside the input directory and no other
+non-intented <code class="docutils literal notranslate"><span class="pre">.tsv</span></code>/<code class="docutils literal notranslate"><span class="pre">.csv</span></code> file, even if they are inside a folder.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -134,7 +178,7 @@ different Ids.</p>
 <section id="settings-3-protein-markers">
 <h2>Settings 3. Protein markers<a class="headerlink" href="#settings-3-protein-markers" title="Link to this heading"></a></h2>
 <p>Select positivity columns obtained via the representative file to define major
-populations (cell types). Other protein markers will remain available for subtype definitions
+populations (cell types). Other protein markers will remain available for other definitions
 if needed.</p>
 <div class="admonition important">
 <p class="admonition-title">Important</p>
@@ -154,10 +198,22 @@ if needed.</p>
 file will appear. Please select a representative file to retrieve and make
 available all the protein markers you may need.</p>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>In unsupervised configuration, user must define a short name for protein markers.</strong> The Configuration Builder
+offers a default name that user can modify. Protein marker short names cannot have the same name between them.</p>
+</div>
 </section>
-<section id="settings-4-cell-types-and-subtypes">
-<h2>Settings 4. Cell types and subtypes<a class="headerlink" href="#settings-4-cell-types-and-subtypes" title="Link to this heading"></a></h2>
-<p>In this settings option, users define each major cell type using protein markers
+<section id="supervised-configuration">
+<h2>Supervised configuration<a class="headerlink" href="#supervised-configuration" title="Link to this heading"></a></h2>
+<p>In supervised mode, users define:</p>
+<ul class="simple">
+<li><p>primary cell types and optional hierarchical subtypes using additional protein markers;</p></li>
+<li><p>AnnData saving, overwrite behavior and spatial plotting options.</p></li>
+</ul>
+<section id="cell-types-and-subtypes-section">
+<h3>“Cell types and subtypes” section<a class="headerlink" href="#cell-types-and-subtypes-section" title="Link to this heading"></a></h3>
+<p>In this settings section, users define each major cell type using protein markers
 that are <strong>Present</strong>, <strong>Absent</strong>, or <strong>Not applicable</strong>, then optionally create
 nested subtypes using additional markers.</p>
 <p>Protein markers selected in settings option 3 will be used to define cell types. Please
@@ -193,10 +249,10 @@ types and subtypes.</p>
 each parent-child relationship, it can appear <em>Other</em> {<code class="docutils literal notranslate"><span class="pre">parent_name</span></code>} corresponding to the cells
 that belong to the parent but no to any of the children.</p>
 </section>
-<section id="settings-5-output-and-spatial-plotting">
-<h2>Settings 5. Output and spatial plotting<a class="headerlink" href="#settings-5-output-and-spatial-plotting" title="Link to this heading"></a></h2>
-<p>Configure output overwriting, AnnData saving, plot type, DPI, point size, and
-optional per-sample custom plotting.</p>
+<section id="output-and-spatial-plotting-section">
+<h3>“Output and spatial plotting” section<a class="headerlink" href="#output-and-spatial-plotting-section" title="Link to this heading"></a></h3>
+<p>In this settings section, users may configure output overwriting, AnnData saving, plot type, DPI,
+point size, and optional per-sample custom plotting.</p>
 <ul class="simple">
 <li><p>For <strong>Overwrite existing outputs?</strong> option, if <em>Yes</em> is selected, previous generated output files in the output path will be replaced by the new ones. If <em>No</em> is selected, SpPrAn will skip generating all the output files that already exist, just creating the non-existent.</p></li>
 <li><p>The AnnData files can be used for generating plots inside and outside this tool, and follow-up analyses outside this tool using Python or R. For <strong>Save AnnData files?</strong> option, if <em>Yes</em> is selected, AnnData files will be saved in the output path.</p></li>
@@ -213,7 +269,7 @@ optional per-sample custom plotting.</p>
 </li>
 </ul>
 <p>For custom plotting, the builder reads matching filenames from a selected local
-folder and lets the user assign each file an overview, highlight, both, or no
+folder (input folder) and lets the user assign each file an overview, highlight, both, or no
 plot. After assigning plot types for each file, click <strong>Save custom plotting options</strong>
 button for effectively save the assignations.</p>
 <div class="admonition important">
@@ -221,9 +277,61 @@ button for effectively save the assignations.</p>
 <p>This is the only option that needs to be saved through clicking a button; every other
 setting update is automatically saved.</p>
 </div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Verify that the corrected input file format is selected before selecting the input folder. If not, you might see no files.</p>
+</div>
 </section>
-<section id="settings-6-preview-and-download">
-<h2>Settings 6. Preview and download<a class="headerlink" href="#settings-6-preview-and-download" title="Link to this heading"></a></h2>
+</section>
+<section id="unsupervised-configuration">
+<h2>Unsupervised configuration<a class="headerlink" href="#unsupervised-configuration" title="Link to this heading"></a></h2>
+<p>After defining major cell types, the unsupervised view asks which populations
+should be explored and which protein markers should define exploratory phenotypes. Discovered phenotypes represent
+observed combinations of these protein marker states within the selected parent populations.</p>
+<section id="cell-types-to-explore-section">
+<h3>“Cell types to explore” section<a class="headerlink" href="#cell-types-to-explore-section" title="Link to this heading"></a></h3>
+<p>In this settings section, users define each major cell type using protein markers
+that are <strong>Present</strong>, <strong>Absent</strong>, or <strong>Not applicable</strong>. Cell types also need a short name, that it is used
+in result and annotation labels.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is not possible to define nested cell subtypes in this mode.</p>
+</div>
+</section>
+<section id="phenotype-discovery-section">
+<h3>“Phenotype discovery” section<a class="headerlink" href="#phenotype-discovery-section" title="Link to this heading"></a></h3>
+<dl class="simple">
+<dt>In this settings section, users choose how broadly SpPrAn should search for protein-marker-defined phenotypes</dt><dd><p>within the defined cell types.</p>
+</dd>
+</dl>
+<p>The <strong>Full phenotype discovery</strong> option, if checked, discovers protein marker patterns, stores them as subtype definitions, and
+continues with the supervised workflow. If not checked, SpPrAn will do only the protein-marker-defined phenotype discovery.</p>
+<p>The <strong>Plot cell-type proportion pie plots?</strong> option controls whether sample-level composition pie plots
+are generated together with the cell-type proportion matrices.</p>
+<p>The <strong>Overwrite existing outputs?</strong> and <strong>Save AnnData files?</strong> are exactly the same as in the supervised configuration.</p>
+</section>
+<section id="group-comparison-analysis-section">
+<h3>“Group-comparison analysis” section<a class="headerlink" href="#group-comparison-analysis-section" title="Link to this heading"></a></h3>
+<p>In this settings section, users optionally assign samples to two groups to compare discovered phenotypes between
+them. Here, the builder reads matching filenames from a selected local folder (input folder) and lets the user
+assign each file to each group.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<ul class="simple">
+<li><p>If comparison is enabled, both groups must contain samples and use different group labels.</p></li>
+<li><p>Samples may also remain unassigned.</p></li>
+<li><p>Verify that the corrected input file format is selected before selecting the input folder.</p></li>
+</ul>
+</div>
+</section>
+<section id="intensity-box-plot-data-section">
+<h3>“Intensity box-plot data” section<a class="headerlink" href="#intensity-box-plot-data-section" title="Link to this heading"></a></h3>
+<p>In this settings section, users may select markers whose intensity measurements should be summarized
+within discovered phenotypes for external downstream boxplot analysis.</p>
+</section>
+</section>
+<section id="configuration-preview-and-download-section">
+<h2>“Configuration preview and download” section<a class="headerlink" href="#configuration-preview-and-download-section" title="Link to this heading"></a></h2>
 <p>Preview the generated configuration in the browser. Download it for use with either
 the desktop application or in the command line:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sppran<span class="w"> </span>--config<span class="w"> </span>path/to/config.yaml
@@ -236,7 +344,7 @@ the desktop application or in the command line:</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="desktop_app.html" class="btn btn-neutral float-left" title="Desktop application" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="analysis_modes.html" class="btn btn-neutral float-left" title="Analysis modes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="workflow.html" class="btn btn-neutral float-right" title="Analysis workflow" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

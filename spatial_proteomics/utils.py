@@ -653,6 +653,29 @@ def order_sub_cell_types(cell_subtypes):
     return ordered
 
 def export_legend_png(ax,output_path,handles, labels, horizontal=False, dpi=300):
+    """
+    Export a plot legend as a standalone PNG image.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Source axes whose legend formatting may be reused.
+    output_path : str or pathlib.Path
+        Destination image path.
+    handles : sequence
+        Matplotlib legend handles.
+    labels : sequence of str
+        Legend labels.
+    horizontal : bool, default=False
+        Arrange entries horizontally when true.
+    dpi : int, default=300
+        Output resolution.
+
+    Returns
+    -------
+    None
+        A standalone legend image is written to plots directory.
+    """
     old_legend     = ax.get_legend()
     title          = None
     frameon        = False
@@ -683,6 +706,23 @@ def export_legend_png(ax,output_path,handles, labels, horizontal=False, dpi=300)
     plt.close(fig)
 
 def median_iqr(values):
+    """
+    Calculate the median and interquartile-range limits.
+
+    Parameters
+    ----------
+    values : array-like
+        Numeric observations.
+
+    Returns
+    -------
+    median : float
+        Median value.
+    q1 : float
+        25th percentile.
+    q3 : float
+        75th percentile.
+    """
     q1, q3 = np.percentile(values, [25, 75])
     return np.median(values), q1, q3
 

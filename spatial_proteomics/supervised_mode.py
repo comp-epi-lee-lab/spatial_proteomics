@@ -2,6 +2,28 @@ from spatial_proteomics.spatial_plot import plot_spatial
 from spatial_proteomics.cell_proportions import calculate_cell_proportions
 
 def _apply_supervised_mode(adata_dicts, config):
+    """
+    Run the supervised SpPrAn analysis workflow.
+
+    Parameters
+    ----------
+    adata_dicts : dict of str to anndata.AnnData
+        Per-sample AnnData objects containing protein marker-defined cell annotations.
+    config : dict
+        Validated SpPrAn configuration containing supervised spatial-plot
+        settings, phenotype colors, output settings, and subtype definitions.
+
+    Returns
+    -------
+    None
+        Spatial plots and cell-population proportion outputs are written to the
+        configured output directory.
+
+    Notes
+    -----
+    Supervised mode assumes that populations of interest are defined a priori
+    by the user through protein marker rules.
+    """
     if config['spatial_plot']['plot_options'] != 'none':
         plot_spatial(
             adata_dicts              = adata_dicts,

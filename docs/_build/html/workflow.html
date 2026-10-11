@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Analysis workflow &mdash; SpPrAn  documentation</title>
+  <title>Analysis workflow &mdash; SpPrAn 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/documentation_options.js?v=e259d695"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -46,11 +46,20 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="desktop_app.html">Desktop application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analysis_modes.html">Analysis modes</a></li>
 <li class="toctree-l1"><a class="reference internal" href="config_builder.html">SpPrAn Configuration Builder</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Analysis workflow</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Analysis workflow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#common-preprocessing">Common preprocessing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#supervised-branch">Supervised branch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#unsupervised-branch">Unsupervised branch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#full-branch">Full branch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#questions-answered-by-each-mode">Questions answered by each mode</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration file</a></li>
 <li class="toctree-l1"><a class="reference internal" href="usage.html">Running SpPrAn</a></li>
 <li class="toctree-l1"><a class="reference internal" href="outputs.html">Outputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release_notes.html">Release notes</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Developer reference</span></p>
 <ul>
@@ -83,13 +92,52 @@
              
   <section id="analysis-workflow">
 <h1>Analysis workflow<a class="headerlink" href="#analysis-workflow" title="Link to this heading"></a></h1>
-<p>SpPrAn converts object-level spatial proteomics measurements into annotated
-single-cell data, marker-defined phenotypes, spatial visualizations, and
-population summaries.</p>
-<p>Input tables contain individual segmented objects/cells and marker-positivity
-measurements exported from Visiopharm®. SpPrAn creates per-sample AnnData
-objects, assigns primary phenotypes and hierarchical subtypes, generates
-selected spatial visualizations, and reports counts and percentages.</p>
+<section id="common-preprocessing">
+<h2>Common preprocessing<a class="headerlink" href="#common-preprocessing" title="Link to this heading"></a></h2>
+<p>All analysis modes begin by:</p>
+<ol class="arabic simple">
+<li><p>reading Visiopharm object-level tables;</p></li>
+<li><p>constructing per-sample AnnData objects;</p></li>
+<li><p>applying user-defined rules for major cell types; and</p></li>
+<li><p>storing cell-level annotations and spatial/intensity information.</p></li>
+</ol>
+<p>Execution then branches according to <code class="docutils literal notranslate"><span class="pre">type_of_analysis</span></code>.</p>
+</section>
+<section id="supervised-branch">
+<h2>Supervised branch<a class="headerlink" href="#supervised-branch" title="Link to this heading"></a></h2>
+<p>The supervised branch applies user-defined subtype rules, calculates
+cell-population counts and proportions, generates hierarchy information, and
+produces requested spatial plots.</p>
+</section>
+<section id="unsupervised-branch">
+<h2>Unsupervised branch<a class="headerlink" href="#unsupervised-branch" title="Link to this heading"></a></h2>
+<p>The unsupervised branch:</p>
+<ol class="arabic simple">
+<li><p>creates cell-type proportion matrices;</p></li>
+<li><p>identifies binary protein marker patterns observed in the data;</p></li>
+<li><p>quantifies those patterns within selected major cell types;</p></li>
+<li><p>stores discovered phenotype labels/patterns in AnnData;</p></li>
+<li><p>optionally compares phenotypes between two sample groups; and</p></li>
+<li><p>optionally summarizes marker intensities within discovered phenotypes.</p></li>
+</ol>
+</section>
+<section id="full-branch">
+<h2>Full branch<a class="headerlink" href="#full-branch" title="Link to this heading"></a></h2>
+<p>Full mode runs the unsupervised branch first, converts discovered protein marker
+patterns into subtype definitions, and then invokes the supervised workflow.</p>
+</section>
+<section id="questions-answered-by-each-mode">
+<h2>Questions answered by each mode<a class="headerlink" href="#questions-answered-by-each-mode" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><strong>Supervised</strong></dt><dd><p>Which predefined phenotypes are present, how abundant are they, and how are
+they spatially distributed?</p>
+</dd>
+<dt><strong>Unsupervised</strong></dt><dd><p>Which marker combinations are observed within a selected parent population,
+how abundant are they, and do their proportions differ between groups?</p>
+</dd>
+</dl>
+<p>Neither mode alone establishes biological lineage or causality.</p>
+</section>
 </section>
 
 

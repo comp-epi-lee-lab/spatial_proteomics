@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Running SpPrAn &mdash; SpPrAn  documentation</title>
+  <title>Running SpPrAn &mdash; SpPrAn 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/documentation_options.js?v=e259d695"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -46,16 +46,20 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="desktop_app.html">Desktop application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analysis_modes.html">Analysis modes</a></li>
 <li class="toctree-l1"><a class="reference internal" href="config_builder.html">SpPrAn Configuration Builder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="workflow.html">Analysis workflow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration file</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Running SpPrAn</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#command-line">Command line</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#desktop-application">Desktop application</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#typical-workflow">Typical workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#choosing-a-mode">Choosing a mode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#typical-supervised-workflow">Typical supervised workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#typical-unsupervised-workflow">Typical unsupervised workflow</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="outputs.html">Outputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release_notes.html">Release notes</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Developer reference</span></p>
 <ul>
@@ -100,19 +104,49 @@
 user interface for configuration selection, workspace selection, execution,
 and runtime messages. See <a class="reference internal" href="desktop_app.html"><span class="doc">Desktop application</span></a>.</p>
 </section>
-<section id="typical-workflow">
-<h2>Typical workflow<a class="headerlink" href="#typical-workflow" title="Link to this heading"></a></h2>
+<section id="choosing-a-mode">
+<h2>Choosing a mode<a class="headerlink" href="#choosing-a-mode" title="Link to this heading"></a></h2>
+<p>Use <strong>Supervised</strong> for a hypothesis-driven analysis with predefined subtypes.</p>
+<p>Use <strong>Unsupervised</strong> for exploratory marker-pattern discovery within known
+major parent populations.</p>
+<p>Enable <strong>full phenotype discovery</strong> when the discovered patterns should be
+converted into subtype definitions and passed through the supervised workflow.</p>
+</section>
+<section id="typical-supervised-workflow">
+<h2>Typical supervised workflow<a class="headerlink" href="#typical-supervised-workflow" title="Link to this heading"></a></h2>
 <ol class="arabic simple">
 <li><p>Export object-level measurements from Visiopharm®.</p></li>
 <li><p>Create or update a YAML configuration.</p>
 <ul class="simple">
-<li><p>Define biologically appropriate marker rules.</p></li>
+<li><p>Define biologically appropriate protein marker rules.</p></li>
 <li><p>Add hierarchical subtypes where supported by the marker panel.</p></li>
 <li><p>Select spatial plotting/output options.</p></li>
 </ul>
 </li>
 <li><p>Run SpPrAn from the desktop application or command line.</p></li>
 <li><p>Review population counts, hierarchy reports, and spatial maps.</p></li>
+</ol>
+</section>
+<section id="typical-unsupervised-workflow">
+<h2>Typical unsupervised workflow<a class="headerlink" href="#typical-unsupervised-workflow" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Export object-level measurements from Visiopharm®.</p></li>
+<li><p>Create or update a YAML configuration.</p>
+<ul class="simple">
+<li><p>Define biologically appropriate protein marker rules.</p></li>
+<li><p>Select populations to explore.</p></li>
+<li><p>Select exploratory protein markers and their corresponding short names.</p></li>
+<li><p>Optionally enable full phenotype discovery option.</p></li>
+<li><p>Optionally define two sample groups for all the samples in the run.</p></li>
+<li><p>Optionally select protein markers for intensity summaries.</p></li>
+</ul>
+</li>
+<li><p>Run SpPrAn from the desktop application or command line.</p></li>
+<li><p>Review phenotype patterns and within-parent proportions.</p></li>
+<li><p>If groups were supplied, interpret descriptive differences, detection
+frequency, nominal p-values, and FDR-adjusted results together.</p></li>
+<li><p>If intensity protein markers were supplied, review boxplot summaries and
+outliers from intensities by phenotype in each selected cell type.</p></li>
 </ol>
 </section>
 </section>

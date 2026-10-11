@@ -6,9 +6,32 @@ import logging
 logger = logging.getLogger(__name__)
 
 def _add_phenotype_discovery(adata_dicts, config):
+    """
+    Convert discovered protein marker patterns into supervised subtype definitions.
+
+    Parameters
+    ----------
+    adata_dicts : dict of str to anndata.AnnData
+        AnnData objects produced by phenotype discovery. Observed phenotype
+        protein marker mappings are expected in ``adata.uns``.
+    config : dict
+        Active SpPrAn configuration. It is updated in place with discovered
+        subtype definitions and colors.
+
+    Returns
+    -------
+    dict
+        Updated configuration containing discovered phenotypes in
+        ``sub_cell_types``.
+
+    Notes
+    -----
+    Phenotype definitions are combined across samples for each selected parent
+    population. Parent populations with more than ``2**9`` unique phenotypes
+    are skipped for the subsequent supervised stage.
+    """
     config['spatial_plot'] = {}
     config['spatial_plot']['plot_options'] = 'none'
-    # config['spatial_plot'] = {"dpi": 300,"scatter_point_size": 50, 'plot_options': 'all'}
     config["sub_cell_types"] = {}
     for ct, short_ct in zip(config["cell_types_to_explore"], config["cell_types_to_explore_short_name"]):
         patterns_key = f"sub{short_ct}_patterns"
@@ -29,6 +52,28 @@ def _add_phenotype_discovery(adata_dicts, config):
 
 
 def _apply_full_mode(adata_dicts, config):
+    """
+    Run phenotype discovery followed by the supervised SpPrAn workflow.
+
+    Parameters
+    ----------
+    adata_dicts : dict of str to anndata.AnnData
+        Initial samples containing major cell-type annotations.
+    config : dict
+        Validated configuration with ``type_of_analysis`` set to ``"full"``.
+
+    Returns
+    -------
+    None
+        Exploratory and subsequent supervised outputs are written to the
+        configured output directory.
+
+    Notes
+    -----
+    Full mode discovers protein marker-defined phenotypes, converts them into subtype
+    rules, regenerates the annotated AnnData objects, and then runs the
+    supervised workflow.
+    """
     adata_dicts_updated = _apply_unsupervised_mode(adata_dicts, config)
     logger.warning("Unsupervised analysis finished! Starting supervised analysis...")
     config_updated = _add_phenotype_discovery(adata_dicts_updated, config)

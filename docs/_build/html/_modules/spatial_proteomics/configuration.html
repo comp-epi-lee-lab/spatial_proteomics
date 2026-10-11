@@ -1,0 +1,901 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>spatial_proteomics.configuration &mdash; SpPrAn 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            SpPrAn
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../desktop_app.html">Desktop application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../analysis_modes.html">Analysis modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../config_builder.html">SpPrAn Configuration Builder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../workflow.html">Analysis workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../configuration.html">Configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Running SpPrAn</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../outputs.html">Outputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release notes</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">Python API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">SpPrAn</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">spatial_proteomics.configuration</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for spatial_proteomics.configuration</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Configuration loading and validation utilities for SpPrAn.</span>
+
+<span class="sd">This module is responsible for:</span>
+
+<span class="sd">1. Safely parsing YAML configuration files.</span>
+<span class="sd">2. Rejecting duplicate YAML mapping keys.</span>
+<span class="sd">3. Applying configuration defaults.</span>
+<span class="sd">4. Validating configuration structure and cross-field rules.</span>
+<span class="sd">5. Converting workspace paths to ``pathlib.Path`` objects.</span>
+<span class="sd">6. Verifying that user-defined input and output directories exist.</span>
+
+<span class="sd">The public entry point is :func:`load_config`.</span>
+<span class="sd">"""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">REVIEW_YAML_MESSAGE</span> <span class="o">=</span> <span class="s2">"Please review the YAML configuration file."</span>
+
+<span class="n">HEX_COLOR_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^#[0-9A-Fa-f]</span><span class="si">{6}</span><span class="s2">$"</span><span class="p">)</span>
+
+<span class="n">WORKSPACE_FILETYPES</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"tsv"</span><span class="p">,</span> <span class="s2">"csv"</span><span class="p">}</span>
+
+<span class="n">PLOT_OPTIONS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"none"</span><span class="p">,</span> <span class="s2">"all"</span><span class="p">,</span> <span class="s2">"highlight"</span><span class="p">,</span> <span class="s2">"overview"</span><span class="p">,</span> <span class="s2">"custom"</span><span class="p">,}</span>
+
+<span class="n">CUSTOM_PLOT_TYPES</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"none"</span><span class="p">,</span> <span class="s2">"all"</span><span class="p">,</span> <span class="s2">"highlight"</span><span class="p">,</span> <span class="s2">"overview"</span><span class="p">,}</span>
+
+<span class="c1"># Add other supported values here if SPPRAN accepts more orientations.</span>
+<span class="n">ARROWS_ORIENTATIONS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"contains"</span><span class="p">,</span> <span class="s2">"isContained"</span><span class="p">,}</span>
+
+<span class="n">ANALYSIS_TYPES</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"supervised"</span><span class="p">,</span> <span class="s2">"unsupervised"</span><span class="p">,</span> <span class="s2">"full"</span><span class="p">,}</span>
+
+
+<div class="viewcode-block" id="ConfigValidationError">
+<a class="viewcode-back" href="../../api.html#spatial_proteomics.configuration.ConfigValidationError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConfigValidationError</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Report one or more invalid SpPrAn configuration settings.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    errors : list of str</span>
+<span class="sd">        Human-readable validation messages collected while checking the YAML</span>
+<span class="sd">        configuration.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    errors : list of str</span>
+<span class="sd">        Individual configuration errors.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">errors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="n">errors</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"Invalid YAML configuration:</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  - </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">errors</span><span class="p">)</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">"</span><span class="se">\n\n</span><span class="si">{</span><span class="n">REVIEW_YAML_MESSAGE</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span></div>
+
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">UniqueKeyLoader</span><span class="p">(</span><span class="n">yaml</span><span class="o">.</span><span class="n">SafeLoader</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Safe YAML loader that rejects duplicate mapping keys."""</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_construct_unique_mapping</span><span class="p">(</span><span class="n">loader</span><span class="p">:</span> <span class="n">yaml</span><span class="o">.</span><span class="n">SafeLoader</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">yaml</span><span class="o">.</span><span class="n">MappingNode</span><span class="p">,</span> <span class="n">deep</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Construct a YAML mapping while rejecting duplicate keys."""</span>
+    <span class="n">mapping</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">key_node</span><span class="p">,</span> <span class="n">value_node</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">construct_object</span><span class="p">(</span><span class="n">key_node</span><span class="p">,</span> <span class="n">deep</span><span class="o">=</span><span class="n">deep</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">already_present</span> <span class="o">=</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">mapping</span>
+        <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">yaml</span><span class="o">.</span><span class="n">constructor</span><span class="o">.</span><span class="n">ConstructorError</span><span class="p">(</span><span class="s2">"while constructing a mapping"</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">start_mark</span><span class="p">,</span> <span class="s2">"found an unhashable mapping key"</span><span class="p">,</span> <span class="n">key_node</span><span class="o">.</span><span class="n">start_mark</span><span class="p">,)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+
+        <span class="k">if</span> <span class="n">already_present</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">yaml</span><span class="o">.</span><span class="n">constructor</span><span class="o">.</span><span class="n">ConstructorError</span><span class="p">(</span><span class="s2">"while constructing a mapping"</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">start_mark</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"found duplicate key </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2">"</span><span class="p">,</span> <span class="n">key_node</span><span class="o">.</span><span class="n">start_mark</span><span class="p">,)</span>
+
+        <span class="n">mapping</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">construct_object</span><span class="p">(</span><span class="n">value_node</span><span class="p">,</span> <span class="n">deep</span><span class="o">=</span><span class="n">deep</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">mapping</span>
+
+
+<span class="n">UniqueKeyLoader</span><span class="o">.</span><span class="n">add_constructor</span><span class="p">(</span><span class="n">yaml</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">BaseResolver</span><span class="o">.</span><span class="n">DEFAULT_MAPPING_TAG</span><span class="p">,</span> <span class="n">_construct_unique_mapping</span><span class="p">,)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_is_binary_or_null</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Return True only for integer 0, integer 1, or None."""</span>
+    <span class="c1"># bool must be excluded explicitly because bool is a subclass of int.</span>
+    <span class="k">return</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">int</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_is_binary</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Return True only for integer 0 or integer 1."""</span>
+    <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">int</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_valid_marker_name</span><span class="p">(</span><span class="n">marker</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Check the basic expected format of a protein-marker name."""</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="nb">isinstance</span><span class="p">(</span><span class="n">marker</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="ow">and</span> <span class="n">marker</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"Positivity - "</span><span class="p">)</span>
+        <span class="ow">and</span> <span class="s2">"(MV"</span> <span class="ow">in</span> <span class="n">marker</span>
+        <span class="ow">and</span> <span class="n">marker</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">")"</span><span class="p">)</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_yaml</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Validate and normalize an already-parsed SPPRAN configuration.</span>
+
+<span class="sd">    Validation errors are collected so users can fix several independent</span>
+<span class="sd">    problems in one pass rather than discovering one error per run.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    config : Any</span>
+<span class="sd">        Object produced by YAML parsing.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict</span>
+<span class="sd">        A validated, normalized copy of the configuration.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ConfigValidationError</span>
+<span class="sd">        If one or more settings are invalid.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">config</span><span class="p">:</span> <span class="k">raise</span> <span class="n">ConfigValidationError</span><span class="p">([</span><span class="s2">"Configuration file is empty or does not contain a YAML dictionary."</span><span class="p">])</span>
+
+    <span class="n">config</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="n">errors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">error</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">warning</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"WARNING: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
+
+    <span class="c1"># ========== workspace ==========</span>
+    <span class="n">workspace</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"workspace"</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">workspace</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">error</span><span class="p">(</span><span class="s2">"'workspace' setting is missing."</span><span class="p">)</span>
+        <span class="n">workspace</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">config</span><span class="p">[</span><span class="s2">"workspace"</span><span class="p">]</span> <span class="o">=</span> <span class="n">workspace</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="n">error</span><span class="p">(</span><span class="s2">"'workspace' must be a dictionary, "</span> <span class="sa">f</span><span class="s2">"got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">workspace</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="n">workspace</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">config</span><span class="p">[</span><span class="s2">"workspace"</span><span class="p">]</span> <span class="o">=</span> <span class="n">workspace</span>
+
+    <span class="k">for</span> <span class="n">path_key</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="p">((</span><span class="s2">"input_dir"</span><span class="p">,</span> <span class="s2">"Input"</span><span class="p">),</span> <span class="p">(</span><span class="s2">"output_dir"</span><span class="p">,</span> <span class="s2">"Output"</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">path_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">workspace</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'workspace.</span><span class="si">{</span><span class="n">path_key</span><span class="si">}</span><span class="s2">' setting is missing."</span><span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="n">path_value</span> <span class="o">=</span> <span class="n">workspace</span><span class="p">[</span><span class="n">path_key</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path_value</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">path_value</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2"> directory' must contain a non-empty path string."</span><span class="p">)</span>
+
+    <span class="n">input_dir</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"input_dir"</span><span class="p">)</span>
+    <span class="n">input_dir_checked</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">output_dir</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"output_dir"</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">input_dir</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">input_dir</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">output_dir</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normpath</span><span class="p">(</span><span class="n">input_dir</span><span class="p">)</span> <span class="o">==</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normpath</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)):</span>
+        <span class="n">warning</span><span class="p">(</span><span class="s2">"Input and output directories are the same. Using a different output directory is recommended to avoid mixing input and results."</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">Path</span><span class="p">(</span><span class="n">input_dir</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Input directory '</span><span class="si">{</span><span class="n">input_dir</span><span class="si">}</span><span class="s2">' does not exist or is misspelled."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">Path</span><span class="p">(</span><span class="n">input_dir</span><span class="p">)</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Input path '</span><span class="si">{</span><span class="n">input_dir</span><span class="si">}</span><span class="s2">' exists, but it is not a directory."</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span> <span class="n">input_dir_checked</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">input_dir</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Output directory '</span><span class="si">{</span><span class="n">output_dir</span><span class="si">}</span><span class="s2">' does not exist or is misspelled. Please create the desired output directory and specify it in the configuration file."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Output path '</span><span class="si">{</span><span class="n">output_dir</span><span class="si">}</span><span class="s2">' exists, but it is not a directory."</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="s2">"filetype"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">workspace</span><span class="p">:</span>
+        <span class="n">warning</span><span class="p">(</span><span class="s2">"'workspace.filetype' is missing. Defaulting to 'tsv'."</span><span class="p">)</span>
+        <span class="n">workspace</span><span class="p">[</span><span class="s2">"filetype"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"tsv"</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">workspace</span><span class="p">[</span><span class="s2">"filetype"</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'workspace.filetype' must be a string, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">workspace</span><span class="p">[</span><span class="s1">'filetype'</span><span class="p">])</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">workspace</span><span class="p">[</span><span class="s2">"filetype"</span><span class="p">]</span> <span class="o">=</span> <span class="n">workspace</span><span class="p">[</span><span class="s2">"filetype"</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">workspace</span><span class="p">[</span><span class="s2">"filetype"</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">WORKSPACE_FILETYPES</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'workspace.filetype' must be either 'tsv' or 'csv', got </span><span class="si">{</span><span class="n">workspace</span><span class="p">[</span><span class="s1">'filetype'</span><span class="p">]</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+
+    <span class="c1"># ========== type_of_analysis ==========</span>
+    <span class="c1"># Older configuration files predate this setting and correspond to the</span>
+    <span class="c1"># supervised pipeline, so missing/invalid values fall back to supervised.</span>
+    <span class="k">if</span> <span class="s2">"type_of_analysis"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span> <span class="ow">or</span> <span class="n">config</span><span class="p">[</span><span class="s2">"type_of_analysis"</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">warning</span><span class="p">(</span><span class="s2">"'type_of_analysis' is missing. Defaulting to 'supervised'."</span><span class="p">)</span>
+        <span class="n">config</span><span class="p">[</span><span class="s2">"type_of_analysis"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"supervised"</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">"type_of_analysis"</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'type_of_analysis' must be one of </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">ANALYSIS_TYPES</span><span class="p">)</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">config</span><span class="p">[</span><span class="s1">'type_of_analysis'</span><span class="p">]</span><span class="si">!r}</span><span class="s2">. Defaulting to 'supervised'."</span><span class="p">)</span>
+        <span class="n">config</span><span class="p">[</span><span class="s2">"type_of_analysis"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"supervised"</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">config</span><span class="p">[</span><span class="s2">"type_of_analysis"</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">"type_of_analysis"</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">"type_of_analysis"</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ANALYSIS_TYPES</span><span class="p">:</span>
+            <span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'type_of_analysis' must be one of </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">ANALYSIS_TYPES</span><span class="p">)</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">config</span><span class="p">[</span><span class="s1">'type_of_analysis'</span><span class="p">]</span><span class="si">!r}</span><span class="s2">. Defaulting to 'supervised'."</span><span class="p">)</span>
+            <span class="n">config</span><span class="p">[</span><span class="s2">"type_of_analysis"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"supervised"</span>
+
+    <span class="n">type_of_analysis</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">"type_of_analysis"</span><span class="p">]</span>
+
+    <span class="c1"># ========== protein_markers ==========</span>
+    <span class="n">protein_markers</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"protein_markers"</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">protein_markers</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">error</span><span class="p">(</span><span class="s2">"'protein_markers' setting is missing."</span><span class="p">)</span>
+        <span class="n">protein_markers</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">protein_markers</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'protein_markers' must be a list, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">protein_markers</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="n">protein_markers</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">protein_markers</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="s2">"At least one primary protein marker is required."</span><span class="p">)</span>
+
+        <span class="n">seen_markers</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">marker</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">protein_markers</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">marker</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'protein_markers[</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2">]' must be a string, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">_valid_marker_name</span><span class="p">(</span><span class="n">marker</span><span class="p">):</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Protein marker </span><span class="si">{</span><span class="n">marker</span><span class="si">!r}</span><span class="s2"> is not valid."</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">marker</span> <span class="ow">in</span> <span class="n">seen_markers</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Primary protein marker </span><span class="si">{</span><span class="n">marker</span><span class="si">!r}</span><span class="s2"> appears more than once in 'protein_markers'."</span><span class="p">)</span>
+            <span class="n">seen_markers</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span>
+
+    <span class="n">primary_markers</span> <span class="o">=</span> <span class="p">{</span><span class="n">marker</span> <span class="k">for</span> <span class="n">marker</span> <span class="ow">in</span> <span class="n">protein_markers</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">marker</span><span class="p">,</span> <span class="nb">str</span><span class="p">)}</span>
+
+    <span class="c1"># ========== cell_types ==========</span>
+    <span class="n">cell_types</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cell_types"</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">cell_types</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">error</span><span class="p">(</span><span class="s2">"'cell_types' setting is missing."</span><span class="p">)</span>
+        <span class="n">cell_types</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cell_types</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'cell_types' must be a dictionary, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">cell_types</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="n">cell_types</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cell_types</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="s2">"At least one cell type is required."</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">cell_type</span><span class="p">,</span> <span class="n">definition</span> <span class="ow">in</span> <span class="n">cell_types</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cell_type</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">cell_type</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cell type name </span><span class="si">{</span><span class="n">cell_type</span><span class="si">!r}</span><span class="s2"> must be a non-empty string."</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">definition</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Definition for cell type </span><span class="si">{</span><span class="n">cell_type</span><span class="si">!r}</span><span class="s2"> must be a list, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">definition</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">definition</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">protein_markers</span><span class="p">):</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cell type </span><span class="si">{</span><span class="n">cell_type</span><span class="si">!r}</span><span class="s2"> contains </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">definition</span><span class="p">)</span><span class="si">}</span><span class="s2"> protein-marker values, but 'protein_markers' contains </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">protein_markers</span><span class="p">)</span><span class="si">}</span><span class="s2"> markers."</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">definition</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">_is_binary_or_null</span><span class="p">(</span><span class="n">value</span><span class="p">):</span> <span class="k">continue</span>
+
+                <span class="n">marker</span> <span class="o">=</span> <span class="p">(</span><span class="n">protein_markers</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="k">if</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">protein_markers</span><span class="p">)</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">"index </span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+                <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Value </span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2"> for protein marker </span><span class="si">{</span><span class="n">marker</span><span class="si">!r}</span><span class="s2">, defining </span><span class="si">{</span><span class="n">cell_type</span><span class="si">!r}</span><span class="s2">, must be 0, 1, or null."</span><span class="p">)</span>
+
+    <span class="c1"># ========== sub_cell_types ==========</span>
+    <span class="k">if</span> <span class="s2">"sub_cell_types"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span> <span class="ow">or</span> <span class="n">config</span><span class="p">[</span><span class="s2">"sub_cell_types"</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">config</span><span class="p">[</span><span class="s2">"sub_cell_types"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="n">sub_cell_types</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">"sub_cell_types"</span><span class="p">]</span>
+    <span class="n">child_to_parents</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">edge_markers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">all_children</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sub_cell_types</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'sub_cell_types' must be a dictionary, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">sub_cell_types</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="n">sub_cell_types</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">config</span><span class="p">[</span><span class="s2">"sub_cell_types"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">parent</span><span class="p">,</span> <span class="n">children</span> <span class="ow">in</span> <span class="n">sub_cell_types</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">parent</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Subtype parent </span><span class="si">{</span><span class="n">parent</span><span class="si">!r}</span><span class="s2"> must be a non-empty string."</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">children</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Descendants of </span><span class="si">{</span><span class="n">parent</span><span class="si">!r}</span><span class="s2"> must be a dictionary, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">children</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">children</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Subtype parent </span><span class="si">{</span><span class="n">parent</span><span class="si">!r}</span><span class="s2"> must contain at least one descendant."</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">child</span><span class="p">,</span> <span class="n">definition</span> <span class="ow">in</span> <span class="n">children</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="n">all_children</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span> <span class="n">child_to_parents</span><span class="p">[</span><span class="n">child</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">child</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cell subtype </span><span class="si">{</span><span class="n">child</span><span class="si">!r}</span><span class="s2"> must be a non-empty string."</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">child</span> <span class="o">==</span> <span class="n">parent</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cell subtype </span><span class="si">{</span><span class="n">child</span><span class="si">!r}</span><span class="s2"> cannot be its own parent."</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">definition</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                    <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Protein-marker definition for </span><span class="si">{</span><span class="n">child</span><span class="si">!r}</span><span class="s2"> must be a dictionary, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">definition</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+                    <span class="k">continue</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">definition</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"At least one protein marker is required to define subtype </span><span class="si">{</span><span class="n">child</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+
+                <span class="n">current_markers</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+                <span class="k">for</span> <span class="n">marker</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">definition</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">marker</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                        <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Marker names defining </span><span class="si">{</span><span class="n">child</span><span class="si">!r}</span><span class="s2"> must be strings, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+                        <span class="k">continue</span>
+
+                    <span class="n">current_markers</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">_valid_marker_name</span><span class="p">(</span><span class="n">marker</span><span class="p">):</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Subtype marker </span><span class="si">{</span><span class="n">marker</span><span class="si">!r}</span><span class="s2">, defining </span><span class="si">{</span><span class="n">child</span><span class="si">!r}</span><span class="s2">, does not have a valid protein-marker name."</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">marker</span> <span class="ow">in</span> <span class="n">primary_markers</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Primary protein marker </span><span class="si">{</span><span class="n">marker</span><span class="si">!r}</span><span class="s2"> cannot also be used to define subtype </span><span class="si">{</span><span class="n">child</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+
+                    <span class="c1"># Subtype markers actively define the subtype, so they must be 0 or 1 rather than null.</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">_is_binary</span><span class="p">(</span><span class="n">value</span><span class="p">):</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Value </span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2"> for subtype marker </span><span class="si">{</span><span class="n">marker</span><span class="si">!r}</span><span class="s2">, defining </span><span class="si">{</span><span class="n">child</span><span class="si">!r}</span><span class="s2">, must be 0 or 1."</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span> <span class="n">edge_markers</span><span class="p">[(</span><span class="n">parent</span><span class="p">,</span> <span class="n">child</span><span class="p">)]</span> <span class="o">=</span> <span class="n">current_markers</span>
+
+        <span class="n">root_cell_types</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">cell_types</span><span class="p">)</span>
+        <span class="n">known_nodes</span> <span class="o">=</span> <span class="n">root_cell_types</span> <span class="o">|</span> <span class="n">all_children</span>
+
+        <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">sub_cell_types</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">parent</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">known_nodes</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Subtype parent </span><span class="si">{</span><span class="n">parent</span><span class="si">!r}</span><span class="s2"> is neither a primary cell type nor a defined cell subtype."</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">child</span><span class="p">,</span> <span class="n">parents</span> <span class="ow">in</span> <span class="n">child_to_parents</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parents</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cell subtype </span><span class="si">{</span><span class="n">child</span><span class="si">!r}</span><span class="s2"> has multiple parents: </span><span class="si">{</span><span class="n">parents</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+
+        <span class="n">graph</span> <span class="o">=</span> <span class="p">{</span> <span class="n">parent</span><span class="p">:</span><span class="nb">list</span><span class="p">(</span><span class="n">children</span><span class="p">)</span> <span class="k">for</span> <span class="n">parent</span><span class="p">,</span> <span class="n">children</span> <span class="ow">in</span> <span class="n">sub_cell_types</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">children</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)}</span>
+
+        <span class="c1"># ---------- Detect cycles ----------</span>
+        <span class="n">node_state</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">cycle_found</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">detect_cycles</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">nonlocal</span> <span class="n">cycle_found</span>
+            <span class="n">node_state</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="p">[]):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span> <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">node_state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">cycle_found</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="n">error</span><span class="p">(</span><span class="s2">"Cycle detected in 'sub_cell_types': "</span> <span class="o">+</span> <span class="s2">" -&gt; "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span> <span class="o">+</span> <span class="p">[</span><span class="n">child</span><span class="p">]))</span>
+                <span class="k">elif</span> <span class="n">node_state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="n">detect_cycles</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">path</span> <span class="o">+</span> <span class="p">[</span><span class="n">child</span><span class="p">])</span>
+            <span class="n">node_state</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">graph</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">node_state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="n">detect_cycles</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="p">[</span><span class="n">node</span><span class="p">])</span>
+
+        <span class="c1"># ---------- Detect orphan branches ----------</span>
+        <span class="n">reachable</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">root_cell_types</span><span class="p">)</span>
+        <span class="n">changed</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">while</span> <span class="n">changed</span><span class="p">:</span>
+            <span class="n">changed</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">parent</span><span class="p">,</span> <span class="n">children</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">parent</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">reachable</span><span class="p">:</span> <span class="k">continue</span>
+
+                <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">children</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">child</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">reachable</span><span class="p">:</span>
+                        <span class="n">reachable</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+                        <span class="n">changed</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">sub_cell_types</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">parent</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">reachable</span> <span class="ow">and</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">known_nodes</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Subtype branch starting at </span><span class="si">{</span><span class="n">parent</span><span class="si">!r}</span><span class="s2"> cannot be reached from any primary cell type."</span><span class="p">)</span>
+
+        <span class="c1"># ---------- Ancestor protein-marker rule ----------</span>
+        <span class="c1"># Markers used by ancestors cannot be reused by descendants.</span>
+        <span class="c1"># Sibling branches are validated independently, so siblings may use</span>
+        <span class="c1"># the same marker when they share the same parent.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cycle_found</span><span class="p">:</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">validate_branch</span><span class="p">(</span>
+                <span class="n">parent</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                <span class="n">ancestor_markers</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+                <span class="n">path</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+            <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="p">[]):</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span> <span class="k">continue</span>
+
+                    <span class="n">markers</span> <span class="o">=</span> <span class="n">edge_markers</span><span class="o">.</span><span class="n">get</span><span class="p">((</span><span class="n">parent</span><span class="p">,</span> <span class="n">child</span><span class="p">),</span> <span class="nb">set</span><span class="p">())</span>
+                    <span class="n">repeated</span> <span class="o">=</span> <span class="n">markers</span> <span class="o">&amp;</span> <span class="n">ancestor_markers</span>
+
+                    <span class="k">if</span> <span class="n">repeated</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Subtype </span><span class="si">{</span><span class="n">child</span><span class="si">!r}</span><span class="s2"> reuses protein marker(s) already used by an ancestor: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">repeated</span><span class="p">)</span><span class="si">}</span><span class="s2">. Path: </span><span class="si">{</span><span class="s1">' -&gt; '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">[</span><span class="n">child</span><span class="p">])</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+
+                    <span class="n">validate_branch</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">ancestor_markers</span> <span class="o">|</span> <span class="n">markers</span><span class="p">,</span> <span class="n">path</span> <span class="o">+</span> <span class="p">[</span><span class="n">child</span><span class="p">],)</span>
+
+            <span class="k">for</span> <span class="n">root</span> <span class="ow">in</span> <span class="n">root_cell_types</span><span class="p">:</span> <span class="n">validate_branch</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="nb">set</span><span class="p">(</span><span class="n">primary_markers</span><span class="p">),</span> <span class="p">[</span><span class="n">root</span><span class="p">])</span>
+
+    <span class="c1"># ========== Unsupervised-analysis settings ==========</span>
+    <span class="c1"># These settings are required/validated only when the selected analysis is</span>
+    <span class="c1"># unsupervised. This preserves compatibility with supervised/full configs.</span>
+    <span class="k">if</span> <span class="n">type_of_analysis</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"unsupervised"</span><span class="p">,</span> <span class="s2">"full"</span><span class="p">}:</span>
+        <span class="c1"># ---------- cell_types_to_explore ----------</span>
+        <span class="n">cell_types_to_explore</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cell_types_to_explore"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cell_types_to_explore</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">"'cell_types_to_explore' setting is required when 'type_of_analysis' is 'unsupervised' or 'full."</span><span class="p">)</span>
+            <span class="n">cell_types_to_explore</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cell_types_to_explore</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'cell_types_to_explore' must be a list, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">cell_types_to_explore</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+            <span class="n">cell_types_to_explore</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">cell_types_to_explore</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="s2">"'cell_types_to_explore' must contain at least one cell type."</span><span class="p">)</span>
+            <span class="n">seen_cell_types</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">cell_type</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cell_types_to_explore</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cell_type</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'cell_types_to_explore[</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2">]' must be a string naming a key from 'cell_types', got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">cell_type</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">cell_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cell_types</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cell type </span><span class="si">{</span><span class="n">cell_type</span><span class="si">!r}</span><span class="s2"> in 'cell_types_to_explore' is not a key in 'cell_types'."</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">cell_type</span> <span class="ow">in</span> <span class="n">seen_cell_types</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cell type </span><span class="si">{</span><span class="n">cell_type</span><span class="si">!r}</span><span class="s2"> appears more than once in 'cell_types_to_explore'."</span><span class="p">)</span>
+                <span class="n">seen_cell_types</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">cell_type</span><span class="p">)</span>
+
+        <span class="c1"># ---------- cell_types_to_explore_short_name ----------</span>
+        <span class="n">short_cell_names</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cell_types_to_explore_short_name"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">short_cell_names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">"'cell_types_to_explore_short_name' setting is required when 'type_of_analysis' is 'unsupervised' or 'full."</span><span class="p">)</span>
+            <span class="n">short_cell_names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">short_cell_names</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'cell_types_to_explore_short_name' must be a list, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">short_cell_names</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+            <span class="n">short_cell_names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">normalized_short_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">seen_short_names</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">short_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">short_cell_names</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">short_name</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">short_name</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+                    <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'cell_types_to_explore_short_name[</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2">]' must be a string, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">short_name</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+                    <span class="k">continue</span>
+                <span class="n">short_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">short_name</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">short_name</span><span class="p">:</span>
+                    <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'cell_types_to_explore_short_name[</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2">]' must not be empty."</span><span class="p">)</span>
+                    <span class="k">continue</span>
+                <span class="n">normalized_short_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">short_name</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">short_name</span> <span class="ow">in</span> <span class="n">seen_short_names</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Short name </span><span class="si">{</span><span class="n">short_name</span><span class="si">!r}</span><span class="s2"> appears more than once in 'cell_types_to_explore_short_name'."</span><span class="p">)</span>
+                <span class="n">seen_short_names</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">short_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">normalized_short_names</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">short_cell_names</span><span class="p">):</span> <span class="n">config</span><span class="p">[</span><span class="s2">"cell_types_to_explore_short_name"</span><span class="p">]</span> <span class="o">=</span> <span class="n">normalized_short_names</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cell_types_to_explore</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">short_cell_names</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">cell_types_to_explore</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">short_cell_names</span><span class="p">):</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">"'cell_types_to_explore' and 'cell_types_to_explore_short_name' must contain the same number of elements."</span><span class="p">)</span>
+
+        <span class="c1"># ---------- want_to_plot_pie_plots ----------</span>
+        <span class="k">if</span> <span class="s2">"want_to_plot_pie_plots"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span> <span class="ow">or</span> <span class="n">config</span><span class="p">[</span><span class="s2">"want_to_plot_pie_plots"</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">config</span><span class="p">[</span><span class="s2">"want_to_plot_pie_plots"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">"want_to_plot_pie_plots"</span><span class="p">])</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">bool</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'want_to_plot_pie_plots' must be true or false, got </span><span class="si">{</span><span class="n">config</span><span class="p">[</span><span class="s1">'want_to_plot_pie_plots'</span><span class="p">]</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+
+        <span class="c1"># ---------- exploratory protein markers + short names ----------</span>
+        <span class="n">exploratory_markers</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"exploratory_protein_markers"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">exploratory_markers</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">"'exploratory_protein_markers' setting is required when 'type_of_analysis' is 'unsupervised' or 'full."</span><span class="p">)</span>
+            <span class="n">exploratory_markers</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exploratory_markers</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'exploratory_protein_markers' must be a list, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">exploratory_markers</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+            <span class="n">exploratory_markers</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">exploratory_markers</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="s2">"'exploratory_protein_markers' must contain at least one protein marker."</span><span class="p">)</span>
+            <span class="n">normalized_exploratory_markers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">seen_exploratory_markers</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">marker</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">exploratory_markers</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">marker</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">marker</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">)):</span>
+                    <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'exploratory_protein_markers[</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2">]' must be a string, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+                    <span class="k">continue</span>
+                <span class="n">marker</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="n">normalized_exploratory_markers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">_valid_marker_name</span><span class="p">(</span><span class="n">marker</span><span class="p">):</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Exploratory protein marker </span><span class="si">{</span><span class="n">marker</span><span class="si">!r}</span><span class="s2"> is not valid."</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">marker</span> <span class="ow">in</span> <span class="n">seen_exploratory_markers</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Exploratory protein marker </span><span class="si">{</span><span class="n">marker</span><span class="si">!r}</span><span class="s2"> appears more than once in 'exploratory_protein_markers'."</span><span class="p">)</span>
+                <span class="n">seen_exploratory_markers</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">normalized_exploratory_markers</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">exploratory_markers</span><span class="p">):</span>
+                <span class="n">exploratory_markers</span> <span class="o">=</span> <span class="n">normalized_exploratory_markers</span>
+                <span class="n">config</span><span class="p">[</span><span class="s2">"exploratory_protein_markers"</span><span class="p">]</span> <span class="o">=</span> <span class="n">normalized_exploratory_markers</span>
+
+        <span class="n">exploratory_short_names</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"exploratory_protein_markers_short_name"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">exploratory_short_names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">"'exploratory_protein_markers_short_name' setting is required when 'type_of_analysis' is 'unsupervised' or 'full."</span><span class="p">)</span>
+            <span class="n">exploratory_short_names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exploratory_short_names</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'exploratory_protein_markers_short_name' must be a list, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">exploratory_short_names</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+            <span class="n">exploratory_short_names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">normalized_marker_short_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">seen_marker_short_names</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">short_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">exploratory_short_names</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">short_name</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">short_name</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+                    <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'exploratory_protein_markers_short_name[</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2">]' must be a string, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">short_name</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+                    <span class="k">continue</span>
+                <span class="n">short_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">short_name</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">short_name</span><span class="p">:</span>
+                    <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'exploratory_protein_markers_short_name[</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2">]' must not be empty."</span><span class="p">)</span>
+                    <span class="k">continue</span>
+                <span class="n">normalized_marker_short_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">short_name</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">short_name</span> <span class="ow">in</span> <span class="n">seen_marker_short_names</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Short name </span><span class="si">{</span><span class="n">short_name</span><span class="si">!r}</span><span class="s2"> appears more than once in 'exploratory_protein_markers_short_name'."</span><span class="p">)</span>
+                <span class="n">seen_marker_short_names</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">short_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">normalized_marker_short_names</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">exploratory_short_names</span><span class="p">):</span> <span class="n">config</span><span class="p">[</span><span class="s2">"exploratory_protein_markers_short_name"</span><span class="p">]</span> <span class="o">=</span> <span class="n">normalized_marker_short_names</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exploratory_markers</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exploratory_short_names</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">exploratory_markers</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">exploratory_short_names</span><span class="p">):</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">"'exploratory_protein_markers' and 'exploratory_protein_markers_short_name' must contain the same number of elements."</span><span class="p">)</span>
+
+        <span class="c1"># ---------- dict_ctrl / dict_trtmnt ----------</span>
+        <span class="c1"># None means that the optional two-group comparison is disabled. If one</span>
+        <span class="c1"># dictionary is populated, the other one must be populated as well.</span>
+        <span class="n">comparison_dicts</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">comparison_files</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">comparison_labels</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">filetype</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"filetype"</span><span class="p">)</span>
+
+        <span class="c1"># Names already carrying biological meaning should not be reused as</span>
+        <span class="c1"># group labels, because downstream plots/tables could become ambiguous.</span>
+        <span class="n">reserved_names</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="o">.</span><span class="n">casefold</span><span class="p">()</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">cell_types</span><span class="p">)</span> <span class="o">|</span> <span class="n">all_children</span> <span class="o">|</span> <span class="n">primary_markers</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)}</span>
+        <span class="n">reserved_names</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">casefold</span><span class="p">()</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cell_types_to_explore_short_name"</span><span class="p">,</span> <span class="p">[])</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">))</span>
+        <span class="n">reserved_names</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">casefold</span><span class="p">()</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"exploratory_protein_markers_short_name"</span><span class="p">,</span> <span class="p">[])</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">))</span>
+        <span class="n">reserved_names</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">"other cells"</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">dict_name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"dict_ctrl"</span><span class="p">,</span> <span class="s2">"dict_trtmnt"</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">dict_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span><span class="p">:</span>
+                <span class="n">config</span><span class="p">[</span><span class="n">dict_name</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">group_dict</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">dict_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">group_dict</span> <span class="o">==</span> <span class="p">{}:</span>
+                <span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">dict_name</span><span class="si">}</span><span class="s2">' is empty. Changing it to null/None."</span><span class="p">)</span>
+                <span class="n">config</span><span class="p">[</span><span class="n">dict_name</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="n">group_dict</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="k">if</span> <span class="n">group_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">group_dict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">dict_name</span><span class="si">}</span><span class="s2">' must be a dictionary or null, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">group_dict</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+                <span class="n">group_dict</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="n">comparison_dicts</span><span class="p">[</span><span class="n">dict_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">group_dict</span>
+            <span class="n">comparison_files</span><span class="p">[</span><span class="n">dict_name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="n">comparison_labels</span><span class="p">[</span><span class="n">dict_name</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">group_dict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">labels</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">file_name</span><span class="p">,</span> <span class="n">group_label</span> <span class="ow">in</span> <span class="n">group_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">file_name</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+                        <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Keys in '</span><span class="si">{</span><span class="n">dict_name</span><span class="si">}</span><span class="s2">' must be non-empty filename strings, got </span><span class="si">{</span><span class="n">file_name</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">file_name</span> <span class="o">=</span> <span class="n">file_name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                        <span class="k">if</span> <span class="s2">"_objects"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Path</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span><span class="o">.</span><span class="n">stem</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"File </span><span class="si">{</span><span class="n">file_name</span><span class="si">!r}</span><span class="s2"> in '</span><span class="si">{</span><span class="n">dict_name</span><span class="si">}</span><span class="s2">' must contain '_objects' in its filename."</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">filetype</span> <span class="ow">in</span> <span class="n">WORKSPACE_FILETYPES</span><span class="p">:</span>
+                            <span class="n">expected_extension</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">".</span><span class="si">{</span><span class="n">filetype</span><span class="si">}</span><span class="s2">"</span>
+                            <span class="k">if</span> <span class="n">Path</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span><span class="o">.</span><span class="n">suffix</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="n">expected_extension</span><span class="p">:</span>
+                                <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"File </span><span class="si">{</span><span class="n">file_name</span><span class="si">!r}</span><span class="s2"> in '</span><span class="si">{</span><span class="n">dict_name</span><span class="si">}</span><span class="s2">' must use </span><span class="si">{</span><span class="n">expected_extension</span><span class="si">!r}</span><span class="s2"> to match 'workspace.filetype'."</span><span class="p">)</span>
+                            <span class="k">elif</span> <span class="n">input_dir_checked</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">Path</span><span class="p">(</span><span class="n">input_dir_checked</span> <span class="o">/</span> <span class="n">file_name</span><span class="p">)</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+                                <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"File </span><span class="si">{</span><span class="n">file_name</span><span class="si">!r}</span><span class="s2"> in '</span><span class="si">{</span><span class="n">dict_name</span><span class="si">}</span><span class="s2">' does not exist or is misspelled."</span><span class="p">)</span>
+                        <span class="n">comparison_files</span><span class="p">[</span><span class="n">dict_name</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">group_label</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">group_label</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+                        <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Values in '</span><span class="si">{</span><span class="n">dict_name</span><span class="si">}</span><span class="s2">' must be the same non-empty string, got </span><span class="si">{</span><span class="n">group_label</span><span class="si">!r}</span><span class="s2"> for </span><span class="si">{</span><span class="n">file_name</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">group_label</span> <span class="o">=</span> <span class="n">group_label</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                        <span class="n">labels</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">group_label</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">group_label</span><span class="o">.</span><span class="n">casefold</span><span class="p">()</span> <span class="ow">in</span> <span class="n">reserved_names</span><span class="p">:</span>
+                            <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Group label </span><span class="si">{</span><span class="n">group_label</span><span class="si">!r}</span><span class="s2"> in '</span><span class="si">{</span><span class="n">dict_name</span><span class="si">}</span><span class="s2">' conflicts with a cell type, cell subtype, protein marker, or configured short name."</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"All values in '</span><span class="si">{</span><span class="n">dict_name</span><span class="si">}</span><span class="s2">' must be the same string, got </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> <span class="n">comparison_labels</span><span class="p">[</span><span class="n">dict_name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">labels</span><span class="p">))</span>
+
+        <span class="n">ctrl</span> <span class="o">=</span> <span class="n">comparison_dicts</span><span class="p">[</span><span class="s2">"dict_ctrl"</span><span class="p">]</span>
+        <span class="n">trtmnt</span> <span class="o">=</span> <span class="n">comparison_dicts</span><span class="p">[</span><span class="s2">"dict_trtmnt"</span><span class="p">]</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">ctrl</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="o">!=</span> <span class="p">(</span><span class="n">trtmnt</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">"'dict_ctrl' and 'dict_trtmnt' must either both be null or both contain at least one sample."</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ctrl</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">trtmnt</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">overlap</span> <span class="o">=</span> <span class="n">comparison_files</span><span class="p">[</span><span class="s2">"dict_ctrl"</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">comparison_files</span><span class="p">[</span><span class="s2">"dict_trtmnt"</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">overlap</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="s2">"Samples cannot appear in both 'dict_ctrl' and 'dict_trtmnt': "</span> <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">overlap</span><span class="p">))</span> <span class="o">+</span> <span class="s2">"."</span><span class="p">)</span>
+            <span class="n">ctrl_label</span> <span class="o">=</span> <span class="n">comparison_labels</span><span class="p">[</span><span class="s2">"dict_ctrl"</span><span class="p">]</span>
+            <span class="n">trtmnt_label</span> <span class="o">=</span> <span class="n">comparison_labels</span><span class="p">[</span><span class="s2">"dict_trtmnt"</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">ctrl_label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">trtmnt_label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ctrl_label</span><span class="o">.</span><span class="n">casefold</span><span class="p">()</span> <span class="o">==</span> <span class="n">trtmnt_label</span><span class="o">.</span><span class="n">casefold</span><span class="p">():</span>
+                <span class="n">error</span><span class="p">(</span><span class="s2">"'dict_ctrl' and 'dict_trtmnt' must use different group labels."</span><span class="p">)</span>
+
+        <span class="c1"># ---------- protein_markers_for_intensity ----------</span>
+        <span class="k">if</span> <span class="s2">"protein_markers_for_intensity"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span> <span class="ow">or</span> <span class="n">config</span><span class="p">[</span><span class="s2">"protein_markers_for_intensity"</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">config</span><span class="p">[</span><span class="s2">"protein_markers_for_intensity"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">intensity_markers</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">"protein_markers_for_intensity"</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">intensity_markers</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'protein_markers_for_intensity' must be a list, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">intensity_markers</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">normalized_intensity_markers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">seen_intensity_markers</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">marker</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">intensity_markers</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">marker</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">marker</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">)):</span>
+                    <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'protein_markers_for_intensity[</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2">]' must be a string or number, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+                    <span class="k">continue</span>
+                <span class="n">marker</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="n">normalized_intensity_markers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">_valid_marker_name</span><span class="p">(</span><span class="n">marker</span><span class="p">):</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Protein marker </span><span class="si">{</span><span class="n">marker</span><span class="si">!r}</span><span class="s2"> in 'protein_markers_for_intensity' is not valid."</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">marker</span> <span class="ow">in</span> <span class="n">seen_intensity_markers</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Protein marker </span><span class="si">{</span><span class="n">marker</span><span class="si">!r}</span><span class="s2"> appears more than once in 'protein_markers_for_intensity'."</span><span class="p">)</span>
+                <span class="n">seen_intensity_markers</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">normalized_intensity_markers</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">intensity_markers</span><span class="p">):</span> <span class="n">config</span><span class="p">[</span><span class="s2">"protein_markers_for_intensity"</span><span class="p">]</span> <span class="o">=</span> <span class="n">normalized_intensity_markers</span>
+
+    <span class="c1"># ========== spatial_plot ==========</span>
+    <span class="k">if</span> <span class="n">type_of_analysis</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"supervised"</span><span class="p">}:</span>
+        <span class="n">spatial_plot</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"spatial_plot"</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">spatial_plot</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="s2">"'spatial_plot' setting is missing."</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spatial_plot</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'spatial_plot' must be a dictionary, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">spatial_plot</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># The supplied YAML uses "plot_options". "spatial_options" is</span>
+            <span class="c1"># accepted as a backwards-compatible alias.</span>
+            <span class="k">if</span> <span class="s2">"plot_options"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">spatial_plot</span> <span class="ow">and</span> <span class="s2">"spatial_options"</span> <span class="ow">in</span> <span class="n">spatial_plot</span><span class="p">:</span>
+                <span class="n">spatial_plot</span><span class="p">[</span><span class="s2">"plot_options"</span><span class="p">]</span> <span class="o">=</span> <span class="n">spatial_plot</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"spatial_options"</span><span class="p">)</span>
+                <span class="n">warning</span><span class="p">(</span><span class="s2">"'spatial_options' was renamed to 'plot_options' to match the configuration schema."</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="s2">"plot_options"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">spatial_plot</span><span class="p">:</span>
+                <span class="n">warning</span><span class="p">(</span><span class="s2">"'spatial_plot.plot_options' is missing. Defaulting to 'all'."</span><span class="p">)</span>
+                <span class="n">spatial_plot</span><span class="p">[</span><span class="s2">"plot_options"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"all"</span>
+
+            <span class="n">plot_option</span> <span class="o">=</span> <span class="n">spatial_plot</span><span class="p">[</span><span class="s2">"plot_options"</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">plot_option</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="n">plot_option</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PLOT_OPTIONS</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'spatial_plot.plot_options' must be one of </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">PLOT_OPTIONS</span><span class="p">)</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">plot_option</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="s2">"custom_plot"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">spatial_plot</span> <span class="ow">or</span> <span class="n">spatial_plot</span><span class="p">[</span><span class="s2">"custom_plot"</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">spatial_plot</span><span class="p">[</span><span class="s2">"custom_plot"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="n">custom_plot</span> <span class="o">=</span> <span class="n">spatial_plot</span><span class="p">[</span><span class="s2">"custom_plot"</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">custom_plot</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'spatial_plot.custom_plot' must be a list, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">custom_plot</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">plot_option</span> <span class="o">==</span> <span class="s2">"custom"</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">custom_plot</span><span class="p">:</span>
+                    <span class="n">warning</span><span class="p">(</span><span class="s2">"'spatial_plot.plot_options' is 'custom', but 'custom_plot' is empty. Changing plot_options to 'none'."</span><span class="p">)</span>
+                    <span class="n">spatial_plot</span><span class="p">[</span><span class="s2">"plot_options"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"none"</span>
+                <span class="k">elif</span> <span class="n">plot_option</span> <span class="o">!=</span> <span class="s2">"custom"</span> <span class="ow">and</span> <span class="n">custom_plot</span><span class="p">:</span> <span class="n">warning</span><span class="p">(</span><span class="s2">"'spatial_plot.custom_plot' contains entries, but plot_options is not 'custom'. Custom entries will not normally be used."</span><span class="p">)</span>
+
+                <span class="n">seen_files</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+                <span class="n">filetype</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"filetype"</span><span class="p">)</span>
+
+                <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">custom_plot</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                        <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'spatial_plot.custom_plot[</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2">]' must be a dictionary, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">item</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+                        <span class="k">continue</span>
+
+                    <span class="n">expected_keys</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"fileName"</span><span class="p">,</span> <span class="s2">"type"</span><span class="p">}</span>
+                    <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="o">!=</span> <span class="n">expected_keys</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'spatial_plot.custom_plot[</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2">]' must contain exactly the keys 'fileName' and 'type'."</span><span class="p">)</span>
+
+                    <span class="n">file_name</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"fileName"</span><span class="p">)</span>
+                    <span class="n">custom_type</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"type"</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">file_name</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'spatial_plot.custom_plot[</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2">].fileName' must be a non-empty string."</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">file_name</span> <span class="o">=</span> <span class="n">file_name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                        <span class="k">if</span> <span class="s2">"_objects"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Path</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span><span class="o">.</span><span class="n">stem</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Custom plot file </span><span class="si">{</span><span class="n">file_name</span><span class="si">!r}</span><span class="s2"> must contain '_objects' in its filename."</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">filetype</span> <span class="ow">in</span> <span class="n">WORKSPACE_FILETYPES</span><span class="p">:</span>
+                            <span class="n">expected_extension</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">".</span><span class="si">{</span><span class="n">filetype</span><span class="si">}</span><span class="s2">"</span>
+                            <span class="k">if</span> <span class="n">Path</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span><span class="o">.</span><span class="n">suffix</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="n">expected_extension</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Custom plot file </span><span class="si">{</span><span class="n">file_name</span><span class="si">!r}</span><span class="s2"> must use </span><span class="si">{</span><span class="n">expected_extension</span><span class="si">!r}</span><span class="s2"> to match 'workspace.filetype'."</span><span class="p">)</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="k">if</span> <span class="n">input_dir_checked</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">Path</span><span class="p">(</span><span class="n">input_dir_checked</span> <span class="o">/</span> <span class="n">file_name</span><span class="p">)</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Custom plot file </span><span class="si">{</span><span class="n">file_name</span><span class="si">!r}</span><span class="s2"> does not exist or is misspelled."</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">file_name</span> <span class="ow">in</span> <span class="n">seen_files</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Custom plot file </span><span class="si">{</span><span class="n">file_name</span><span class="si">!r}</span><span class="s2"> appears more than once."</span><span class="p">)</span>
+                        <span class="n">seen_files</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">custom_type</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="n">custom_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">CUSTOM_PLOT_TYPES</span><span class="p">):</span>
+                        <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'spatial_plot.custom_plot[</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2">].type' must be one of </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">CUSTOM_PLOT_TYPES</span><span class="p">)</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">custom_type</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="s2">"dpi"</span> <span class="ow">in</span> <span class="n">spatial_plot</span><span class="p">:</span>
+                <span class="n">dpi</span> <span class="o">=</span> <span class="n">spatial_plot</span><span class="p">[</span><span class="s2">"dpi"</span><span class="p">]</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">dpi</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dpi</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="ow">or</span> <span class="n">dpi</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">):</span> <span class="n">error</span><span class="p">(</span><span class="s2">"'spatial_plot.dpi' must be a positive number."</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="s2">"scatter_point_size"</span> <span class="ow">in</span> <span class="n">spatial_plot</span><span class="p">:</span>
+                <span class="n">point_size</span> <span class="o">=</span> <span class="n">spatial_plot</span><span class="p">[</span><span class="s2">"scatter_point_size"</span><span class="p">]</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">point_size</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">point_size</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="ow">or</span> <span class="n">point_size</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">):</span> <span class="n">error</span><span class="p">(</span><span class="s2">"'spatial_plot.scatter_point_size' must be a positive number."</span><span class="p">)</span>
+
+    <span class="c1"># ========== custom_colors ==========</span>
+    <span class="n">custom_colors</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"custom_colors"</span><span class="p">)</span>
+    <span class="n">hierarchy_names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">cell_types</span><span class="p">)</span> <span class="o">|</span> <span class="n">all_children</span> <span class="o">|</span> <span class="nb">set</span><span class="p">([</span><span class="s1">'Other cells'</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">custom_colors</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="s2">"'custom_colors' setting is missing."</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">custom_colors</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'custom_colors' must be a dictionary, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">custom_colors</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># if 'Other cells' not in custom_colors.keys(): error(f"'Other cells' is missing in 'custom_colors' keys.")</span>
+        <span class="k">for</span> <span class="n">cell_name</span><span class="p">,</span> <span class="n">color</span> <span class="ow">in</span> <span class="n">custom_colors</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cell_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">cell_name</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span> <span class="n">error</span><span class="p">(</span><span class="s2">"Keys in 'custom_colors' must be non-empty strings."</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">HEX_COLOR_RE</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">color</span><span class="p">):</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Color for </span><span class="si">{</span><span class="n">cell_name</span><span class="si">!r}</span><span class="s2"> must be a hexadecimal color in the format '#RRGGBB', got </span><span class="si">{</span><span class="n">color</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+
+        <span class="n">missing_colors</span> <span class="o">=</span> <span class="n">hierarchy_names</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">custom_colors</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">missing_colors</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="s2">"Missing custom color(s) for: "</span> <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">missing_colors</span><span class="p">))</span> <span class="o">+</span> <span class="s2">"."</span><span class="p">)</span>
+
+        <span class="n">extra_colors</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">custom_colors</span><span class="p">)</span> <span class="o">-</span> <span class="n">hierarchy_names</span>
+        <span class="k">if</span> <span class="n">extra_colors</span><span class="p">:</span> <span class="n">warning</span><span class="p">(</span><span class="s2">"'custom_colors' contains name(s) that are not present in the cell hierarchy: "</span> <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">extra_colors</span><span class="p">))</span> <span class="o">+</span> <span class="s2">"."</span><span class="p">)</span>
+
+        <span class="n">color_to_cells</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">cell_name</span><span class="p">,</span> <span class="n">color</span> <span class="ow">in</span> <span class="n">custom_colors</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">HEX_COLOR_RE</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">color</span><span class="p">):</span> <span class="n">color_to_cells</span><span class="p">[</span><span class="n">color</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cell_name</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">color</span><span class="p">,</span> <span class="n">cells</span> <span class="ow">in</span> <span class="n">color_to_cells</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cells</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span> <span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Color </span><span class="si">{</span><span class="n">color</span><span class="si">!r}</span><span class="s2"> is used by multiple cell types/subtypes: </span><span class="si">{</span><span class="n">cells</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+
+    <span class="c1"># ========== Boolean settings present in the supplied configuration ==========</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"locally_save_anndata_files"</span><span class="p">,</span> <span class="s2">"overwrite_existing_files"</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">config</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">bool</span><span class="p">:</span> <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">' must be true or false, got </span><span class="si">{</span><span class="n">config</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+
+    <span class="c1"># ========== Defaults + arrows_orientation validation ==========</span>
+    <span class="k">if</span> <span class="s2">"arrows_orientation"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span><span class="p">:</span> <span class="n">config</span><span class="p">[</span><span class="s2">"arrows_orientation"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"contains"</span>
+
+    <span class="n">arrows_orientation</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">"arrows_orientation"</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arrows_orientation</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span> 
+        <span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'arrows_orientation' must be a string, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">arrows_orientation</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">. Therefore, 'arrows_orientation' is set to default value."</span><span class="p">)</span>
+        <span class="n">config</span><span class="p">[</span><span class="s2">"arrows_orientation"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"contains"</span>
+    <span class="k">elif</span> <span class="n">arrows_orientation</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ARROWS_ORIENTATIONS</span><span class="p">:</span> 
+        <span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'arrows_orientation' must be one of </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">ARROWS_ORIENTATIONS</span><span class="p">)</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">arrows_orientation</span><span class="si">!r}</span><span class="s2">. Therefore, 'arrows_orientation' is set to default value."</span><span class="p">)</span>
+        <span class="n">config</span><span class="p">[</span><span class="s2">"arrows_orientation"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"contains"</span>
+
+    <span class="c1"># ========== Final result ==========</span>
+    <span class="k">if</span> <span class="n">errors</span><span class="p">:</span> <span class="k">raise</span> <span class="n">ConfigValidationError</span><span class="p">(</span><span class="n">errors</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">config</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_resolve_workspace_path</span><span class="p">(</span><span class="n">path_value</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">config_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Resolve a configured workspace path to an absolute path.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    path_value : str</span>
+<span class="sd">        User-provided input or output directory.</span>
+<span class="sd">    config_path : pathlib.Path</span>
+<span class="sd">        Path to the YAML configuration file.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pathlib.Path</span>
+<span class="sd">        Absolute normalized workspace path.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Relative workspace paths are interpreted relative to the directory</span>
+<span class="sd">    containing the YAML file rather than the current working directory.</span>
+<span class="sd">    """</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path_value</span><span class="p">)</span><span class="o">.</span><span class="n">expanduser</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="o">.</span><span class="n">is_absolute</span><span class="p">():</span> <span class="n">path</span> <span class="o">=</span> <span class="n">config_path</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="n">path</span>
+    <span class="k">return</span> <span class="n">path</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="load_config">
+<a class="viewcode-back" href="../../api.html#spatial_proteomics.configuration.load_config">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_config</span><span class="p">(</span><span class="n">config_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Load, validate, and normalize a SPPRAN YAML configuration file.</span>
+
+<span class="sd">    The function performs four steps:</span>
+
+<span class="sd">    1. Validate the configuration-file path.</span>
+<span class="sd">    2. Parse YAML safely while rejecting duplicate keys.</span>
+<span class="sd">    3. Validate and normalize the configuration schema.</span>
+<span class="sd">    4. Convert workspace paths to ``Path`` objects and verify that the</span>
+<span class="sd">       user-defined input and output directories exist.</span>
+
+<span class="sd">    Relative ``input_dir`` and ``output_dir`` values are resolved relative</span>
+<span class="sd">    to the YAML file's directory.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    config_path : str | Path</span>
+<span class="sd">        Path to the YAML configuration file.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict</span>
+<span class="sd">        Validated and normalized configuration dictionary. The returned</span>
+<span class="sd">        ``workspace.input_dir`` and ``workspace.output_dir`` values are</span>
+<span class="sd">        absolute ``Path`` objects.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    FileNotFoundError</span>
+<span class="sd">        If the configuration file, input directory, or output directory</span>
+<span class="sd">        does not exist.</span>
+<span class="sd">    IsADirectoryError</span>
+<span class="sd">        If ``config_path`` points to a directory instead of a file.</span>
+<span class="sd">    NotADirectoryError</span>
+<span class="sd">        If ``input_dir`` or ``output_dir`` exists but is not a directory.</span>
+<span class="sd">    ConfigValidationError</span>
+<span class="sd">        If the YAML is syntactically valid but contains invalid settings.</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If the YAML file cannot be parsed.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Configurations from before v0.3.0 that omit ``type_of_analysis`` are</span>
+<span class="sd">    normalized to ``"supervised"`` for backward compatibility.</span>
+<span class="sd">    """</span>
+    <span class="n">config_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span><span class="o">.</span><span class="n">expanduser</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">config_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span> <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Configuration file not found: '</span><span class="si">{</span><span class="n">config_path</span><span class="si">}</span><span class="s2">'."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">config_path</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span> <span class="k">raise</span> <span class="ne">IsADirectoryError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Configuration path '</span><span class="si">{</span><span class="n">config_path</span><span class="si">}</span><span class="s2">' exists, but it is not a file."</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">config_path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"r"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">Loader</span><span class="o">=</span><span class="n">UniqueKeyLoader</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">yaml</span><span class="o">.</span><span class="n">YAMLError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"There's an error parsing the configuration file '</span><span class="si">{</span><span class="n">config_path</span><span class="si">}</span><span class="s2">'. </span><span class="si">{</span><span class="n">REVIEW_YAML_MESSAGE</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+
+    <span class="n">config</span> <span class="o">=</span> <span class="n">_check_yaml</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+    <span class="n">input_dir</span> <span class="o">=</span> <span class="n">_resolve_workspace_path</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">"workspace"</span><span class="p">][</span><span class="s2">"input_dir"</span><span class="p">],</span> <span class="n">config_path</span><span class="p">,)</span>
+    <span class="n">output_dir</span> <span class="o">=</span> <span class="n">_resolve_workspace_path</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">"workspace"</span><span class="p">][</span><span class="s2">"output_dir"</span><span class="p">],</span> <span class="n">config_path</span><span class="p">,)</span>
+    <span class="n">config</span><span class="p">[</span><span class="s2">"workspace"</span><span class="p">][</span><span class="s2">"input_dir"</span><span class="p">]</span> <span class="o">=</span> <span class="n">input_dir</span>
+    <span class="n">config</span><span class="p">[</span><span class="s2">"workspace"</span><span class="p">][</span><span class="s2">"output_dir"</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_dir</span>
+    <span class="k">return</span> <span class="n">config</span></div>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"ConfigValidationError"</span><span class="p">,</span> <span class="s2">"load_config"</span><span class="p">,]</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

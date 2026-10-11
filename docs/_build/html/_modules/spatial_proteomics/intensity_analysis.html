@@ -1,0 +1,253 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>spatial_proteomics.intensity_analysis &mdash; SpPrAn 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            SpPrAn
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../desktop_app.html">Desktop application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../analysis_modes.html">Analysis modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../config_builder.html">SpPrAn Configuration Builder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../workflow.html">Analysis workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../configuration.html">Configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Running SpPrAn</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../outputs.html">Outputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release notes</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">Python API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">SpPrAn</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">spatial_proteomics.intensity_analysis</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for spatial_proteomics.intensity_analysis</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_read_intensities</span><span class="p">(</span><span class="n">adata_dicts</span><span class="p">,</span> <span class="n">which_pm</span> <span class="o">=</span> <span class="s1">'all'</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Extract protein marker intensity matrices from AnnData objects.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    adata_dicts : dict of str to anndata.AnnData</span>
+<span class="sd">        Per-sample AnnData objects.</span>
+<span class="sd">    which_pm : "all" or list of str, default="all"</span>
+<span class="sd">        AnnData variable names to retain.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict of str to pandas.DataFrame</span>
+<span class="sd">        Per-sample intensity matrices indexed by cell identifier.</span>
+<span class="sd">    """</span>
+    <span class="n">intensities_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">adata</span> <span class="ow">in</span> <span class="n">adata_dicts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">which_pm</span> <span class="o">==</span> <span class="s1">'all'</span><span class="p">:</span> <span class="n">intensities_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">adata</span><span class="o">.</span><span class="n">X</span><span class="p">,</span><span class="n">columns</span><span class="o">=</span><span class="n">adata</span><span class="o">.</span><span class="n">var_names</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="n">adata</span><span class="o">.</span><span class="n">obs_names</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="n">intensities_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">adata</span><span class="o">.</span><span class="n">X</span><span class="p">,</span><span class="n">columns</span><span class="o">=</span><span class="n">adata</span><span class="o">.</span><span class="n">var_names</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="n">adata</span><span class="o">.</span><span class="n">obs_names</span><span class="p">)[</span><span class="n">which_pm</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">intensities_dict</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_boxplot_calculation</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">pm_name</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Calculate Tukey box plot summary values for one protein marker.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    list of float</span>
+<span class="sd">        Lower whisker, Q1, median, Q3, and upper whisker using the 1.5-IQR rule.</span>
+<span class="sd">    """</span>
+    <span class="n">q1</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">pm_name</span><span class="p">]</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mf">0.25</span><span class="p">)</span>
+    <span class="n">median</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">pm_name</span><span class="p">]</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mf">0.50</span><span class="p">)</span>
+    <span class="n">q3</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">pm_name</span><span class="p">]</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mf">0.75</span><span class="p">)</span>
+    <span class="n">iqr</span> <span class="o">=</span> <span class="n">q3</span> <span class="o">-</span> <span class="n">q1</span>
+    <span class="n">lower_bound</span> <span class="o">=</span> <span class="n">q1</span> <span class="o">-</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="n">iqr</span>
+    <span class="n">upper_bound</span> <span class="o">=</span> <span class="n">q3</span> <span class="o">+</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="n">iqr</span>
+    <span class="n">inner_data</span> <span class="o">=</span> <span class="n">df</span><span class="p">[(</span><span class="n">df</span><span class="p">[</span><span class="n">pm_name</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">lower_bound</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">pm_name</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">upper_bound</span><span class="p">)][</span><span class="n">pm_name</span><span class="p">]</span>
+    <span class="n">lower_whisker</span> <span class="o">=</span> <span class="n">inner_data</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+    <span class="n">upper_whisker</span> <span class="o">=</span> <span class="n">inner_data</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">lower_whisker</span><span class="p">,</span> <span class="n">q1</span><span class="p">,</span> <span class="n">median</span><span class="p">,</span> <span class="n">q3</span><span class="p">,</span> <span class="n">upper_whisker</span><span class="p">]</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_boxplot_outliers</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">pm_name</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Return intensity observations outside the 1.5-IQR whisker range.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.Series</span>
+<span class="sd">        Sorted outlier intensity values.</span>
+<span class="sd">    """</span>
+    <span class="n">q1</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">pm_name</span><span class="p">]</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mf">0.25</span><span class="p">)</span>
+    <span class="n">q3</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">pm_name</span><span class="p">]</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mf">0.75</span><span class="p">)</span>
+    <span class="n">iqr</span> <span class="o">=</span> <span class="n">q3</span> <span class="o">-</span> <span class="n">q1</span>
+    <span class="n">lower_bound</span> <span class="o">=</span> <span class="n">q1</span> <span class="o">-</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="n">iqr</span>
+    <span class="n">upper_bound</span> <span class="o">=</span> <span class="n">q3</span> <span class="o">+</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="n">iqr</span>
+    <span class="n">outliers</span> <span class="o">=</span> <span class="n">df</span><span class="p">[(</span><span class="n">df</span><span class="p">[</span><span class="n">pm_name</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">lower_bound</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">pm_name</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">upper_bound</span><span class="p">)][</span><span class="n">pm_name</span><span class="p">]</span><span class="o">.</span><span class="n">sort_values</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">outliers</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_intensities_data</span><span class="p">(</span><span class="n">intensities_dict</span><span class="p">,</span><span class="n">adata_dicts</span><span class="p">,</span><span class="n">list_ct_short_name</span><span class="p">,</span><span class="n">output_dir</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Export box plot summary data by discovered phenotype.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    intensities_dict : dict of str to pandas.DataFrame</span>
+<span class="sd">        Per-sample protein marker intensity matrices.</span>
+<span class="sd">    adata_dicts : dict of str to anndata.AnnData</span>
+<span class="sd">        AnnData objects containing discovered phenotype labels.</span>
+<span class="sd">    list_ct_short_name : list of str</span>
+<span class="sd">        Short names of explored parent populations.</span>
+<span class="sd">    output_dir : pathlib.Path</span>
+<span class="sd">        Base directory for intensity analysis results.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+<span class="sd">        Per-sample/per-phenotype summaries and outlier tables are written as CSV.</span>
+<span class="sd">    """</span>
+    <span class="n">intensities_csv_dir_phen</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"results"</span> <span class="o">/</span> <span class="s2">"Intensity analysis"</span> <span class="o">/</span> <span class="s2">"By phenotype"</span>
+    <span class="n">intensities_csv_dir_phen</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">adata</span> <span class="ow">in</span> <span class="n">adata_dicts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">intensity_df</span> <span class="o">=</span> <span class="n">intensities_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="n">pm_list</span> <span class="o">=</span> <span class="n">intensity_df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">short_ct_name</span> <span class="ow">in</span> <span class="n">list_ct_short_name</span><span class="p">:</span>
+            <span class="n">host_column</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"sub</span><span class="si">{</span><span class="n">short_ct_name</span><span class="si">}</span><span class="s2"> phenotype"</span>
+            
+            <span class="n">list_host_names</span> <span class="o">=</span> <span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="n">host_column</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">phenotype</span> <span class="ow">in</span> <span class="n">list_host_names</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">phenotype</span><span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="n">title_name_1</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Box plot data - Sample </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">host_column</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">phenotype</span><span class="si">}</span><span class="s2">"</span>
+                <span class="n">save_namefile_1</span> <span class="o">=</span> <span class="n">intensities_csv_dir_phen</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">title_name_1</span><span class="si">}</span><span class="s2">.csv"</span>
+                <span class="n">title_name_2</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Box plot data - Sample </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">host_column</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">phenotype</span><span class="si">}</span><span class="s2"> - outliers"</span>
+                <span class="n">save_namefile_2</span> <span class="o">=</span> <span class="n">intensities_csv_dir_phen</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">title_name_2</span><span class="si">}</span><span class="s2">.csv"</span>
+
+                <span class="n">cell_ids</span> <span class="o">=</span> <span class="n">adata</span><span class="o">.</span><span class="n">obs_names</span><span class="p">[</span><span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="n">host_column</span><span class="p">]</span> <span class="o">==</span> <span class="n">phenotype</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+                <span class="n">filtered_df</span> <span class="o">=</span> <span class="n">intensity_df</span><span class="p">[</span><span class="n">intensity_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">cell_ids</span><span class="p">)]</span>
+
+                <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">'Metric'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'Lower_Whisker'</span><span class="p">,</span> <span class="s1">'Q1'</span><span class="p">,</span> <span class="s1">'Median (Q2)'</span><span class="p">,</span> <span class="s1">'Q3'</span><span class="p">,</span> <span class="s1">'Upper_Whisker'</span><span class="p">]}</span><span class="o">|</span><span class="p">{</span> <span class="n">pm_name</span><span class="p">:</span> <span class="n">_boxplot_calculation</span><span class="p">(</span><span class="n">filtered_df</span><span class="p">,</span><span class="n">pm_name</span><span class="p">)</span> <span class="k">for</span> <span class="n">pm_name</span> <span class="ow">in</span> <span class="n">pm_list</span> <span class="p">})</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">save_namefile_1</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span> <span class="n">pm_name</span><span class="p">:</span> <span class="n">_boxplot_outliers</span><span class="p">(</span><span class="n">filtered_df</span><span class="p">,</span><span class="n">pm_name</span><span class="p">)</span> <span class="k">for</span> <span class="n">pm_name</span> <span class="ow">in</span> <span class="n">pm_list</span> <span class="p">})</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">save_namefile_2</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<div class="viewcode-block" id="calculate_pm_intensity_analysis">
+<a class="viewcode-back" href="../../api.html#spatial_proteomics.intensity_analysis.calculate_pm_intensity_analysis">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">calculate_pm_intensity_analysis</span><span class="p">(</span><span class="n">adata_dicts</span><span class="p">,</span> <span class="n">list_ct_short_name</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">which_pm</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Export protein marker intensity summaries for discovered phenotypes.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    adata_dicts : dict of str to anndata.AnnData</span>
+<span class="sd">        AnnData objects containing discovered phenotype annotations.</span>
+<span class="sd">    list_ct_short_name : list of str</span>
+<span class="sd">        Short names of explored parent populations.</span>
+<span class="sd">    output_dir : pathlib.Path</span>
+<span class="sd">        SpPrAn output directory.</span>
+<span class="sd">    which_pm : list of str</span>
+<span class="sd">        Positivity column names whose corresponding intensity measurements</span>
+<span class="sd">        should be summarized. An empty list disables the analysis.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+<span class="sd">        Summary tables are written under the statistics/intensity output tree.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    This is descriptive output for box plot visualization; the function itself</span>
+<span class="sd">    does not perform inferential tests on marker intensity.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">which_pm</span><span class="p">)</span><span class="o">!=</span><span class="mi">0</span><span class="p">:</span>
+        <span class="n">positivity_column_names</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"results"</span> <span class="o">/</span> <span class="s2">"Positivity column names.csv"</span><span class="p">)</span>
+        <span class="n">epm_list</span> <span class="o">=</span> <span class="n">positivity_column_names</span><span class="p">[</span><span class="n">positivity_column_names</span><span class="p">[</span><span class="s2">"Positivity column names"</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">which_pm</span><span class="p">)][</span><span class="s2">"Name appearing in anndata file"</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">intensities_dict</span> <span class="o">=</span> <span class="n">_read_intensities</span><span class="p">(</span><span class="n">adata_dicts</span><span class="p">,</span> <span class="n">epm_list</span><span class="p">)</span>
+        <span class="n">_intensities_data</span><span class="p">(</span><span class="n">intensities_dict</span><span class="p">,</span> <span class="n">adata_dicts</span><span class="p">,</span> <span class="n">list_ct_short_name</span><span class="p">,</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"Statistics"</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

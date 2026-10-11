@@ -9,11 +9,18 @@ hierarchical cell populations and subtypes.
 SpPrAn can be run from Python/the command line or from a packaged desktop
 application for users who prefer a graphical workflow.
 
-.. note::
+Version 0.3.0
+-------------
 
-   SpPrAn assigns marker-defined phenotypes. Biological specificity depends on
-   the antibody panel, tissue context, segmentation strategy, staining
-   performance, and upstream positivity thresholds.
+SpPrAn 0.3.0 introduces separate supervised and unsupervised analysis
+workflows, plus an optional full phenotype-discovery workflow that connects
+exploratory phenotype discovery with the established supervised analysis.
+
+.. important::
+
+   SpPrAn phenotypes are protein-marker-defined operational annotations. Their
+   biological meaning depends on the antibody panel, tissue context,
+   segmentation strategy, staining performance, and positivity thresholds.
 
 .. toctree::
    :maxdepth: 2
@@ -21,11 +28,13 @@ application for users who prefer a graphical workflow.
 
    installation
    desktop_app
+   analysis_modes
    config_builder
    workflow
    configuration
    usage
    outputs
+   release_notes
 
 .. toctree::
    :maxdepth: 2

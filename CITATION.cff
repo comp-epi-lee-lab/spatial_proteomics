@@ -1,0 +1,76 @@
+cff-version: 1.2.0
+message: "If you use SpPrAn in your research, please cite the software using these metadata. Publications that have used SpPrAn are listed under references."
+title: "SpPrAn: Spatial Proteomics Analysis"
+type: software
+version: 0.3.0
+repository-code: "https://github.com/comp-epi-lee-lab/spatial_proteomics"
+url: "https://sppran.readthedocs.io/en/stable/"
+authors:
+  - family-names: "Zamora-Erazo"
+    given-names: "Sergio"
+    email: "sergio.zamorae@gmail.com"
+    affiliation: "Fox Chase Cancer Center, Philadelphia, Pennsylvania, USA"
+keywords:
+  - spatial proteomics
+  - single-cell analysis
+  - tumor microenvironment
+  - cancer bioinformatics
+  - phenotype analysis
+  - supervised analysis
+  - unsupervised analysis
+  - AnnData
+references:
+  - type: article
+    title: "Multipronged enhancement of CART cell activity against ROR1 neoantigen by inhibition of H3K27 methyltransferase EZH2"
+    authors:
+      - family-names: "Wang"
+        given-names: "Shengchun"
+      - family-names: "Lobello"
+        given-names: "Cosimo"
+      - family-names: "Gupta"
+        given-names: "Pradeep"
+      - family-names: "Francis"
+        given-names: "Roniya"
+      - family-names: "Vistarop"
+        given-names: "Aldana"
+      - family-names: "Shah"
+        given-names: "Bhaumik"
+      - family-names: "Zamora-Erazo"
+        given-names: "Sergio"
+      - family-names: "Ahmed"
+        given-names: "Fahad"
+      - family-names: "Rushmore"
+        given-names: "David"
+      - family-names: "Kalgren"
+        given-names: "Andrew"
+      - family-names: "Nelson"
+        given-names: "David"
+      - family-names: "Dupoux"
+        given-names: "Vanessa"
+      - family-names: "Basappa"
+        given-names: "Johnvesly"
+      - family-names: "Baldwin"
+        given-names: "Don A."
+      - family-names: "Fung"
+        given-names: "Henry"
+      - family-names: "Jillab"
+        given-names: "Mowafaq"
+      - family-names: "Lee"
+        given-names: "Hayan"
+      - family-names: "Cai"
+        given-names: "K. Qi"
+      - family-names: "Nejati"
+        given-names: "Reza"
+      - family-names: "Boldajipour"
+        given-names: "Bijan"
+      - family-names: "Franco-Barraza"
+        given-names: "Janusz"
+      - family-names: "Lee"
+        given-names: "Gary"
+      - family-names: "Nath"
+        given-names: "Kavindra"
+      - family-names: "Wasik"
+        given-names: "Mariusz A."
+    journal: "Cell Reports Medicine"
+    year: 2026
+    doi: "10.1016/j.xcrm.2026.103060"

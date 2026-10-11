@@ -3,6 +3,30 @@ from spatial_proteomics.phenotype_analysis import unsupervised_phenotype_explora
 from spatial_proteomics.intensity_analysis import calculate_pm_intensity_analysis
 
 def _apply_unsupervised_mode(adata_dicts, config):
+    """
+    Run the exploratory protein marker-pattern analysis within selected cell populations.
+
+    Parameters
+    ----------
+    adata_dicts : dict of str to anndata.AnnData
+        Per-sample AnnData objects containing major cell-type annotations.
+    config : dict
+        Validated unsupervised/full-mode configuration containing selected
+        parent populations, exploratory protein markers, optional sample groups, and
+        optional intensity markers.
+
+    Returns
+    -------
+    dict of str to anndata.AnnData or None
+        Updated AnnData objects are returned when ``type_of_analysis`` is
+        ``"full"`` so discovered phenotypes can continue to the supervised
+        workflow. Standard ``"unsupervised"`` mode returns ``None``.
+
+    Notes
+    -----
+    This workflow performs exploratory protein marker-pattern discovery within
+    user-defined major cell types. It is not latent-space clustering.
+    """
     output_dir = config['workspace']['output_dir']
     calculate_cell_proportion_matrix(
         adata_dicts              = adata_dicts,

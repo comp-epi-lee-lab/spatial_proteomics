@@ -1,0 +1,220 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analysis modes &mdash; SpPrAn 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=e259d695"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="SpPrAn Configuration Builder" href="config_builder.html" />
+    <link rel="prev" title="Desktop application" href="desktop_app.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SpPrAn
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="desktop_app.html">Desktop application</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Analysis modes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#supervised-mode">Supervised mode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#unsupervised-mode">Unsupervised mode</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#two-group-comparison">Two-group comparison</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#marker-intensity-summaries">Marker-intensity summaries</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#full-phenotype-discovery">Full phenotype discovery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#biological-interpretation">Biological interpretation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="config_builder.html">SpPrAn Configuration Builder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">Analysis workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Running SpPrAn</a></li>
+<li class="toctree-l1"><a class="reference internal" href="outputs.html">Outputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release_notes.html">Release notes</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Python API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SpPrAn</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Analysis modes</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/analysis_modes.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="analysis-modes">
+<h1>Analysis modes<a class="headerlink" href="#analysis-modes" title="Link to this heading"></a></h1>
+<p>SpPrAn 0.3.0 provides two user-facing choices in the Configuration Builder:
+<strong>Supervised</strong> and <strong>Unsupervised</strong>. A third configuration value, <code class="docutils literal notranslate"><span class="pre">full</span></code>, is
+used when optional full phenotype discovery is enabled.</p>
+<section id="supervised-mode">
+<h2>Supervised mode<a class="headerlink" href="#supervised-mode" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">type_of_analysis:</span> <span class="pre">supervised</span></code></p>
+<p>Supervised mode is hypothesis-driven. Users define major cell types and,
+optionally, nested subtypes using protein-marker positivity rules.</p>
+<p>Use this mode when the protein marker combinations defining the populations of interest
+are known in advance.</p>
+<p>The workflow includes:</p>
+<ul class="simple">
+<li><p>primary cell-type annotation;</p></li>
+<li><p>hierarchical subtype annotation;</p></li>
+<li><p>cell counts and proportions;</p></li>
+<li><p>phenotype-hierarchy outputs; and</p></li>
+<li><p>spatial overview, highlight, or custom plots.</p></li>
+</ul>
+</section>
+<section id="unsupervised-mode">
+<h2>Unsupervised mode<a class="headerlink" href="#unsupervised-mode" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">type_of_analysis:</span> <span class="pre">unsupervised</span></code></p>
+<p>Unsupervised mode keeps major cell types user-defined, but discovers
+subphenotypes from observed combinations of selected exploratory protein markers within
+one or more of those parent populations.</p>
+<p>The term <strong>unsupervised</strong> does not mean that all cells are clustered without
+prior biological information. Parent populations remain protein-marker-rule-defined.
+The exploratory step enumerates observed binary protein marker patterns within them.</p>
+<p>The workflow can generate:</p>
+<ul class="simple">
+<li><p>sample-by-cell-type proportion matrices;</p></li>
+<li><p>optional sample-level pie plots;</p></li>
+<li><p>observed phenotype labels and protein-marker-pattern mappings;</p></li>
+<li><p>phenotype proportions within selected parent populations;</p></li>
+<li><p>optional two-group phenotype comparisons; and</p></li>
+<li><p>optional protein-marker intensity summaries.</p></li>
+</ul>
+<section id="two-group-comparison">
+<h3>Two-group comparison<a class="headerlink" href="#two-group-comparison" title="Link to this heading"></a></h3>
+<p>Samples can optionally be assigned to two groups, such as Control and
+Treatment. For phenotypes found in both groups, SpPrAn can report descriptive
+summaries and perform:</p>
+<ul class="simple">
+<li><p>two-sided Mann–Whitney U tests;</p></li>
+<li><p>Welch independent-samples t-tests; and</p></li>
+<li><p>Benjamini–Hochberg FDR correction.</p></li>
+</ul>
+<p>Group-specific phenotypes are also reported.</p>
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p>Statistical significance should be interpreted together with biological
+sample size, phenotype-detection frequency, effect magnitude, multiple-test
+correction, and experimental design.</p>
+</div>
+</section>
+<section id="marker-intensity-summaries">
+<h3>Marker-intensity summaries<a class="headerlink" href="#marker-intensity-summaries" title="Link to this heading"></a></h3>
+<p>Selected protein-marker intensities can be summarized within discovered
+phenotypes. SpPrAn exports Tukey-style box-plot summary values and outliers for
+downstream visualization.</p>
+</section>
+</section>
+<section id="full-phenotype-discovery">
+<h2>Full phenotype discovery<a class="headerlink" href="#full-phenotype-discovery" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">type_of_analysis:</span> <span class="pre">full</span></code></p>
+<p>The Configuration Builder exposes full phenotype discovery as an option in the
+unsupervised workflow.</p>
+<p>Full mode:</p>
+<ol class="arabic simple">
+<li><p>runs unsupervised protein-marker-pattern discovery;</p></li>
+<li><p>combines the observed phenotype definitions across samples;</p></li>
+<li><p>converts those protein marker patterns into SpPrAn subtype definitions;</p></li>
+<li><p>regenerates annotated AnnData objects; and</p></li>
+<li><p>continues through the supervised workflow.</p></li>
+</ol>
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p>If the total of discovered phenotypes for a cell type is higher than 512,
+they will be omitted from the supervised analysis.</p>
+</div>
+</section>
+<section id="biological-interpretation">
+<h2>Biological interpretation<a class="headerlink" href="#biological-interpretation" title="Link to this heading"></a></h2>
+<p>A discovered phenotype is an observed combination of protein marker positivity states
+within a defined parent population. It is not automatically a distinct cell
+lineage, differentiation state, or functional state.</p>
+<p>Interpret the phenotype using the tissue context and the known specificity and
+function of the protein markers in the panel.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="desktop_app.html" class="btn btn-neutral float-left" title="Desktop application" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="config_builder.html" class="btn btn-neutral float-right" title="SpPrAn Configuration Builder" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

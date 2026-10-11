@@ -1,3 +1,15 @@
+"""
+Exploratory marker-defined phenotype analysis for SpPrAn.
+
+This module identifies observed binary protein marker patterns within selected
+major cell populations, calculates phenotype abundance, stores phenotype labels
+and marker definitions in AnnData objects, and optionally compares phenotype
+abundance between two user-defined sample groups.
+
+The workflow enumerates observed marker patterns rather than performing
+latent-space clustering.
+"""
+
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -12,7 +24,26 @@ from spatial_proteomics.utils import median_iqr, save_anndata_files
 import logging
 logger = logging.getLogger(__name__)
 
-def _pehontypes_proportion_matrix(results_dir, subCT_dict, ct_short, overwrite_existing_files=False):
+def _phenotypes_proportion_matrix(results_dir, subCT_dict, ct_short, overwrite_existing_files=False):
+    """
+    Export a sample-by-phenotype proportion matrix for one parent population.
+
+    Parameters
+    ----------
+    results_dir : pathlib.Path
+        Base statistics-results directory.
+    subCT_dict : dict of str to pandas.DataFrame
+        Per-sample phenotype tables containing host names and proportions.
+    ct_short : str
+        Short name of the parent cell population.
+    overwrite_existing_files : bool, default=False
+        Whether an existing matrix may be replaced.
+
+    Returns
+    -------
+    None
+        The phenotype-proportion matrix is written as CSV.
+    """
     save_filepath = results_dir / "Phenotypes proportion"
     save_filepath.mkdir(parents=True, exist_ok=True)
     save_namefile = save_filepath / f"Phenotypes proportion matrix - sub{ct_short}.csv"
@@ -20,9 +51,41 @@ def _pehontypes_proportion_matrix(results_dir, subCT_dict, ct_short, overwrite_e
         logger.warning(f"File 'Phenotypes proportion matrix.csv' already exists...")
     else:
         pd.concat([df[['Host name','Proportion']].set_index('Host name').rename(columns={'Proportion':key}).apply(lambda x:x.str.replace('%','').astype(float)) for key,df in subCT_dict.items()], axis=1).to_csv(save_namefile)
-    logger.warning(f'Phenotype proportion matrix for {ct_short} saved!')
+        logger.warning(f'Phenotype proportion matrix for {ct_short} saved!')
 
 def _filtering_phenotypes(df_tt,subCT_dict, dictionary, samples_id, subCT_OG_dict, apply_filter=False, zeroes_for_statistics = False):
+    """
+    Summarize phenotype abundance and detection frequency across a sample group.
+
+    Parameters
+    ----------
+    df_tt : pandas.DataFrame
+        Phenotype table indexed by phenotype host name.
+    subCT_dict : dict of str to pandas.DataFrame
+        Filtered per-sample phenotype-proportion tables.
+    dictionary : dict
+        Mapping from sample filenames to the group label.
+    samples_id : pandas.DataFrame
+        Mapping between SpPrAn sample identifiers and source filenames.
+    subCT_OG_dict : dict of str to pandas.DataFrame
+        Unfiltered per-sample phenotype tables.
+    apply_filter : bool, default=False
+        Whether detection-frequency filter columns should be added.
+    zeroes_for_statistics : bool, default=False
+        Whether non-detected samples contribute zero phenotype abundance.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Group-level phenotype summaries including detected-only and
+        zero-inclusive abundance information.
+
+    Notes
+    -----
+    Conditional summaries use only samples in which the phenotype was detected.
+    Zero-inclusive values answer a different biological/statistical question
+    and include absence of the phenotype across samples.
+    """
     df_tt['Proportion Average'] = 0.0
     df_tt['Standard deviation'] = 0.0
     df_tt['Conditional Proportion Average'] = 0.0
@@ -86,6 +149,14 @@ def _filtering_phenotypes(df_tt,subCT_dict, dictionary, samples_id, subCT_OG_dic
     return df_tt
 
 def _count_phenotypes(subCT_dict, dictionary, results_dir, subCT_OG_dict, apply_filter=False, zeroes_for_statistics=False):
+    """
+    Count phenotype detections across samples in one experimental group.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Phenotype detection counts and abundance summaries for the group.
+    """
     all_phenotypes = []
     samples_id = pd.read_csv(results_dir / 'Samples Id.csv', dtype=str)
     samples_id.set_index('Samples Id', inplace=True)
@@ -100,6 +171,29 @@ def _count_phenotypes(subCT_dict, dictionary, results_dir, subCT_OG_dict, apply_
     return df_tt
 
 def _common_n_unique_phenotypes(df_phenotypes_ctrl, name_ctrl, df_phenotypes_trtmnt, name_trtmnt, short_ct_name, results_dir, overwrite_existing_files=False, second_filter = None):
+    """
+    Separate phenotypes into common and group-specific sets.
+
+    Parameters
+    ----------
+    df_phenotypes_ctrl, df_phenotypes_trtmnt : pandas.DataFrame
+        Phenotype summaries for the two comparison groups.
+    name_ctrl, name_trtmnt : str
+        Display names of the groups.
+    short_ct_name : str
+        Short name of the parent population.
+    results_dir : pathlib.Path
+        Statistics-results directory.
+    overwrite_existing_files : bool, default=False
+        Whether existing outputs may be replaced.
+    second_filter : int or None, default=None
+        Optional detection-frequency filter percentage.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Phenotypes detected in both groups and their abundance summaries.
+    """
     results_dir_to_save = results_dir / f"sub{short_ct_name} split test analysis"
     results_dir_to_save.mkdir(parents=True, exist_ok=True)
     save_namefile_all = results_dir_to_save / f"Common sub{short_ct_name}.csv"
@@ -152,7 +246,7 @@ def _common_n_unique_phenotypes(df_phenotypes_ctrl, name_ctrl, df_phenotypes_trt
     
     if save_namefile_all.exists() and not overwrite_existing_files: 
         logger.warning(f"File 'Common sub{short_ct_name}.csv' already exists...")
-        return pd.read_csv(save_namefile_all, index_col=0), None, None
+        return pd.read_csv(save_namefile_all, index_col=0)
 
     df_together.to_csv(save_namefile_all)
     df_together[f"{name_ctrl} Prop Values"] = df_phenotypes_ctrl.loc[together_list].sort_values(by="Conditional Proportion Average", ascending=False)["Proportions"].copy()
@@ -163,6 +257,44 @@ def _common_n_unique_phenotypes(df_phenotypes_ctrl, name_ctrl, df_phenotypes_trt
     return df_together
 
 def _plotting_table(df_together, name_ctrl, name_trtmnt, pvals, caption_text, short_ct_name, plots_dir, test_name="test", dpi=300, bbox_inches="tight", filter_applied=True, second_filter=None, overwrite_existing_files=False, max_phenotypes_per_plot=12, ctrl_values_column=None, trtmnt_values_column=None):
+    """
+    Plot paginated two-group phenotype-abundance comparisons.
+
+    Parameters
+    ----------
+    df_together : pandas.DataFrame
+        Common-phenotype comparison table.
+    name_ctrl, name_trtmnt : str
+        Group labels.
+    pvals : array-like
+        Nominal p-values shown beside each phenotype.
+    caption_text : str
+        Figure-caption text.
+    short_ct_name : str
+        Short name of the parent population.
+    plots_dir : pathlib.Path
+        Destination directory.
+    test_name : str, default="test"
+        Statistical-test label used in output filenames.
+    dpi : int, default=300
+        Figure resolution.
+    filter_applied : bool, default=True
+        Whether results correspond to filtered phenotype tables.
+    second_filter : int or None, default=None
+        Optional secondary filter identifier.
+    overwrite_existing_files : bool, default=False
+        Whether existing figures may be replaced.
+    max_phenotypes_per_plot : int, default=12
+        Maximum phenotypes displayed per page.
+    ctrl_values_column, trtmnt_values_column : str or None
+        Columns containing per-sample abundance vectors.
+
+    Returns
+    -------
+    None
+        Plot images and phenotype-ID mappings are written below the
+        ``Statistics`` output directory.
+    """
     plots_dir.mkdir(parents=True, exist_ok=True)
 
     if max_phenotypes_per_plot < 1:
@@ -272,6 +404,40 @@ def _plotting_table(df_together, name_ctrl, name_trtmnt, pvals, caption_text, sh
         logger.warning(f"Saved boxplot for {short_ct_name}.")
 
 def _common_phenotypes_differences_analysis(df_together, name_ctrl, name_trtmnt, short_ct_name, output_dir, filter_applied=True, second_filter = None, overwrite_existing_files=False):
+    """
+    Compare common phenotype abundances between two sample groups.
+
+    Parameters
+    ----------
+    df_together : pandas.DataFrame
+        Common-phenotype table containing per-sample abundance vectors.
+    name_ctrl, name_trtmnt : str
+        Names of the two comparison groups.
+    short_ct_name : str
+        Short name of the parent population.
+    output_dir : pathlib.Path
+        SpPrAn output directory.
+    filter_applied : bool, default=True
+        Whether the analysis uses filtered phenotype tables.
+    second_filter : int or None, default=None
+        Optional secondary detection-frequency filter.
+    overwrite_existing_files : bool, default=False
+        Whether existing outputs may be replaced.
+
+    Returns
+    -------
+    None
+        Statistical summaries and comparison plots are written below the
+        ``Statistics`` output directory.
+
+    Notes
+    -----
+    The function performs two-sided Mann–Whitney U and Welch independent-sample
+    t-tests. Benjamini–Hochberg FDR-adjusted p-values are also calculated.
+
+    Statistical interpretation should consider biological sample size,
+    phenotype detection frequency, effect magnitude, and multiplicity.
+    """
     results_dir = output_dir / "Statistics" / "results" / f"sub{short_ct_name} split test analysis"
     plots_dir = output_dir / "Statistics" / "plots" / "phenotypes differences analysis"
     results_dir.mkdir(parents=True, exist_ok=True)
@@ -335,6 +501,25 @@ def _common_phenotypes_differences_analysis(df_together, name_ctrl, name_trtmnt,
 
 
 def _naming_phenotypes(CST_markers, initials_CST, short_ct_name, observed_numbers):
+    """
+    Create names and marker patterns for observed binary phenotypes.
+
+    Parameters
+    ----------
+    CST_markers : list of str
+        Protein marker columns represented by the binary phenotype code.
+    initials_CST : list of str
+        Short protein marker names used in readable phenotype labels.
+    short_ct_name : str
+        Short name of the parent population.
+    observed_numbers : array-like of int
+        Integer-encoded protein marker patterns observed in the data.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Integer codes, binary patterns, protein marker labels, and generated host names.
+    """
     n_markers = len(CST_markers)
     df_bin = pd.DataFrame({"number": sorted(set(observed_numbers))})
     df_bin["binary"] = [format(n, f"0{n_markers}b") for n in df_bin["number"]]
@@ -344,6 +529,48 @@ def _naming_phenotypes(CST_markers, initials_CST, short_ct_name, observed_number
     return df_bin
 
 def _calculate_unsupervised_subCT_proportions(adata_dicts, adata_dir, pheno_dict, phenotype_codes_dict, exploratory_protein_markers, output_dir, short_ct_name, ct_name="cells", use_filter=True, overwrite_existing_files=False, min_proportion=0.005):
+    """
+    Annotate discovered phenotypes and calculate their within-parent abundance.
+
+    Parameters
+    ----------
+    adata_dicts : dict of str to anndata.AnnData
+        Per-sample annotated data.
+    adata_dir : pathlib.Path
+        Directory used when updated AnnData files are saved.
+    pheno_dict : dict of str to pandas.DataFrame
+        Per-sample phenotype-code lookup tables.
+    phenotype_codes_dict : dict of str to numpy.ndarray
+        Integer phenotype code for every cell in each sample.
+    exploratory_protein_markers : list of str
+        Protein markers represented by the discovered patterns.
+    output_dir : pathlib.Path
+        SpPrAn output directory.
+    short_ct_name : str
+        Short name of the parent population.
+    ct_name : str, default="cells"
+        Parent cell type within which proportions are calculated.
+    use_filter : bool, default=True
+        Whether low-abundance phenotypes are filtered from exported tables.
+    overwrite_existing_files : bool, default=False
+        Whether existing phenotype files may be replaced.
+    min_proportion : float, default=0.005
+        Minimum within-parent proportion retained when filtering.
+
+    Returns
+    -------
+    subCT_dict : dict of str to pandas.DataFrame
+        Filtered per-sample phenotype tables.
+    adata_dicts : dict of str to anndata.AnnData
+        Updated AnnData objects containing phenotype labels/patterns.
+    subCT_OG_dict : dict of str to pandas.DataFrame
+        Unfiltered per-sample phenotype tables.
+
+    Notes
+    -----
+    Proportions are relative to the selected parent cell type, not all cells in
+    the tissue sample.
+    """
     statistics_results_dir = output_dir / "Statistics" / "results"
     save_filepath = ( statistics_results_dir / f"sub{short_ct_name} cell proportions")
     save_filepath.mkdir(parents=True, exist_ok=True)
@@ -422,6 +649,44 @@ def _calculate_unsupervised_subCT_proportions(adata_dicts, adata_dir, pheno_dict
     return subCT_dict, adata_dicts, subCT_OG_dict
 
 def unsupervised_phenotype_exploration_analysis(adata_dicts, adata_dir, exploratory_protein_markers, exploratory_protein_markers_short_name, cell_types_to_explore, cell_types_to_explore_short_name, dict_ctrl, dict_trtmnt, output_dir,overwrite_existing_files):
+    """
+    Discover and quantify observed protein marker-defined phenotypes.
+
+    Parameters
+    ----------
+    adata_dicts : dict of str to anndata.AnnData
+        Samples containing major cell-type annotations and binary positivity
+        data.
+    adata_dir : pathlib.Path
+        Directory used to save updated AnnData objects.
+    exploratory_protein_markers : list of str
+        Positivity protein markers selected for phenotype discovery.
+    exploratory_protein_markers_short_name : list of str
+        Short names corresponding to the exploratory protein markers.
+    cell_types_to_explore : list of str
+        Major cell populations in which phenotypes are quantified.
+    cell_types_to_explore_short_name : list of str
+        Short names corresponding to the selected parent populations.
+    dict_ctrl, dict_trtmnt : dict or None
+        Optional filename-to-group mappings. Both are required for group
+        comparison.
+    output_dir : pathlib.Path
+        SpPrAn output directory.
+    overwrite_existing_files : bool
+        Whether existing outputs may be replaced.
+
+    Returns
+    -------
+    dict of str to anndata.AnnData
+        Updated AnnData objects containing discovered phenotype labels and
+        protein marker-pattern mappings.
+
+    Notes
+    -----
+    Phenotypes correspond to observed binary positivity combinations rather
+    than clusters. When two groups are supplied, common phenotype proportions
+    are statistically compared and group-specific phenotypes are reported.
+    """
     logger.warning("Started unsupervised_phenotype_exploration_analysis")
     adata_dicts_updated = adata_dicts
     statistics_results_dir = output_dir / "Statistics" / "results" 
@@ -450,7 +715,7 @@ def unsupervised_phenotype_exploration_analysis(adata_dicts, adata_dir, explorat
             pheno_dict[k] = df_bin
 
         subCT_dict, adata_dicts_updated, subCT_OG_dict = _calculate_unsupervised_subCT_proportions( adata_dicts=adata_dicts_updated, adata_dir=adata_dir, pheno_dict=pheno_dict, phenotype_codes_dict=phenotype_codes_dict, exploratory_protein_markers=exploratory_protein_markers, output_dir=output_dir, short_ct_name=cell_type_to_explore_short_name, ct_name=cell_type_to_explore, use_filter=True, overwrite_existing_files=overwrite_existing_files, min_proportion=0.005)
-        _pehontypes_proportion_matrix(results_dir=statistics_results_dir, subCT_dict = subCT_dict, ct_short = cell_type_to_explore_short_name, overwrite_existing_files=overwrite_existing_files)
+        _phenotypes_proportion_matrix(results_dir=statistics_results_dir, subCT_dict = subCT_dict, ct_short = cell_type_to_explore_short_name, overwrite_existing_files=overwrite_existing_files)
 
         if dict_ctrl is not None or dict_trtmnt is not None:
             df_phenotypes_ctrl = _count_phenotypes(subCT_dict, dict_ctrl, results_og_dir, subCT_OG_dict, zeroes_for_statistics=True)

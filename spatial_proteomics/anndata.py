@@ -307,6 +307,9 @@ def sets_and_subsets_cell_types(cell_type_dict, sub_cell_type_dict, protein_mark
         Hexadecimal color assigned to each phenotype.
     arrows_orientation : {"contains", "isContained"}, default="contains"
         Direction used to display relationships in hierarchy diagrams.
+    type_of_analysis : {"supervised", "unsupervised", "full"}, default="supervised"
+        Active analysis mode. The user-defined hierarchy figure is generated only
+        for the supervised workflow at this stage.
 
     Returns
     -------
@@ -490,6 +493,8 @@ def labeling_cell_types(data_dicts, adata_dicts, cell_type_dict, sub_cell_type_d
         Whether updated AnnData objects should be written to disk.
     arrows_orientation : {"contains", "isContained"}, default="contains"
         Orientation used for hierarchy diagrams.
+    type_of_analysis : {"supervised", "unsupervised", "full"}, default="supervised"
+        Active analysis mode propagated to hierarchy-processing logic.
 
     Returns
     -------
@@ -587,6 +592,26 @@ def labeling_cell_types(data_dicts, adata_dicts, cell_type_dict, sub_cell_type_d
     return adata_dicts
 
 def _anndata_generator(config, output_dir):
+    """
+    Generate and annotate AnnData objects from configured input files.
+
+    Parameters
+    ----------
+    config : dict
+        Validated SpPrAn configuration.
+    output_dir : pathlib.Path
+        Output directory used for generated metadata and optional AnnData files.
+
+    Returns
+    -------
+    dict of str to anndata.AnnData
+        Newly generated and protein marker annotated samples.
+
+    Raises
+    ------
+    ValueError
+        If no AnnData objects can be generated from the configured input files.
+    """
     logger.warning("Generating anndata files for analysis...")
     file_names = filenames(config['workspace']['input_dir'], config['workspace']['filetype'])
     cell_type_dict = create_cell_type_dict(config['protein_markers'], config['cell_types'])

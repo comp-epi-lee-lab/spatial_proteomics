@@ -17,7 +17,8 @@ setup(
         'scipy>=1.17.1',
         'seaborn>=0.13.2',
         'squidpy>=1.8.1',
-        "statsmodels>=0.14.6"
+        "statsmodels>=0.14.6",
+        "networkx>=3.6.1",
     ],
     entry_points={
         'console_scripts': [

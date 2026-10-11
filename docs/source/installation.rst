@@ -6,13 +6,13 @@ SpPrAn can be used as a packaged desktop application or installed from source.
 Desktop application
 -------------------
 
-Precompiled Windows and macOS builds are distributed through GitHub Releases
-when available. See :doc:`desktop_app`.
+Pre-built Windows and macOS applications are distributed through GitHub
+Releases. See :doc:`desktop_app`.
 
 Install from source
 -------------------
 
-SpPrAn requires Python 3.12 or newer.
+SpPrAn 0.3.0 requires Python 3.12 or newer.
 
 .. code-block:: bash
 
