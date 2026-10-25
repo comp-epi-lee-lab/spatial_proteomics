@@ -168,6 +168,7 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .option-card { border: 1px solid var(--border); border-radius: 10px; padding: 14px; background: var(--surface-soft); }
 .option-card label { display: flex; align-items: flex-start; gap: 9px; margin: 0; cursor: pointer; }
 .option-card input[type="checkbox"] { margin-top: 4px; }
+.option-card [hidden] { display: none !important; }
 .group-name-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 12px; }
 .unsup-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 @media (max-width: 820px) { .mode-cards, .group-name-row { grid-template-columns: 1fr; } .unsup-cell-header { grid-template-columns: 1fr; } .unsup-short-grid { grid-template-columns: 1fr; } }
@@ -437,8 +438,45 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 
     <section class="panel">
       <div class="panel-heading">
-        <div><h2>Group-comparison analysis</h2><p>Optionally assign samples to two groups to compare discovered phenotypes between them. Samples may also remain unassigned.</p></div>
+        <div><h2>Optional spatial and phenotype analyses</h2><p>Choose additional analyses and plots to generate after phenotype discovery.</p></div>
         <span class="step-badge">6</span>
+      </div>
+
+      <div class="option-card">
+        <label>
+          <input type="checkbox" id="unsupIntensitySpatialPlot" />
+          <span><strong>Protein marker intensity spatial plots</strong><br><span class="small">Create spatial maps that color individual cells by protein-marker intensity. A separate plot is generated for each sample and each detected protein marker.</span></span>
+        </label>
+        <div id="unsupIntensitySpatialPlotSettings" class="grid" style="margin-top:14px;" hidden>
+          <div class="field"><label for="unsupIntensitySpatialDpi">Plot DPI</label><input id="unsupIntensitySpatialDpi" type="number" min="1" value="150" /></div>
+          <div class="field"><label for="unsupIntensitySpatialPointSize">Scatter-point size</label><input id="unsupIntensitySpatialPointSize" type="number" min="0" step="any" value="50" /></div>
+        </div>
+      </div>
+
+      <div class="option-card" style="margin-top:14px;">
+        <label>
+          <input type="checkbox" id="unsupNeighborhoodAnalysis" />
+          <span><strong>Neighborhood analysis</strong><br><span class="small">Measure which cell populations tend to be near each other, how frequently they interact, and how their spatial association changes across distance.</span></span>
+        </label>
+        <div id="unsupNeighborhoodSettings" style="margin-top:14px;" hidden>
+          <div class="grid">
+            <div class="field"><label for="unsupNhoodRadius">Neighborhood radius size</label><input id="unsupNhoodRadius" type="number" min="0" step="any" value="50" /><p class="small">Radius around each cell used to define its local neighborhood. The unit follows the coordinates in the input data.</p></div>
+            <div class="field"><label for="unsupPixelConversionRate">Pixel conversion rate</label><input id="unsupPixelConversionRate" type="number" min="0" step="any" value="1" /><p class="small">Conversion factor applied to the neighborhood radius when image coordinates require scaling.</p></div>
+            <div class="field"><label for="unsupMaxDistanceCoocurrence">Maximum distance for co-occurrence plot</label><input id="unsupMaxDistanceCoocurrence" type="number" min="0" step="any" value="200" /><p class="small">Largest distance displayed when summarizing how often cell populations occur near one another.</p></div>
+            <div class="field"><label for="unsupNhoodDpi">Plot DPI</label><input id="unsupNhoodDpi" type="number" min="1" value="150" /></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="option-card" style="margin-top:14px;">
+        <label><input type="checkbox" id="unsupAdvancedClassification" /><span><strong>Advanced phenotype classification</strong><br><span class="small">After phenotypes are discovered, further characterize them using low, medium, and high protein-intensity levels within each sample. This adds expression-strength information to the discovered phenotype profiles without changing the initial discovery step.</span></span></label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <div><h2>Group-comparison analysis</h2><p>Optionally assign samples to two groups to compare discovered phenotypes between them. Samples may also remain unassigned.</p></div>
+        <span class="step-badge">7</span>
       </div>
       <div class="group-name-row">
         <div class="field"><label for="unsupControlName">Group 1 name</label><input id="unsupControlName" type="text" value="Control" /></div>
@@ -457,7 +495,7 @@ button:disabled { opacity: .55; cursor: not-allowed; }
     <section class="panel">
       <div class="panel-heading">
         <div><h2>Intensity box-plot data</h2><p>Optionally select protein markers whose intensity measurements should be exported for downstream box-plot analysis.</p></div>
-        <span class="step-badge">7</span>
+        <span class="step-badge">8</span>
       </div>
       <div id="unsupIntensityMarkers"></div>
     </section>
@@ -465,7 +503,7 @@ button:disabled { opacity: .55; cursor: not-allowed; }
     <section class="panel">
       <div class="panel-heading">
         <div><h2>Configuration preview and download</h2><p>Review the unsupervised configuration before saving it.</p></div>
-        <span class="step-badge">8</span>
+        <span class="step-badge">9</span>
       </div>
       <div class="actions"><button id="unsupPreviewYaml" type="button">Preview configuration file</button><button id="unsupDownloadYaml" type="button" class="primary">Download configuration file</button></div>
       <pre id="unsupYamlPreview" class="yaml-preview">(click “Preview configuration file”)</pre>
@@ -533,7 +571,10 @@ const unsupState = {
   intensityMarkers: [],
   groupFiles: [],
   groupAssignments: {},
-  fullPhenotypeDiscovery: false
+  fullPhenotypeDiscovery: false,
+  intensitySpatialPlot: false,
+  neighborhoodAnalysis: false,
+  advancedCellClassification: false
 };
 
 function suggestProteinMarkerShortName(cleanedMarker) {
@@ -638,6 +679,25 @@ document.getElementById('unsupOtherCellsColor').addEventListener('input', event 
 
 document.getElementById('unsupFullPhenotype').addEventListener('change', event => {
   unsupState.fullPhenotypeDiscovery = event.target.checked;
+});
+
+function updateUnsupervisedOptionalAnalysisVisibility() {
+  document.getElementById('unsupIntensitySpatialPlotSettings').hidden = !unsupState.intensitySpatialPlot;
+  document.getElementById('unsupNeighborhoodSettings').hidden = !unsupState.neighborhoodAnalysis;
+}
+
+document.getElementById('unsupIntensitySpatialPlot').addEventListener('change', event => {
+  unsupState.intensitySpatialPlot = event.target.checked;
+  updateUnsupervisedOptionalAnalysisVisibility();
+});
+
+document.getElementById('unsupNeighborhoodAnalysis').addEventListener('change', event => {
+  unsupState.neighborhoodAnalysis = event.target.checked;
+  updateUnsupervisedOptionalAnalysisVisibility();
+});
+
+document.getElementById('unsupAdvancedClassification').addEventListener('change', event => {
+  unsupState.advancedCellClassification = event.target.checked;
 });
 
 function renderUnsupervisedPrimaryMarkers() {
@@ -927,6 +987,10 @@ function renderUnsupervisedAll() {
   renderUnsupervisedGroupTable();
   document.getElementById('unsupOtherCellsColor').value = unsupState.otherCellsColor || '#a3a3a3';
   document.getElementById('unsupFullPhenotype').checked = !!unsupState.fullPhenotypeDiscovery;
+  document.getElementById('unsupIntensitySpatialPlot').checked = !!unsupState.intensitySpatialPlot;
+  document.getElementById('unsupNeighborhoodAnalysis').checked = !!unsupState.neighborhoodAnalysis;
+  document.getElementById('unsupAdvancedClassification').checked = !!unsupState.advancedCellClassification;
+  updateUnsupervisedOptionalAnalysisVisibility();
 }
 
 async function handleUnsupervisedMarkerFileUpload(event) {
@@ -982,7 +1046,7 @@ function collectUnsupervisedFormData() {
   const exploratoryRaw = unsupState.allProteinColumns.map(cleaned => unsupState.allProteinRawColumnsReverse[cleaned] || cleaned);
   const exploratoryShort = exploratoryRaw.map(raw => normalizeName(unsupState.proteinMarkerShortNames[raw]));
   const { dict_ctrl, dict_trtmnt } = buildUnsupervisedGroupDictionaries();
-  return {
+  const data = {
     type_of_analysis: unsupState.fullPhenotypeDiscovery ? 'full' : 'unsupervised',
     workspace: {
       input_dir: document.getElementById('unsup_input_dir').value || '',
@@ -1001,8 +1065,27 @@ function collectUnsupervisedFormData() {
     want_to_plot_pie_plots: getBool('unsupWantPie', false),
     dict_ctrl,
     dict_trtmnt,
-    protein_markers_for_intensity: [...unsupState.intensityMarkers]
+    protein_markers_for_intensity: [...unsupState.intensityMarkers],
+    advanced_cell_classification: !!unsupState.advancedCellClassification
   };
+
+  if (unsupState.intensitySpatialPlot) {
+    data.intensity_spatial_plot = {
+      dpi: getNum('unsupIntensitySpatialDpi', 150),
+      scatter_point_size: getNum('unsupIntensitySpatialPointSize', 50)
+    };
+  }
+
+  if (unsupState.neighborhoodAnalysis) {
+    data.nhood_analysis = {
+      nhood_radius_size: getNum('unsupNhoodRadius', 50),
+      pixel_conversion_rate: getNum('unsupPixelConversionRate', 1),
+      max_distance_coocurrence: getNum('unsupMaxDistanceCoocurrence', 200),
+      dpi: getNum('unsupNhoodDpi', 150)
+    };
+  }
+
+  return data;
 }
 
 function validateUnsupervisedRequiredFields(data) {
@@ -1027,6 +1110,18 @@ function validateUnsupervisedRequiredFields(data) {
   const treatmentName = normalizeName(document.getElementById('unsupTreatmentName').value);
   if ((ctrlCount > 0 || trtCount > 0) && (!controlName || !treatmentName)) errors.push('both comparison groups require names when group assignments are used');
   if ((ctrlCount > 0 || trtCount > 0) && sameName(controlName, treatmentName)) errors.push('comparison group names must be different');
+
+  if (data.intensity_spatial_plot) {
+    if (!(data.intensity_spatial_plot.dpi > 0)) errors.push('protein marker intensity spatial plot DPI must be greater than 0');
+    if (!(data.intensity_spatial_plot.scatter_point_size >= 0)) errors.push('protein marker intensity spatial plot scatter-point size must be 0 or greater');
+  }
+
+  if (data.nhood_analysis) {
+    if (!(data.nhood_analysis.nhood_radius_size > 0)) errors.push('neighborhood radius size must be greater than 0');
+    if (!(data.nhood_analysis.pixel_conversion_rate > 0)) errors.push('pixel conversion rate must be greater than 0');
+    if (!(data.nhood_analysis.max_distance_coocurrence > 0)) errors.push('maximum co-occurrence distance must be greater than 0');
+    if (!(data.nhood_analysis.dpi > 0)) errors.push('neighborhood analysis DPI must be greater than 0');
+  }
 
   if (errors.length > 0) {
     alert(`Cannot download:\n- ${errors.join('\n- ')}`);
@@ -1074,6 +1169,20 @@ function importUnsupervisedParsedConfig(config, fileName = 'configuration file')
 
   const analysisType = String(config.type_of_analysis || 'unsupervised').toLowerCase();
   unsupState.fullPhenotypeDiscovery = analysisType === 'full';
+
+  const intensitySpatialPlot = isPlainObject(config.intensity_spatial_plot) ? config.intensity_spatial_plot : null;
+  unsupState.intensitySpatialPlot = !!intensitySpatialPlot;
+  document.getElementById('unsupIntensitySpatialDpi').value = String(intensitySpatialPlot && Number.isFinite(Number(intensitySpatialPlot.dpi)) ? Number(intensitySpatialPlot.dpi) : 150);
+  document.getElementById('unsupIntensitySpatialPointSize').value = String(intensitySpatialPlot && Number.isFinite(Number(intensitySpatialPlot.scatter_point_size)) ? Number(intensitySpatialPlot.scatter_point_size) : 50);
+
+  const nhoodAnalysis = isPlainObject(config.nhood_analysis) ? config.nhood_analysis : null;
+  unsupState.neighborhoodAnalysis = !!nhoodAnalysis;
+  document.getElementById('unsupNhoodRadius').value = String(nhoodAnalysis && Number.isFinite(Number(nhoodAnalysis.nhood_radius_size)) ? Number(nhoodAnalysis.nhood_radius_size) : 50);
+  document.getElementById('unsupPixelConversionRate').value = String(nhoodAnalysis && Number.isFinite(Number(nhoodAnalysis.pixel_conversion_rate)) ? Number(nhoodAnalysis.pixel_conversion_rate) : 1);
+  document.getElementById('unsupMaxDistanceCoocurrence').value = String(nhoodAnalysis && Number.isFinite(Number(nhoodAnalysis.max_distance_coocurrence)) ? Number(nhoodAnalysis.max_distance_coocurrence) : 200);
+  document.getElementById('unsupNhoodDpi').value = String(nhoodAnalysis && Number.isFinite(Number(nhoodAnalysis.dpi)) ? Number(nhoodAnalysis.dpi) : 150);
+
+  unsupState.advancedCellClassification = config.advanced_cell_classification === true || String(config.advanced_cell_classification).toLowerCase() === 'true';
 
   const primaryMarkers = Array.isArray(config.protein_markers) ? config.protein_markers.map(normalizeName).filter(Boolean) : [];
   const exploratoryMarkers = Array.isArray(config.exploratory_protein_markers)

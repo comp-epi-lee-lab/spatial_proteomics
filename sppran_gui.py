@@ -129,15 +129,15 @@ class SpPrAnGUI:
         
         button_frame = tk.Frame(self.main_frame)
         button_frame.pack(pady=10)
-        Button(button_frame, text="Create a new or edit an existing configuration file", command=self.open_config_file_editor, width=20, wraplength=200, justify='center').pack(side=tk.LEFT,padx=10)
-        Button(button_frame, text="Open a configuration file", command=self.choose_config_file, width=20).pack(side=tk.LEFT,padx=10)
+        Button(button_frame, text="Create a new or edit an existing configuration file", command=self.open_config_file_editor, width=25, wraplength=200, justify='center').pack(side=tk.LEFT,padx=10)
+        Button(button_frame, text="Open a configuration file", command=self.choose_config_file, width=25).pack(side=tk.LEFT,padx=10)
         self.config_label = Label(self.main_frame, text="No configuration file selected", wraplength=600)
         self.config_label.pack(pady=10)
 
         button_frame_2 = tk.Frame(self.main_frame)
         button_frame_2.pack(pady=10)
-        self.input_button = Button(button_frame_2, text="Select an input directory", command=lambda: self.select_folder("input_dir"), width=20, state=tk.DISABLED)
-        self.output_button = Button(button_frame_2, text="Select an output directory", command=lambda: self.select_folder("output_dir"), width=20, state=tk.DISABLED)
+        self.input_button = Button(button_frame_2, text="Select an input directory", command=lambda: self.select_folder("input_dir"), width=25, state=tk.DISABLED)
+        self.output_button = Button(button_frame_2, text="Select an output directory", command=lambda: self.select_folder("output_dir"), width=25, state=tk.DISABLED)
         self.config_label_2 = WrappingLabel(self.main_frame, text="")
         self.config_label_2.pack(pady=10, expand=True, fill=tk.X)
 
@@ -310,6 +310,7 @@ class SpPrAnGUI:
         try:
             while True:
                 item = self.queue.get_nowait()
+                if "Creating graph using" in item: continue
                 if item == "__DONE__":
                     self.done_button.config(text="Back to Main Menu", state=tk.NORMAL)
                     messagebox.showinfo("Sp", "SpPrAn analysis pipeline finished.")

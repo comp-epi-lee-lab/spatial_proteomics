@@ -44,21 +44,23 @@ def load_anndata_files(output_dir):
     logger.warning(f"WARNING: Anndata loading cannot be completed. File '{filepath}' doesn't exist or it's missing.")                # An empty dictionary is returned.
     return {}
 
-def filenames(input_dir, filetype):
+def filenames(input_dir, file_to_check, filetype):
     """
     Find SpPrAn object-level input files.
 
     Parameters
     ----------
     input_dir : pathlib.Path
-        Directory containing Visiopharm object-level exports.
+        Directory containing Visiopharm object-level or thresholds-level exports.
+    file_to_check : {"_objects", "_Thresholds"}
+        Selector of object-level or threshold-level files to process.
     filetype : {"tsv", "csv"}
         Input-file extension.
 
     Returns
     -------
     list of pathlib.Path
-        Files matching ``*_objects.<filetype>``.
+        Files matching ``*_objects.<filetype>`` or ``*_Thresholds.<filetype>``, according to ``file_to_check`` value.
 
     Raises
     ------
@@ -71,12 +73,13 @@ def filenames(input_dir, filetype):
     """
     if input_dir.exists():
         entries = list(input_dir.iterdir())
-        filenames = [entry for entry in entries if entry.is_file() and entry.match(f"*_objects.{filetype}") and not entry.name.startswith("._") and not entry.name.startswith(".")]  # Exclude hidden files and macOS resource forks
+        filenames = [entry for entry in entries if entry.is_file() and entry.match(f"*{file_to_check}.{filetype}") and not entry.name.startswith("._") and not entry.name.startswith(".")]  # Exclude hidden files and macOS resource forks
         return filenames
     else:
-        raise FileNotFoundError(f"Input directory '{input_dir}' doesn't exists or it's misspelled.")
+        if file_to_check == "_objects": raise FileNotFoundError(f"Input directory '{input_dir}' doesn't exists or it's misspelled.")
+        else: raise FileNotFoundError(f"Thresholds directory '{input_dir}' doesn't exists or it's misspelled.")
 
-def cleaned_data(file_names, output_dir, protein_markers, cell_subtype_dict, filetype='tsv'):
+def cleaned_data(file_names, output_dir, protein_markers, cell_subtype_dict, thresholds_file_names=None, filetype='tsv'):
     """
     Clean object-level spatial proteomics tables and create AnnData objects.
 
@@ -91,6 +94,8 @@ def cleaned_data(file_names, output_dir, protein_markers, cell_subtype_dict, fil
     cell_subtype_dict : dict
         Hierarchical subtype definitions. Subtype marker columns are retained
         when required for downstream classification.
+    thresholds_file_names : list of pathlib.Path | "None" value for compatibility in previous iterations
+        Object-level threshold files to process.
     filetype : {"tsv", "csv"}, default="tsv"
         Input table format.
 
@@ -115,10 +120,15 @@ def cleaned_data(file_names, output_dir, protein_markers, cell_subtype_dict, fil
     data_dicts     = {}
     filename_dicts = {}
     if len(file_names)!=0:
-        for filename in file_names:
+        if thresholds_file_names is None: thresholds_file_names = [None]*len(file_names)
+        elif len(file_names) != len(thresholds_file_names):
+            logger.warning(f"Total input files and threshold files do not match. Please verify that each input file has its corresponding threshold file before running it again. Skipping the use of thresholds in this run...")
+            thresholds_file_names = [None]*len(file_names) 
+        for filename,thresholds_filename in zip(file_names,thresholds_file_names):
             separator = '\t' if filetype=='tsv' else ','
             filename = str(filename)
             data = pd.read_csv(f"{filename}",sep=separator)
+            threshold_data = pd.read_csv(f"{thresholds_filename}",sep=separator, index_col=0) if thresholds_filename is not None else None
             if data.columns.isin(['Positivity - DAPI (MV - NUC)']).any():
                 data = data[data['Positivity - DAPI (MV - NUC)']==1]                                                           # filter out cells without nucleus
             else: logger.warning("WARNING: This pipeline uses 'Positivity - DAPI' for filtering out cells without nucleus. However, such column was not found. Continue without filtering...")
@@ -130,6 +140,7 @@ def cleaned_data(file_names, output_dir, protein_markers, cell_subtype_dict, fil
             data.rename(columns={"Name":"cellID"}, inplace=True)
             
             pos_cols = data.columns[(data.columns.str.contains('Positivity'))&(data.columns.str.contains('MV'))]               # identify columns that says if protein marker is present (1) or abscent (0)
+            thresholds_cols = [pm.replace("Positivity - ","") for pm in data[pos_cols].columns]                                # identify threshold columns from positivity columns
             if len(pos_cols) == 0: 
                 logger.warning(f"WARNING: No protein marker valid name was found in Sample {name_of_file[-14:-12]}. Skipping this sample from analysis...")
                 continue
@@ -165,6 +176,10 @@ def cleaned_data(file_names, output_dir, protein_markers, cell_subtype_dict, fil
 
             columns_pos = data.columns[data.columns.isin(['cellID', 'X-coordinate', 'Y-coordinate'])]                          # keep spatial columns
             data_temp = data[intensities_columns]#.iloc[:,1:]
+            if thresholds_filename is not None:
+                threshold_dict = {pm_i:{"Lower Threshold": threshold_data.loc["Lower Threshold",pm_t], "Upper Threshold" : threshold_data.loc["Upper Threshold",pm_t]} for pm_t, pm_i in zip(thresholds_cols, intensities_columns)}
+            else:
+                threshold_dict = "No protein marker intensities thresholds were passed"
             adata = AnnData(                                                                                                   # generate AnnData file to include spatial data
                 data_temp.set_index((str(x) for x in data_temp.index)),
                 obsm={
@@ -174,7 +189,8 @@ def cleaned_data(file_names, output_dir, protein_markers, cell_subtype_dict, fil
                 },
                 uns={
                     "spatial":{"unique":{}},
-                    "filename_id":{name_of_file: name_of_file[-14:-12]}
+                    "filename_id":{name_of_file: name_of_file[-14:-12]},
+                    "thresholds": threshold_dict
                 }
             )
 
@@ -613,15 +629,19 @@ def _anndata_generator(config, output_dir):
         If no AnnData objects can be generated from the configured input files.
     """
     logger.warning("Generating anndata files for analysis...")
-    file_names = filenames(config['workspace']['input_dir'], config['workspace']['filetype'])
+    file_names = filenames(config['workspace']['input_dir'], "_objects", config['workspace']['filetype'])
+    if 'threshold_dir' in config["workspace"]:
+        thresholds_file_names = filenames(config['workspace']['threshold_dir'], "_Thresholds", config['workspace']['filetype']) if config['workspace']['threshold_dir'] is not None else None
+    else: thresholds_file_names = None
     cell_type_dict = create_cell_type_dict(config['protein_markers'], config['cell_types'])
     sub_cell_type_dict = config['sub_cell_types'] if 'sub_cell_types' in config.keys() else {}
     data_dicts, adata_dicts = cleaned_data(
-        file_names        = file_names, 
-        output_dir        = output_dir, 
-        protein_markers   = config['protein_markers'],
-        cell_subtype_dict = sub_cell_type_dict,
-        filetype          = config['workspace']['filetype'],
+        file_names            = file_names, 
+        output_dir            = output_dir, 
+        protein_markers       = config['protein_markers'],
+        cell_subtype_dict     = sub_cell_type_dict,
+        thresholds_file_names = thresholds_file_names,
+        filetype              = config['workspace']['filetype'],
     )
     if len(adata_dicts)==0: raise ValueError("No anndata files were generated. Please review the configuration file.")
     logger.warning("Anndata generated!")

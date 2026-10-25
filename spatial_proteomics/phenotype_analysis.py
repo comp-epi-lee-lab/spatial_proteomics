@@ -50,7 +50,7 @@ def _phenotypes_proportion_matrix(results_dir, subCT_dict, ct_short, overwrite_e
     if save_namefile.exists() and not overwrite_existing_files:
         logger.warning(f"File 'Phenotypes proportion matrix.csv' already exists...")
     else:
-        pd.concat([df[['Host name','Proportion']].set_index('Host name').rename(columns={'Proportion':key}).apply(lambda x:x.str.replace('%','').astype(float)) for key,df in subCT_dict.items()], axis=1).to_csv(save_namefile)
+        pd.concat([df[['Phenotype','Proportion']].set_index('Phenotype').rename(columns={'Proportion':key}).apply(lambda x:x.str.replace('%','').astype(float)) for key,df in subCT_dict.items()], axis=1).to_csv(save_namefile)
         logger.warning(f'Phenotype proportion matrix for {ct_short} saved!')
 
 def _filtering_phenotypes(df_tt,subCT_dict, dictionary, samples_id, subCT_OG_dict, apply_filter=False, zeroes_for_statistics = False):
@@ -109,12 +109,12 @@ def _filtering_phenotypes(df_tt,subCT_dict, dictionary, samples_id, subCT_OG_dic
         frequency_cond = []
         for k, df_phenotype in subCT_dict.items():
             if samples_id.loc[k,'Samples filename'] not in dictionary.keys(): continue
-            if host in df_phenotype['Host name'].tolist():
-                list_temp.append(float(df_phenotype['Proportion'][df_phenotype['Host name']==host].tolist()[0][:-1])/100)
-                list_temp_cond.append(float(df_phenotype['Proportion'][df_phenotype['Host name']==host].tolist()[0][:-1])/100)
+            if host in df_phenotype['Phenotype'].tolist():
+                list_temp.append(float(df_phenotype['Proportion'][df_phenotype['Phenotype']==host].tolist()[0][:-1])/100)
+                list_temp_cond.append(float(df_phenotype['Proportion'][df_phenotype['Phenotype']==host].tolist()[0][:-1])/100)
                 list_sample_name_temp.append(k)
                 list_sample_name_temp_cond.append(k)
-                corresponding_pheno_list = df_phenotype['Markers name'][df_phenotype['Host name']==host].tolist()
+                corresponding_pheno_list = df_phenotype['Markers name'][df_phenotype['Phenotype']==host].tolist()
                 frequency_cond.append('detected')
                 df_tt.loc[host, 'Phenotype'] = corresponding_pheno_list[0] if df_tt.loc[host, 'Phenotype'] == "no_name" else df_tt.loc[host, 'Phenotype']
             else:
@@ -162,7 +162,7 @@ def _count_phenotypes(subCT_dict, dictionary, results_dir, subCT_OG_dict, apply_
     samples_id.set_index('Samples Id', inplace=True)
     for k, df_phenotype in subCT_dict.items():
         if samples_id.loc[k,'Samples filename'] not in dictionary.keys(): continue
-        for host in df_phenotype['Host name']:
+        for host in df_phenotype['Phenotype']:
             all_phenotypes.append(host)
     count_dict = {item:all_phenotypes.count(item) for item in set(all_phenotypes)}
     df_tt = pd.DataFrame(count_dict.values(),index=count_dict.keys(),columns=['Counts'])
@@ -525,7 +525,7 @@ def _naming_phenotypes(CST_markers, initials_CST, short_ct_name, observed_number
     df_bin["binary"] = [format(n, f"0{n_markers}b") for n in df_bin["number"]]
     df_bin["list_pos"] = [list(binary) for binary in df_bin["binary"]]
     df_bin["Markers name"] = [",".join( initials_CST[i] for i, bit in enumerate(binary) if bit == "1") for binary in df_bin["binary"]]
-    df_bin['host_name'] = ["".join(["Host_",str(sum([int(s) for s in pos])),"_"]+[initials_CST[n-1] for n in [int(pos[numb_pos])*(numb_pos+1) for numb_pos in range(n_markers)] if n!=0]+[f"_sub{short_ct_name}"]) for pos in df_bin['list_pos']]
+    df_bin['host_name'] = ["".join(["Phe_",str(sum([int(s) for s in pos])),"_"]+[f"{initials_CST[n-1]}," for n in [int(pos[numb_pos])*(numb_pos+1) for numb_pos in range(n_markers)] if n!=0]+[f"_sub{short_ct_name}"]).replace(",_","_") for pos in df_bin['list_pos']]
     return df_bin
 
 def _calculate_unsupervised_subCT_proportions(adata_dicts, adata_dir, pheno_dict, phenotype_codes_dict, exploratory_protein_markers, output_dir, short_ct_name, ct_name="cells", use_filter=True, overwrite_existing_files=False, min_proportion=0.005):
@@ -625,7 +625,7 @@ def _calculate_unsupervised_subCT_proportions(adata_dicts, adata_dir, pheno_dict
             observed_hosts = pd.unique(cell_host_names)
             adata.uns[patterns_key] = {host: {marker: value for marker, value in zip( exploratory_protein_markers, all_host_patterns[host])} for host in observed_hosts}
 
-        df_CST = pd.DataFrame({"Host name": df_bin["host_name"].to_numpy(),"Total cells": phenotype_counts})
+        df_CST = pd.DataFrame({"Phenotype": df_bin["host_name"].to_numpy(),"Total cells": phenotype_counts})
         if length_CT != 0: proportions_numeric = (phenotype_counts / length_CT)
         else: proportions_numeric = np.zeros( len(phenotype_counts), dtype=float)
         df_CST["Proportion"] = [ f"{p:.4%}" for p in proportions_numeric]

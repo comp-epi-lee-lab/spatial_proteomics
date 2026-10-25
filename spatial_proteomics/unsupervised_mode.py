@@ -1,6 +1,8 @@
 from spatial_proteomics.cell_proportion_matrix import calculate_cell_proportion_matrix
 from spatial_proteomics.phenotype_analysis import unsupervised_phenotype_exploration_analysis
-from spatial_proteomics.intensity_analysis import calculate_pm_intensity_analysis
+from spatial_proteomics.intensity_analysis import calculate_pm_intensity_analysis, plot_spatial_protein_marker_intensities
+from spatial_proteomics.neighborhoods import neighborhood_by_fixed_distance
+from spatial_proteomics.advanced_cell_classification import phenotype_advanced_cell_classification
 
 def _apply_unsupervised_mode(adata_dicts, config):
     """
@@ -55,5 +57,37 @@ def _apply_unsupervised_mode(adata_dicts, config):
         which_pm                  = config['protein_markers_for_intensity'],
         output_dir                = output_dir
     )
+
+    if "intensity_spatial_plot" in config:
+        plot_spatial_protein_marker_intensities(
+            adata_dicts = adata_dicts_updated,
+            output_dir  = output_dir,
+            point_size  = config['intensity_spatial_plot']['scatter_point_size'],
+            dpi         = config['intensity_spatial_plot']['dpi'],
+        )
+
+    if "nhood_analysis" in config:
+        adata_dicts_updated = neighborhood_by_fixed_distance(
+            adata_dicts              = adata_dicts_updated,
+            output_dir               = output_dir,
+            save_anndata             = config['locally_save_anndata_files'], 
+            overwrite_existing_files = config['overwrite_existing_files'],
+            neighborhood_radius_size = config['nhood_analysis']['nhood_radius_size'],
+            pixel_conversion_rate    = config['nhood_analysis']['pixel_conversion_rate'],
+            max_distance_coocurrence = config['nhood_analysis']['max_distance_coocurrence'],
+            dpi                      = config['nhood_analysis']['dpi'],
+        )
+
+    if config["advanced_cell_classification"] is True:
+        adata_dicts_updated = phenotype_advanced_cell_classification(
+            adata_dicts              = adata_dicts_updated,
+            ct_short_names           = config['cell_types_to_explore_short_name'],
+            epm_list                 = config['exploratory_protein_markers'],
+            epm_short_names          = config['exploratory_protein_markers_short_name'], 
+            output_dir               = output_dir,
+            save_anndata             = config['locally_save_anndata_files'], 
+            overwrite_existing_files = config['overwrite_existing_files'],
+        )
+
     if config['type_of_analysis'] == 'full': return adata_dicts_updated
     else: return None

@@ -163,16 +163,33 @@ def _check_yaml(config: Any) -> dict:
         path_value = workspace[path_key]
         if not isinstance(path_value, str) or not path_value.strip(): error(f"'{label} directory' must contain a non-empty path string.")
 
+    workspace["threshold_dir"] = None
+    # if "threshold_dir" in workspace:
+    #     path_value = workspace["threshold_dir"]
+    #     if not isinstance(path_value, str) or not path_value.strip(): 
+    #         error(f"'Threshold directory' must contain a non-empty path string.")
+    # else: workspace["threshold_dir"] = None
+
     input_dir = workspace.get("input_dir")
     input_dir_checked = None
     output_dir = workspace.get("output_dir")
+    threshold_dir = workspace.get("threshold_dir")
 
     if (isinstance(input_dir, str) and input_dir.strip() and isinstance(output_dir, str) and output_dir.strip() and os.path.normpath(input_dir) == os.path.normpath(output_dir)):
         warning("Input and output directories are the same. Using a different output directory is recommended to avoid mixing input and results.")
+    
+    # if (isinstance(threshold_dir, str) and threshold_dir.strip() and isinstance(output_dir, str) and output_dir.strip() and os.path.normpath(threshold_dir) == os.path.normpath(output_dir)):
+    #     warning("Threshold and output directories are the same. Using a different output directory is recommended to avoid mixing threshold inputs and results.")
+    
+    # if (isinstance(threshold_dir, str) and threshold_dir.strip() and isinstance(input_dir, str) and input_dir.strip() and os.path.normpath(threshold_dir) == os.path.normpath(input_dir)):
+    #     warning("Threshold and input directories are the same. Using a different input directory is recommended to avoid mixing threshold inputs and file inputs.")
 
     if not Path(input_dir).exists(): error(f"Input directory '{input_dir}' does not exist or is misspelled.")
     if not Path(input_dir).is_dir(): error(f"Input path '{input_dir}' exists, but it is not a directory.")
     else: input_dir_checked = Path(input_dir)
+    if threshold_dir is not None:
+        if not Path(threshold_dir).exists(): error(f"Threshold directory '{threshold_dir}' does not exist or is misspelled.")
+        if not Path(threshold_dir).is_dir(): error(f"Threshold path '{threshold_dir}' exists, but it is not a directory.")
     if not Path(output_dir).exists(): error(f"Output directory '{output_dir}' does not exist or is misspelled. Please create the desired output directory and specify it in the configuration file.")
     if not Path(output_dir).is_dir(): error(f"Output path '{output_dir}' exists, but it is not a directory.")
 
@@ -574,6 +591,82 @@ def _check_yaml(config: Any) -> dict:
                 seen_intensity_markers.add(marker)
             if len(normalized_intensity_markers) == len(intensity_markers): config["protein_markers_for_intensity"] = normalized_intensity_markers
 
+    # ========== Optional non-supervised plotting / neighborhood settings ==========
+    # These settings belong to the unsupervised/full pipeline. For backward
+    # compatibility with v0.3.0 configurations, optional dictionaries are only
+    # normalized when the user explicitly includes them in the YAML.
+    if type_of_analysis != "supervised":
+        # ---------- intensity_spatial_plot ----------
+        if "intensity_spatial_plot" in config:
+            intensity_spatial_plot = config["intensity_spatial_plot"]
+
+            if intensity_spatial_plot is None:
+                intensity_spatial_plot = {}
+                config["intensity_spatial_plot"] = intensity_spatial_plot
+            elif not isinstance(intensity_spatial_plot, dict):
+                error(f"'intensity_spatial_plot' must be a dictionary, got {type(intensity_spatial_plot).__name__}.")
+                intensity_spatial_plot = None
+
+            if isinstance(intensity_spatial_plot, dict):
+                intensity_spatial_plot.setdefault("dpi", 150)
+                intensity_spatial_plot.setdefault("scatter_point_size", 50)
+
+                unexpected_keys = set(intensity_spatial_plot) - {"dpi", "scatter_point_size"}
+                if unexpected_keys:
+                    error("'intensity_spatial_plot' contains unsupported key(s): " + ", ".join(sorted(unexpected_keys)) + ".")
+
+                dpi = intensity_spatial_plot.get("dpi")
+                if isinstance(dpi, bool) or not isinstance(dpi, (int, float)) or dpi <= 0:
+                    error("'intensity_spatial_plot.dpi' must be a positive number.")
+
+                point_size = intensity_spatial_plot.get("scatter_point_size")
+                if isinstance(point_size, bool) or not isinstance(point_size, (int, float)) or point_size <= 0:
+                    error("'intensity_spatial_plot.scatter_point_size' must be a positive number.")
+
+        # ---------- nhood_analysis ----------
+        if "nhood_analysis" in config:
+            nhood_analysis = config["nhood_analysis"]
+
+            if nhood_analysis is None:
+                nhood_analysis = {}
+                config["nhood_analysis"] = nhood_analysis
+            elif not isinstance(nhood_analysis, dict):
+                error(f"'nhood_analysis' must be a dictionary, got {type(nhood_analysis).__name__}.")
+                nhood_analysis = None
+
+            if isinstance(nhood_analysis, dict):
+                nhood_analysis.setdefault("nhood_radius_size", 50)
+                nhood_analysis.setdefault("pixel_conversion_rate", 1)
+                nhood_analysis.setdefault("max_distance_coocurrence", None)
+                nhood_analysis.setdefault("dpi", 150)
+
+                expected_keys = {"nhood_radius_size", "pixel_conversion_rate", "max_distance_coocurrence", "dpi"}
+                unexpected_keys = set(nhood_analysis) - expected_keys
+                if unexpected_keys:
+                    error("'nhood_analysis' contains unsupported key(s): " + ", ".join(sorted(unexpected_keys)) + ".")
+
+                radius_size = nhood_analysis.get("nhood_radius_size")
+                if isinstance(radius_size, bool) or not isinstance(radius_size, (int, float)) or radius_size <= 0:
+                    error("'nhood_analysis.nhood_radius_size' must be a positive number.")
+
+                conversion_rate = nhood_analysis.get("pixel_conversion_rate")
+                if isinstance(conversion_rate, bool) or not isinstance(conversion_rate, (int, float)) or conversion_rate <= 0:
+                    error("'nhood_analysis.pixel_conversion_rate' must be a positive number.")
+
+                max_distance = nhood_analysis.get("max_distance_coocurrence")
+                if max_distance is not None and (type(max_distance) is not int or max_distance <= 0):
+                    error("'nhood_analysis.max_distance_coocurrence' must be a positive integer or null/None.")
+
+                nhood_dpi = nhood_analysis.get("dpi")
+                if isinstance(nhood_dpi, bool) or not isinstance(nhood_dpi, (int, float)) or nhood_dpi <= 0:
+                    error("'nhood_analysis.dpi' must be a positive number.")
+
+        # ---------- advanced_cell_classification ----------
+        if "advanced_cell_classification" not in config or config["advanced_cell_classification"] is None:
+            config["advanced_cell_classification"] = False
+        elif type(config["advanced_cell_classification"]) is not bool:
+            error(f"'advanced_cell_classification' must be true or false, got {config['advanced_cell_classification']!r}.")
+
     # ========== spatial_plot ==========
     if type_of_analysis in {"supervised"}:
         spatial_plot = config.get("spatial_plot")
@@ -777,6 +870,11 @@ def load_config(config_path: str | Path) -> dict:
     output_dir = _resolve_workspace_path(config["workspace"]["output_dir"], config_path,)
     config["workspace"]["input_dir"] = input_dir
     config["workspace"]["output_dir"] = output_dir
+
+    if "threshold_dir" in config["workspace"] and config["workspace"]["threshold_dir"] is not None:
+        threshold_dir = _resolve_workspace_path(config["workspace"]["threshold_dir"], config_path,)
+        config["workspace"]["threshold_dir"] = threshold_dir
+
     return config
 
 __all__ = ["ConfigValidationError", "load_config",]

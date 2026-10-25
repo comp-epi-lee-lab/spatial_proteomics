@@ -1,4 +1,9 @@
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import logging
+
+logger = logging.getLogger(__name__)
 
 def _read_intensities(adata_dicts, which_pm = 'all'):
     """
@@ -79,10 +84,10 @@ def _intensities_data(intensities_dict,adata_dicts,list_ct_short_name,output_dir
     None
         Per-sample/per-phenotype summaries and outlier tables are written as CSV.
     """
-    intensities_csv_dir_phen = output_dir / "results" / "Intensity analysis" / "By phenotype"
-    intensities_csv_dir_phen.mkdir(parents=True, exist_ok=True)
 
     for k, adata in adata_dicts.items():
+        intensities_csv_dir_phen = output_dir / "results" / "Intensity analysis by phenotype" / f"{k}"
+        intensities_csv_dir_phen.mkdir(parents=True, exist_ok=True)
         intensity_df = intensities_dict[k]
         pm_list = intensity_df.columns.tolist()
 
@@ -90,19 +95,32 @@ def _intensities_data(intensities_dict,adata_dicts,list_ct_short_name,output_dir
             host_column = f"sub{short_ct_name} phenotype"
             
             list_host_names = adata.obs[host_column].unique().tolist()
+            n_digits = max(3, len(str(len(list_host_names))))
+            phenotype_ids = {phenotype: f"sub{short_ct_name}_P{i:0{n_digits}d}" for i, phenotype in enumerate(list_host_names)}
+            mapping = pd.DataFrame({"Phenotype ID": [pvals for pvals in phenotype_ids.values()], "Phenotype": [pkeys for pkeys in phenotype_ids.keys()]})
+            intensities_csv_dir_phen_ext = intensities_csv_dir_phen / short_ct_name
+            intensities_csv_dir_phen_ext.mkdir(parents=True, exist_ok=True)
+            mapping.to_csv(intensities_csv_dir_phen / f"Phenotype mapping - Sample {k} - sub{short_ct_name}.csv", index=False)
+            mapping = mapping.set_index('Phenotype')
             for phenotype in list_host_names:
                 if pd.isna(phenotype):
                     continue
-                title_name_1 = f"Box plot data - Sample {k} - {host_column} - {phenotype}"
-                save_namefile_1 = intensities_csv_dir_phen / f"{title_name_1}.csv"
-                title_name_2 = f"Box plot data - Sample {k} - {host_column} - {phenotype} - outliers"
-                save_namefile_2 = intensities_csv_dir_phen / f"{title_name_2}.csv"
 
                 cell_ids = adata.obs_names[adata.obs[host_column] == phenotype].tolist()
                 filtered_df = intensity_df[intensity_df.index.isin(cell_ids)]
+                text_total_cells = "(1 cell)" if len(filtered_df)==1 else f"({len(filtered_df)} cells)"
+
+                title_name_1 = f"Box plot data - Sample {k} - {host_column} - {mapping.loc[phenotype,"Phenotype ID"]} {text_total_cells}"
+                save_namefile_1 = intensities_csv_dir_phen_ext / f"{title_name_1}.csv"
+                # title_name_2 = f"Box plot data - Sample {k} - {host_column} - {phenotype} - outliers"
+                # save_namefile_2 = intensities_csv_dir_phen_ext / f"{title_name_2}.csv"
+
+                title_name_3 = f"Intensity data - Sample {k} - {host_column} - {mapping.loc[phenotype,"Phenotype ID"]} {text_total_cells}"
+                save_namefile_3 = intensities_csv_dir_phen_ext / f"{title_name_3}.csv"
 
                 pd.DataFrame({'Metric': ['Lower_Whisker', 'Q1', 'Median (Q2)', 'Q3', 'Upper_Whisker']}|{ pm_name: _boxplot_calculation(filtered_df,pm_name) for pm_name in pm_list }).to_csv(save_namefile_1, index=False)
-                pd.DataFrame({ pm_name: _boxplot_outliers(filtered_df,pm_name) for pm_name in pm_list }).to_csv(save_namefile_2, index=False)
+                # pd.DataFrame({ pm_name: _boxplot_outliers(filtered_df,pm_name) for pm_name in pm_list }).to_csv(save_namefile_2, index=False)
+                pd.DataFrame({ pm_name: filtered_df[pm_name] for pm_name in pm_list }).to_csv(save_namefile_3, index=False)
 
 def calculate_pm_intensity_analysis(adata_dicts, list_ct_short_name, output_dir, which_pm):
     """
@@ -135,3 +153,53 @@ def calculate_pm_intensity_analysis(adata_dicts, list_ct_short_name, output_dir,
         epm_list = positivity_column_names[positivity_column_names["Positivity column names"].isin(which_pm)]["Name appearing in anndata file"].tolist()
         intensities_dict = _read_intensities(adata_dicts, epm_list)
         _intensities_data(intensities_dict, adata_dicts, list_ct_short_name, output_dir / "Statistics")
+
+def _getting_vmin_n_vmax (adata_dicts):
+    marker_limits = {}
+    positivity_columns = []
+    for k, adata in adata_dicts.items():
+        # adata.uns["thresholds"] ={ "pm_intensities" : { "low_treshold": "vaue", high_treshold" : "value"} }
+        if isinstance(adata.uns["thresholds"], str): continue
+        if len(positivity_columns) == 0:
+            positivity_columns = list(adata.var_names)
+            for pm in positivity_columns:
+                marker_limits[pm] = (adata.uns["thresholds"][pm]["low_treshold"], adata.uns["thresholds"][pm]["high_treshold"])
+        else:
+            for pm in positivity_columns:
+                vmin_temp, vmax_temp = marker_limits[pm]
+                marker_limits[pm] = (
+                    min(vmin_temp, adata.uns["thresholds"][pm]["low_treshold"]),
+                    max(vmax_temp, adata.uns["thresholds"][pm]["high_treshold"])
+                )
+    return marker_limits
+
+def plot_spatial_protein_marker_intensities(adata_dicts, output_dir, cmap="viridis", point_size=1, dpi=150):
+    """
+    Save one spatial intensity PNG per protein marker.
+    """
+    logger.warning(f"Generating protein markers' intensities spatial plots...")
+    intensity_dir = output_dir / "plots" / "Spatial protein markers intensity plots"
+    intensity_dir.mkdir(parents=True, exist_ok=True)
+    # marker_limits = _getting_vmin_n_vmax (adata_dicts)
+    marker_limits = {}
+    for k, adata in adata_dicts.items():
+        intensity_dir_2 = intensity_dir / f"{k}"
+        intensity_dir_2.mkdir(parents=True, exist_ok=True)
+        coords = adata.obsm["spatial"]
+        matrix = adata.X
+        for idx, marker in enumerate(adata.var_names):
+            intensities = np.asarray(matrix[:, idx]).ravel()
+            if len(marker_limits)!=0 and marker in marker_limits: vmin, vmax = marker_limits[marker]
+            else:
+                vmin = np.nanmin(intensities)
+                vmax = np.nanmax(intensities)
+            fig, ax = plt.subplots(figsize=(6, 6))
+            scatter = ax.scatter(coords[:, 0], coords[:, 1], c=intensities, cmap=cmap, s=point_size, vmin=vmin, vmax=vmax, edgecolors="none", linewidths=0, rasterized=True)
+            ax.set_aspect("equal")
+            ax.invert_yaxis()
+            ax.axis("off")
+            ax.set_title(marker)
+            fig.colorbar(scatter, ax=ax, label="Protein intensity")
+            fig.savefig(intensity_dir_2 / f"Spatial intensity plot - Sample {k} - {marker}.png", dpi=dpi, facecolor="white")
+            plt.close(fig)
+    logger.warning(f"Intensities spatial plots generated!")
