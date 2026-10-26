@@ -250,7 +250,7 @@ def _co_occurrence_analysis(adata, sample, save_dir, dpi, overwrite_existing_fil
             plt.savefig(save_namefile,dpi=dpi,bbox_inches=None, pil_kwargs={"compress_level": 1},)
             plt.close()
 
-def neighborhood_by_fixed_distance(adata_dicts, output_dir, dpi, save_anndata, overwrite_existing_files, neighborhood_radius_size=50, pixel_conversion_rate = 1, max_distance_coocurrence = None):
+def neighborhood_by_fixed_distance(adata_dicts, output_dir, dpi, save_anndata, overwrite_existing_files, neighborhood_radius_size=50, pixel_conversion_rate = 1, max_distance_cooccurrence = None):
     """
     Run fixed-radius neighborhood analysis for all samples.
 
@@ -271,7 +271,7 @@ def neighborhood_by_fixed_distance(adata_dicts, output_dir, dpi, save_anndata, o
     pixel_conversion_rate : float, default=1
         Conversion factor between the user-facing radius unit and the spatial
         coordinate unit stored in AnnData.
-    max_distance_coocurrence : float or None, default=None
+    max_distance_cooccurrence : float or None, default=None
         Optional maximum distance shown in co-occurrence plots.
 
     Returns
@@ -299,7 +299,7 @@ def neighborhood_by_fixed_distance(adata_dicts, output_dir, dpi, save_anndata, o
         sq.gr.spatial_neighbors(adata,radius=radius_conversion, coord_type = 'generic')
         _neighborhood_enrichment_analysis(adata,k,save_dir = save_dir_2,dpi=dpi, overwrite_existing_files=overwrite_existing_files)
         _interaction_matrix_analysis(adata,k,save_dir = save_dir_2,dpi=dpi, overwrite_existing_files=overwrite_existing_files)
-        _co_occurrence_analysis(adata,k,save_dir = save_dir_2, dpi=dpi, overwrite_existing_files=overwrite_existing_files, max_distance = max_distance_coocurrence)
+        _co_occurrence_analysis(adata,k,save_dir = save_dir_2, dpi=dpi, overwrite_existing_files=overwrite_existing_files, max_distance = max_distance_cooccurrence)
 
     adata_path = output_dir / "adata"
     if save_anndata: save_anndata_files(adata_dicts,adata_dir=adata_path)

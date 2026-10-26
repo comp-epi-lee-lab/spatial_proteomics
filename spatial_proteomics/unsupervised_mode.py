@@ -84,7 +84,7 @@ def _apply_unsupervised_mode(adata_dicts, config):
             overwrite_existing_files = config['overwrite_existing_files'],
             neighborhood_radius_size = config['nhood_analysis']['nhood_radius_size'],
             pixel_conversion_rate    = config['nhood_analysis']['pixel_conversion_rate'],
-            max_distance_coocurrence = config['nhood_analysis']['max_distance_coocurrence'],
+            max_distance_cooccurrence = config['nhood_analysis']['max_distance_cooccurrence'],
             dpi                      = config['nhood_analysis']['dpi'],
         )
 

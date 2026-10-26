@@ -260,6 +260,6 @@ def plot_spatial_protein_marker_intensities(adata_dicts, output_dir, cmap="virid
             ax.axis("off")
             ax.set_title(marker)
             fig.colorbar(scatter, ax=ax, label="Protein intensity")
-            fig.savefig(intensity_dir_2 / f"Spatial intensity plot - Sample {k} - {marker}.png", dpi=dpi, facecolor="white")
+            fig.savefig(intensity_dir_2 / f"Spatial intensity plot - Sample {k} - {marker.replace("*","")}.png", dpi=dpi, facecolor="white")
             plt.close(fig)
     logger.warning(f"Intensities spatial plots generated!")
