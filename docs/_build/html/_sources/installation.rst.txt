@@ -12,7 +12,7 @@ Releases. See :doc:`desktop_app`.
 Install from source
 -------------------
 
-SpPrAn 0.3.0 requires Python 3.12 or newer.
+SpPrAn 0.3.1 requires Python 3.12 or newer.
 
 .. code-block:: bash
 

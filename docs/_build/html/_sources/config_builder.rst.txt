@@ -14,7 +14,7 @@ application.
 Choose an analysis mode
 -----------------------
 
-SpPrAn 0.3.0 begins with a mode-selection view.
+SpPrAn begins with a mode-selection view.
 
 **Supervised mode**
    Users define cell types and subtypes directly from protein-marker rules.
@@ -216,6 +216,29 @@ The **Plot cell-type proportion pie plots?** option controls whether sample-leve
 are generated together with the cell-type proportion matrices.
 
 The **Overwrite existing outputs?** and **Save AnnData files?** are exactly the same as in the supervised configuration.
+
+"Optional spatial and phenotype analyses" section (**New in v0.3.1**)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In this settings section, users optionally may choose additional analyses and plots to generate after phenotype discovery. 
+
+The **Protein marker intensity spatial plots** option, if checked, creates one continuous-intensity spatial map per sample and
+protein marker.
+
+The **Neighborhood analysis** option, if checked, measures which cell populations tend to be near each other, how frequently they 
+interact, and how their spatial association changes across distance.
+
+.. note::
+
+   The pixel conversion rate can be interpreted as 1:"Pixel conversion rate". That is because the neighborhood radius supplied 
+   to the code is "Neighborhood radius size" / "Pixel conversion rate". Therefore, if the input data unit is 1:10, consider 
+   modify "Pixel conversion rate" to 10 in order to correctly measure the neighborhood radius.
+
+   The pixel conversion rate also have an impact in the maximum distance for co-occurrence plot.
+
+The **Advanced phenotype classification** option, if checked, characterizes previously discovered phenotypes using low, medium, and 
+high protein-intensity levels within each sample. This adds expression-strength information to discovered phenotypes without
+changing the original positivity-based phenotype definition.
 
 "Group-comparison analysis" section
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

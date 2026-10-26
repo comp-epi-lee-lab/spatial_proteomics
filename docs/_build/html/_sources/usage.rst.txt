@@ -51,6 +51,8 @@ Typical unsupervised workflow
    * Optionally enable full phenotype discovery option.
    * Optionally define two sample groups for all the samples in the run.
    * Optionally select protein markers for intensity summaries.
+   * Optionally enable neighborhood analysis.
+   * Optionally enable advanced phenotype classification.
 
 #. Run SpPrAn from the desktop application or command line.
 #. Review phenotype patterns and within-parent proportions.

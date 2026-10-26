@@ -1,0 +1,424 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>spatial_proteomics.neighborhoods &mdash; SpPrAn 0.3.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=4621528c"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            SpPrAn
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../desktop_app.html">Desktop application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../analysis_modes.html">Analysis modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../optional_analyses.html">Optional spatial and phenotype analyses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../config_builder.html">SpPrAn Configuration Builder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../workflow.html">Analysis workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../configuration.html">Configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Running SpPrAn</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../outputs.html">Outputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release notes</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">Python API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">SpPrAn</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">spatial_proteomics.neighborhoods</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for spatial_proteomics.neighborhoods</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">Fixed-radius spatial neighborhood analyses for SpPrAn.</span>
+
+<span class="sd">This module constructs spatial-neighbor graphs from single-cell coordinates and</span>
+<span class="sd">summarizes relationships among major marker-defined cell populations using</span>
+<span class="sd">Squidpy neighborhood enrichment, interaction matrices, and co-occurrence</span>
+<span class="sd">analysis.</span>
+
+<span class="sd">Neighborhoods are defined geometrically from a user-specified physical/image</span>
+<span class="sd">radius rather than from PCA or expression-space nearest neighbors.</span>
+<span class="sd">"""</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">squidpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sq</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">seaborn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sns</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">spatial_proteomics.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">save_anndata_files</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_highlighted_by_labels</span><span class="p">(</span><span class="n">data_to_analyze</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">target_row</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">x_axis_fig_size</span><span class="p">,</span> <span class="n">y_axis_fig_size</span><span class="p">,</span> <span class="n">v_bound</span><span class="p">,</span> <span class="n">rotation</span><span class="p">,</span> <span class="n">bottom</span><span class="p">,</span> <span class="n">dpi</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">label_title</span><span class="p">,</span> <span class="n">save_namefile</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Save a single-row heatmap highlighting one cell population.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data_to_analyze : numpy.ndarray</span>
+<span class="sd">        Square neighborhood/interaction matrix.</span>
+<span class="sd">    labels : pandas.Index or sequence of str</span>
+<span class="sd">        Cell-population labels corresponding to matrix rows and columns.</span>
+<span class="sd">    target_row : str</span>
+<span class="sd">        Cell population being highlighted.</span>
+<span class="sd">    idx : int</span>
+<span class="sd">        Row index of ``target_row``.</span>
+<span class="sd">    x_axis_fig_size, y_axis_fig_size : float</span>
+<span class="sd">        Figure dimensions in inches.</span>
+<span class="sd">    v_bound : float</span>
+<span class="sd">        Symmetric color-scale bound.</span>
+<span class="sd">    rotation : float</span>
+<span class="sd">        X-axis label rotation in degrees.</span>
+<span class="sd">    bottom : float</span>
+<span class="sd">        Bottom figure margin.</span>
+<span class="sd">    dpi : int or float</span>
+<span class="sd">        Output resolution.</span>
+<span class="sd">    title : str</span>
+<span class="sd">        Figure title.</span>
+<span class="sd">    label_title : str</span>
+<span class="sd">        Color-bar label.</span>
+<span class="sd">    save_namefile : pathlib.Path</span>
+<span class="sd">        Destination PNG path.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+<span class="sd">        The highlighted heatmap is written to disk.</span>
+<span class="sd">    """</span>
+    <span class="c1"># idx = labels.get_loc(target_row)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="n">x_axis_fig_size</span><span class="p">,</span> <span class="n">y_axis_fig_size</span><span class="p">))</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">data_to_analyze</span><span class="p">[[</span><span class="n">idx</span><span class="p">],</span> <span class="p">:],</span> <span class="n">xticklabels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span> <span class="n">yticklabels</span><span class="o">=</span><span class="p">[</span><span class="n">target_row</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=-</span><span class="n">v_bound</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">v_bound</span><span class="p">,</span> <span class="n">annot</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s2">".2f"</span><span class="p">,</span> <span class="n">cbar_kws</span><span class="o">=</span><span class="p">{</span><span class="s1">'label'</span><span class="p">:</span> <span class="n">label_title</span><span class="p">,</span> <span class="s2">"ticks"</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="n">v_bound</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">v_bound</span><span class="p">]})</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">collections</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">colorbar</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_label_position</span><span class="p">(</span><span class="s2">"left"</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">rotation</span><span class="o">=</span><span class="n">rotation</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">'right'</span><span class="p">)</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">()</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">set_layout_engine</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">left</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span><span class="n">right</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span> <span class="n">top</span><span class="o">=</span><span class="mf">0.85</span><span class="p">,</span> <span class="n">bottom</span><span class="o">=</span><span class="n">bottom</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">save_namefile</span><span class="p">,</span><span class="n">dpi</span><span class="o">=</span><span class="n">dpi</span><span class="p">,</span><span class="n">bbox_inches</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pil_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">"compress_level"</span><span class="p">:</span> <span class="mi">1</span><span class="p">},)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_highlight_analysis</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span> <span class="n">sample_idx</span><span class="p">,</span> <span class="n">save_dir</span><span class="p">,</span> <span class="n">dpi</span><span class="p">,</span> <span class="n">overwrite_existing_files</span><span class="p">,</span><span class="n">analysis_name</span><span class="p">,</span> <span class="n">analysis_type</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Generate one highlighted heatmap per major cell population.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    adata : anndata.AnnData</span>
+<span class="sd">        Sample containing neighborhood-analysis results in ``adata.uns`` and</span>
+<span class="sd">        categorical major cell labels in ``adata.obs["clusters"]``.</span>
+<span class="sd">    sample_idx : str</span>
+<span class="sd">        Sample identifier.</span>
+<span class="sd">    save_dir : pathlib.Path</span>
+<span class="sd">        Destination directory.</span>
+<span class="sd">    dpi : int or float</span>
+<span class="sd">        Output resolution.</span>
+<span class="sd">    overwrite_existing_files : bool</span>
+<span class="sd">        Whether existing highlighted images may be replaced.</span>
+<span class="sd">    analysis_name : str</span>
+<span class="sd">        Human-readable analysis name used in file names.</span>
+<span class="sd">    analysis_type : {"nhood", "interaction"} or None</span>
+<span class="sd">        Matrix to visualize.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+<span class="sd">        Highlight images are written to disk.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">analysis_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'nhood'</span><span class="p">,</span><span class="s1">'interaction'</span><span class="p">]:</span> <span class="k">return</span>
+    <span class="k">if</span> <span class="n">analysis_type</span><span class="o">==</span><span class="s1">'nhood'</span><span class="p">:</span>
+        <span class="n">data_to_analyze</span> <span class="o">=</span> <span class="n">adata</span><span class="o">.</span><span class="n">uns</span><span class="p">[</span><span class="s2">"clusters_nhood_enrichment"</span><span class="p">][</span><span class="s2">"zscore"</span><span class="p">]</span> 
+        <span class="n">h_title</span> <span class="o">=</span> <span class="s2">"Neighborhood Enrichment"</span>
+        <span class="n">h_label_title</span><span class="o">=</span><span class="s1">'z-score'</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">data_to_analyze</span> <span class="o">=</span> <span class="n">adata</span><span class="o">.</span><span class="n">uns</span><span class="p">[</span><span class="s2">"clusters_interactions"</span><span class="p">]</span> 
+        <span class="n">h_title</span> <span class="o">=</span> <span class="s2">"Interaction Matrix"</span>
+        <span class="n">h_label_title</span><span class="o">=</span><span class="s1">'Interaction proportion'</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s2">"clusters"</span><span class="p">]</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">categories</span>
+    <span class="n">v_bound</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">data_to_analyze</span><span class="p">))</span>
+    <span class="n">max_chars</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">lbl</span><span class="p">)</span> <span class="k">for</span> <span class="n">lbl</span> <span class="ow">in</span> <span class="n">labels</span><span class="p">])</span>
+    <span class="n">bottom</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mf">0.25</span> <span class="o">+</span> <span class="mf">0.008</span> <span class="o">*</span> <span class="n">max_chars</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">)</span>
+    <span class="n">x_axis_fig_size</span> <span class="o">=</span> <span class="mi">5</span> <span class="o">+</span> <span class="mi">5</span><span class="o">*</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">//</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">y_axis_fig_size</span> <span class="o">=</span> <span class="mi">4</span> <span class="k">if</span> <span class="n">max_chars</span> <span class="o">&gt;</span> <span class="mi">30</span> <span class="k">else</span> <span class="mi">3</span>
+    <span class="n">rotation</span> <span class="o">=</span> <span class="mi">45</span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span><span class="n">target_row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">labels</span><span class="p">):</span>
+        <span class="n">save_namefile</span> <span class="o">=</span> <span class="n">save_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">analysis_name</span><span class="si">}</span><span class="s2"> - Sample </span><span class="si">{</span><span class="n">sample_idx</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">target_row</span><span class="si">}</span><span class="s2"> highlight.png"</span>
+        <span class="k">if</span> <span class="n">save_namefile</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">overwrite_existing_files</span><span class="p">:</span> 
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Highlighted </span><span class="si">{</span><span class="n">analysis_name</span><span class="si">}</span><span class="s2"> file for </span><span class="si">{</span><span class="n">target_row</span><span class="si">}</span><span class="s2"> in sample </span><span class="si">{</span><span class="n">sample_idx</span><span class="si">}</span><span class="s2"> already exists. Skipping..."</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="n">_highlighted_by_labels</span><span class="p">(</span><span class="n">data_to_analyze</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">target_row</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">x_axis_fig_size</span><span class="p">,</span> <span class="n">y_axis_fig_size</span><span class="p">,</span> <span class="n">v_bound</span><span class="p">,</span> <span class="n">rotation</span><span class="p">,</span> <span class="n">bottom</span><span class="p">,</span> <span class="n">dpi</span><span class="p">,</span> <span class="n">save_namefile</span><span class="o">=</span><span class="n">save_namefile</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">h_title</span><span class="si">}</span><span class="s2"> Highlight: </span><span class="si">{</span><span class="n">target_row</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">label_title</span><span class="o">=</span><span class="n">h_label_title</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_neighborhood_enrichment_analysis</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span><span class="n">sample_idx</span><span class="p">,</span><span class="n">save_dir</span><span class="p">,</span><span class="n">dpi</span><span class="p">,</span><span class="n">overwrite_existing_files</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Calculate and plot neighborhood enrichment for one sample.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    adata : anndata.AnnData</span>
+<span class="sd">        Sample with a spatial-neighbor graph and categorical cell labels in</span>
+<span class="sd">        ``adata.obs["clusters"]``.</span>
+<span class="sd">    sample_idx : str</span>
+<span class="sd">        Sample identifier.</span>
+<span class="sd">    save_dir : pathlib.Path</span>
+<span class="sd">        Plot-output directory.</span>
+<span class="sd">    dpi : int or float</span>
+<span class="sd">        Output resolution.</span>
+<span class="sd">    overwrite_existing_files : bool</span>
+<span class="sd">        Whether an existing overview plot may be replaced.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+<span class="sd">        Squidpy neighborhood-enrichment results are stored in ``adata.uns`` and</span>
+<span class="sd">        overview/highlight PNG files are written to disk.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Positive neighborhood-enrichment z-scores indicate cell-population pairs</span>
+<span class="sd">    observed near one another more often than expected under Squidpy's</span>
+<span class="sd">    permutation model; negative values indicate spatial avoidance/depletion.</span>
+<span class="sd">    """</span>
+    <span class="n">save_namefile</span> <span class="o">=</span> <span class="n">save_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"Neighborhood enrichment analysis - Sample </span><span class="si">{</span><span class="n">sample_idx</span><span class="si">}</span><span class="s2">.png"</span>
+    <span class="k">if</span> <span class="n">save_namefile</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">overwrite_existing_files</span><span class="p">:</span> 
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Neighborhood enrichment analysis file already exists. Skipping..."</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span>
+                <span class="s2">"ignore"</span><span class="p">,</span>
+                <span class="n">message</span><span class="o">=</span><span class="s2">"invalid value encountered in divide"</span><span class="p">,</span>
+                <span class="n">category</span><span class="o">=</span><span class="ne">RuntimeWarning</span><span class="p">,</span>
+                <span class="n">module</span><span class="o">=</span><span class="sa">r</span><span class="s2">"squidpy\.gr\._nhood"</span>
+            <span class="p">)</span>
+            <span class="n">sq</span><span class="o">.</span><span class="n">gr</span><span class="o">.</span><span class="n">nhood_enrichment</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span> <span class="n">cluster_key</span><span class="o">=</span><span class="s2">"clusters"</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">538610</span><span class="p">,</span> <span class="n">show_progress_bar</span><span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="n">sq</span><span class="o">.</span><span class="n">pl</span><span class="o">.</span><span class="n">nhood_enrichment</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span> <span class="n">cluster_key</span><span class="o">=</span><span class="s2">"clusters"</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">()</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">set_layout_engine</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">save_namefile</span><span class="p">,</span><span class="n">dpi</span><span class="o">=</span><span class="n">dpi</span><span class="p">,</span><span class="n">bbox_inches</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pil_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">"compress_level"</span><span class="p">:</span> <span class="mi">1</span><span class="p">},)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+
+        <span class="n">_highlight_analysis</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span> <span class="n">sample_idx</span><span class="p">,</span> <span class="n">save_dir</span><span class="p">,</span> <span class="n">dpi</span><span class="p">,</span> <span class="n">overwrite_existing_files</span><span class="p">,</span> <span class="n">analysis_name</span><span class="o">=</span><span class="s1">'Neighborhood enrichment analysis'</span><span class="p">,</span> <span class="n">analysis_type</span><span class="o">=</span><span class="s1">'nhood'</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_interaction_matrix_analysis</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span><span class="n">sample_idx</span><span class="p">,</span><span class="n">save_dir</span><span class="p">,</span><span class="n">dpi</span><span class="p">,</span><span class="n">overwrite_existing_files</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Calculate and plot the cell-population interaction matrix for one sample.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    adata : anndata.AnnData</span>
+<span class="sd">        Sample with a spatial-neighbor graph and ``clusters`` annotations.</span>
+<span class="sd">    sample_idx : str</span>
+<span class="sd">        Sample identifier.</span>
+<span class="sd">    save_dir : pathlib.Path</span>
+<span class="sd">        Plot-output directory.</span>
+<span class="sd">    dpi : int or float</span>
+<span class="sd">        Output resolution.</span>
+<span class="sd">    overwrite_existing_files : bool</span>
+<span class="sd">        Whether an existing overview plot may be replaced.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+<span class="sd">        The interaction matrix is stored in ``adata.uns`` and overview/highlight</span>
+<span class="sd">        plots are written to disk.</span>
+<span class="sd">    """</span>
+    <span class="n">save_namefile</span> <span class="o">=</span> <span class="n">save_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"Interaction matrix - Sample </span><span class="si">{</span><span class="n">sample_idx</span><span class="si">}</span><span class="s2">.png"</span>
+    <span class="k">if</span> <span class="n">save_namefile</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">overwrite_existing_files</span><span class="p">:</span> 
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Interaction matrix analysis file already exists. Skipping..."</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">sq</span><span class="o">.</span><span class="n">gr</span><span class="o">.</span><span class="n">interaction_matrix</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span> <span class="n">cluster_key</span><span class="o">=</span><span class="s2">"clusters"</span><span class="p">)</span>
+        <span class="n">sq</span><span class="o">.</span><span class="n">pl</span><span class="o">.</span><span class="n">interaction_matrix</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span> <span class="n">cluster_key</span><span class="o">=</span><span class="s2">"clusters"</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">()</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">set_layout_engine</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="c1"># fig.subplots_adjust(left=0.22,right=0.86,bottom=0.12,top=0.90)</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">save_namefile</span><span class="p">,</span><span class="n">dpi</span><span class="o">=</span><span class="n">dpi</span><span class="p">,</span><span class="n">bbox_inches</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pil_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">"compress_level"</span><span class="p">:</span> <span class="mi">1</span><span class="p">},)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+
+        <span class="n">_highlight_analysis</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span> <span class="n">sample_idx</span><span class="p">,</span> <span class="n">save_dir</span><span class="p">,</span> <span class="n">dpi</span><span class="p">,</span> <span class="n">overwrite_existing_files</span><span class="p">,</span> <span class="n">analysis_name</span><span class="o">=</span><span class="s1">'Interaction matrix'</span><span class="p">,</span> <span class="n">analysis_type</span><span class="o">=</span><span class="s1">'interaction'</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_co_occurrence_analysis</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">save_dir</span><span class="p">,</span> <span class="n">dpi</span><span class="p">,</span> <span class="n">overwrite_existing_files</span><span class="p">,</span> <span class="n">max_distance</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Plot distance-dependent co-occurrence for each major cell population.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    adata : anndata.AnnData</span>
+<span class="sd">        Sample with spatial coordinates, a neighbor graph, and categorical</span>
+<span class="sd">        ``clusters`` annotations.</span>
+<span class="sd">    sample : str</span>
+<span class="sd">        Sample identifier.</span>
+<span class="sd">    save_dir : pathlib.Path</span>
+<span class="sd">        Destination directory.</span>
+<span class="sd">    dpi : int or float</span>
+<span class="sd">        Output resolution.</span>
+<span class="sd">    overwrite_existing_files : bool</span>
+<span class="sd">        Whether existing plots may be replaced.</span>
+<span class="sd">    max_distance : float or None, default=None</span>
+<span class="sd">        Optional maximum distance displayed on the x-axis.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+<span class="sd">        One co-occurrence plot per cell population is written to disk.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Co-occurrence summarizes how the relative occurrence of population pairs</span>
+<span class="sd">    changes as a function of spatial distance.</span>
+<span class="sd">    """</span>
+    <span class="n">sq</span><span class="o">.</span><span class="n">gr</span><span class="o">.</span><span class="n">co_occurrence</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span> <span class="n">cluster_key</span><span class="o">=</span><span class="s2">"clusters"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">cell_type</span> <span class="ow">in</span> <span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s1">'clusters'</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">():</span>
+        <span class="n">save_namefile</span> <span class="o">=</span> <span class="n">save_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"Co ocurrence analysis - Sample </span><span class="si">{</span><span class="n">sample</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">cell_type</span><span class="si">}</span><span class="s2">.png"</span>
+        <span class="k">if</span> <span class="n">save_namefile</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">overwrite_existing_files</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Co ocurrence analysis file for </span><span class="si">{</span><span class="n">cell_type</span><span class="si">}</span><span class="s2"> in sample </span><span class="si">{</span><span class="n">sample</span><span class="si">}</span><span class="s2"> already exists..."</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sq</span><span class="o">.</span><span class="n">pl</span><span class="o">.</span><span class="n">co_occurrence</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span> <span class="n">cluster_key</span><span class="o">=</span><span class="s2">"clusters"</span><span class="p">,</span> <span class="n">clusters</span><span class="o">=</span><span class="n">cell_type</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">max_distance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">()</span><span class="o">.</span><span class="n">axes</span><span class="p">:</span> <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">right</span><span class="o">=</span><span class="n">max_distance</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">save_namefile</span><span class="p">,</span><span class="n">dpi</span><span class="o">=</span><span class="n">dpi</span><span class="p">,</span><span class="n">bbox_inches</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pil_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">"compress_level"</span><span class="p">:</span> <span class="mi">1</span><span class="p">},)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+<div class="viewcode-block" id="neighborhood_by_fixed_distance">
+<a class="viewcode-back" href="../../api.html#spatial_proteomics.neighborhoods.neighborhood_by_fixed_distance">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">neighborhood_by_fixed_distance</span><span class="p">(</span><span class="n">adata_dicts</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">dpi</span><span class="p">,</span> <span class="n">save_anndata</span><span class="p">,</span> <span class="n">overwrite_existing_files</span><span class="p">,</span> <span class="n">neighborhood_radius_size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">pixel_conversion_rate</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">max_distance_coocurrence</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Run fixed-radius neighborhood analysis for all samples.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    adata_dicts : dict of str to anndata.AnnData</span>
+<span class="sd">        Per-sample annotated single-cell spatial proteomics data.</span>
+<span class="sd">    output_dir : pathlib.Path</span>
+<span class="sd">        SpPrAn output directory.</span>
+<span class="sd">    dpi : int or float</span>
+<span class="sd">        Resolution of exported neighborhood plots.</span>
+<span class="sd">    save_anndata : bool</span>
+<span class="sd">        Whether AnnData objects containing neighborhood results should be saved.</span>
+<span class="sd">    overwrite_existing_files : bool</span>
+<span class="sd">        Whether existing plot files may be replaced.</span>
+<span class="sd">    neighborhood_radius_size : float, default=50</span>
+<span class="sd">        User-facing neighborhood radius.</span>
+<span class="sd">    pixel_conversion_rate : float, default=1</span>
+<span class="sd">        Conversion factor between the user-facing radius unit and the spatial</span>
+<span class="sd">        coordinate unit stored in AnnData.</span>
+<span class="sd">    max_distance_coocurrence : float or None, default=None</span>
+<span class="sd">        Optional maximum distance shown in co-occurrence plots.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict of str to anndata.AnnData</span>
+<span class="sd">        AnnData objects containing the computed spatial-neighbor graph and</span>
+<span class="sd">        Squidpy neighborhood-analysis results.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    The radius supplied to Squidpy is calculated as</span>
+<span class="sd">    ``neighborhood_radius_size / pixel_conversion_rate``.</span>
+
+<span class="sd">    This analysis defines neighborhoods from tissue/image coordinates. It does</span>
+<span class="sd">    not require PCA, UMAP, or expression-space nearest-neighbor construction.</span>
+<span class="sd">    """</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Neighborhood analysis started..."</span><span class="p">)</span>
+    <span class="n">radius_conversion</span> <span class="o">=</span> <span class="n">neighborhood_radius_size</span> <span class="o">/</span> <span class="n">pixel_conversion_rate</span>
+    <span class="n">save_dir</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"Statistics"</span> <span class="o">/</span> <span class="s2">"plots"</span> <span class="o">/</span> <span class="s2">"Neighborhood analysis"</span>
+    <span class="n">save_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">adata</span> <span class="ow">in</span> <span class="n">adata_dicts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">save_dir_2</span> <span class="o">=</span> <span class="n">save_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">save_dir_2</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">sq</span><span class="o">.</span><span class="n">gr</span><span class="o">.</span><span class="n">spatial_neighbors</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span><span class="n">radius</span><span class="o">=</span><span class="n">radius_conversion</span><span class="p">,</span> <span class="n">coord_type</span> <span class="o">=</span> <span class="s1">'generic'</span><span class="p">)</span>
+        <span class="n">_neighborhood_enrichment_analysis</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="n">save_dir</span> <span class="o">=</span> <span class="n">save_dir_2</span><span class="p">,</span><span class="n">dpi</span><span class="o">=</span><span class="n">dpi</span><span class="p">,</span> <span class="n">overwrite_existing_files</span><span class="o">=</span><span class="n">overwrite_existing_files</span><span class="p">)</span>
+        <span class="n">_interaction_matrix_analysis</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="n">save_dir</span> <span class="o">=</span> <span class="n">save_dir_2</span><span class="p">,</span><span class="n">dpi</span><span class="o">=</span><span class="n">dpi</span><span class="p">,</span> <span class="n">overwrite_existing_files</span><span class="o">=</span><span class="n">overwrite_existing_files</span><span class="p">)</span>
+        <span class="n">_co_occurrence_analysis</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="n">save_dir</span> <span class="o">=</span> <span class="n">save_dir_2</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="n">dpi</span><span class="p">,</span> <span class="n">overwrite_existing_files</span><span class="o">=</span><span class="n">overwrite_existing_files</span><span class="p">,</span> <span class="n">max_distance</span> <span class="o">=</span> <span class="n">max_distance_coocurrence</span><span class="p">)</span>
+
+    <span class="n">adata_path</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"adata"</span>
+    <span class="k">if</span> <span class="n">save_anndata</span><span class="p">:</span> <span class="n">save_anndata_files</span><span class="p">(</span><span class="n">adata_dicts</span><span class="p">,</span><span class="n">adata_dir</span><span class="o">=</span><span class="n">adata_path</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Neighborhood analysis finished!"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">adata_dicts</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

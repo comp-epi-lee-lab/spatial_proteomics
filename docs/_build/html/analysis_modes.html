@@ -6,20 +6,20 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Analysis modes &mdash; SpPrAn 0.3.0 documentation</title>
+  <title>Analysis modes &mdash; SpPrAn 0.3.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=e259d695"></script>
+      <script src="_static/documentation_options.js?v=4621528c"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="SpPrAn Configuration Builder" href="config_builder.html" />
+    <link rel="next" title="Optional spatial and phenotype analyses" href="optional_analyses.html" />
     <link rel="prev" title="Desktop application" href="desktop_app.html" /> 
 </head>
 
@@ -50,13 +50,14 @@
 <li class="toctree-l2"><a class="reference internal" href="#supervised-mode">Supervised mode</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#unsupervised-mode">Unsupervised mode</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#two-group-comparison">Two-group comparison</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#marker-intensity-summaries">Marker-intensity summaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#protein-marker-intensity-summaries">Protein-marker-intensity summaries</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#full-phenotype-discovery">Full phenotype discovery</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#biological-interpretation">Biological interpretation</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="optional_analyses.html">Optional spatial and phenotype analyses</a></li>
 <li class="toctree-l1"><a class="reference internal" href="config_builder.html">SpPrAn Configuration Builder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="workflow.html">Analysis workflow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration file</a></li>
@@ -95,7 +96,7 @@
              
   <section id="analysis-modes">
 <h1>Analysis modes<a class="headerlink" href="#analysis-modes" title="Link to this heading"></a></h1>
-<p>SpPrAn 0.3.0 provides two user-facing choices in the Configuration Builder:
+<p>SpPrAn provides two user-facing choices in the Configuration Builder:
 <strong>Supervised</strong> and <strong>Unsupervised</strong>. A third configuration value, <code class="docutils literal notranslate"><span class="pre">full</span></code>, is
 used when optional full phenotype discovery is enabled.</p>
 <section id="supervised-mode">
@@ -132,6 +133,13 @@ The exploratory step enumerates observed binary protein marker patterns within t
 <li><p>optional two-group phenotype comparisons; and</p></li>
 <li><p>optional protein-marker intensity summaries.</p></li>
 </ul>
+<p>Version 0.3.1 additionally provides optional:</p>
+<ul class="simple">
+<li><p>continuous protein-marker intensity spatial maps;</p></li>
+<li><p>fixed-radius neighborhood analysis; and</p></li>
+<li><p>advanced low/medium/high phenotype-intensity characterization.</p></li>
+</ul>
+<p>See <a class="reference internal" href="optional_analyses.html"><span class="doc">Optional spatial and phenotype analyses</span></a>.</p>
 <section id="two-group-comparison">
 <h3>Two-group comparison<a class="headerlink" href="#two-group-comparison" title="Link to this heading"></a></h3>
 <p>Samples can optionally be assigned to two groups, such as Control and
@@ -150,10 +158,10 @@ sample size, phenotype-detection frequency, effect magnitude, multiple-test
 correction, and experimental design.</p>
 </div>
 </section>
-<section id="marker-intensity-summaries">
-<h3>Marker-intensity summaries<a class="headerlink" href="#marker-intensity-summaries" title="Link to this heading"></a></h3>
+<section id="protein-marker-intensity-summaries">
+<h3>Protein-marker-intensity summaries<a class="headerlink" href="#protein-marker-intensity-summaries" title="Link to this heading"></a></h3>
 <p>Selected protein-marker intensities can be summarized within discovered
-phenotypes. SpPrAn exports Tukey-style box-plot summary values and outliers for
+phenotypes. SpPrAn exports Tukey-style box-plot summary values and complete intensity-data tables for
 downstream visualization.</p>
 </section>
 </section>
@@ -191,7 +199,7 @@ function of the protein markers in the panel.</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="desktop_app.html" class="btn btn-neutral float-left" title="Desktop application" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="config_builder.html" class="btn btn-neutral float-right" title="SpPrAn Configuration Builder" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="optional_analyses.html" class="btn btn-neutral float-right" title="Optional spatial and phenotype analyses" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

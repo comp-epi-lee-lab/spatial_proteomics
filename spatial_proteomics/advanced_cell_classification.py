@@ -1,3 +1,14 @@
+"""
+Intensity-aware characterization of discovered SpPrAn phenotypes.
+
+After unsupervised marker-pattern discovery, this module further stratifies
+positive-marker intensities within each sample into low, medium, and high
+categories. Thresholds are calculated from the distribution of positive cells
+for each marker using the 25th and 75th percentiles.
+
+This analysis adds expression-strength information to existing discovered
+phenotypes; it does not redefine the original positivity-based phenotype.
+"""
 import pandas as pd
 import numpy as np
 from spatial_proteomics.utils import save_anndata_files
@@ -5,6 +16,9 @@ from spatial_proteomics.utils import save_anndata_files
 import logging
 logger = logging.getLogger(__name__)
 
+# Intensity-state codes stored in ``adata.obsm["pm_intensity_class"]``.
+# ``ABSENT`` indicates a marker-negative cell; LOW/MEDIUM/HIGH apply only to
+# cells already called positive by the upstream positivity data.
 ABSENT = 0
 LOW = 1
 MEDIUM = 2
@@ -13,6 +27,28 @@ MISSING = 255
 LABELS = {ABSENT: "Absent", LOW: "Low", MEDIUM: "Medium", HIGH: "High", MISSING: "Missing"}
 
 def _validate_mapping(adata, pm_mapping):
+    """
+    Resolve positivity-protein-marker metadata to AnnData intensity columns.
+
+    Parameters
+    ----------
+    adata : anndata.AnnData
+        Sample whose ``var_names`` contain protein-intensity variables.
+    pm_mapping : pandas.DataFrame
+        Rows containing positivity-column name, intensity-variable name, and
+        protein-marker short name.
+
+    Returns
+    -------
+    list of tuple
+        Valid mappings containing positivity name, intensity variable, short
+        name, positivity-column index, and AnnData intensity-column index.
+
+    Notes
+    -----
+    Mapping rows whose intensity variable is absent from ``adata.var_names`` are
+    skipped.
+    """
     var_index = pd.Index(adata.var_names)
     result = []
     for pos_idx, (pos_name, intensity_name, pm_short_name) in enumerate(pm_mapping.itertuples(index=False, name=None)):
@@ -22,7 +58,38 @@ def _validate_mapping(adata, pm_mapping):
     return result
 
 def _classify_sample(target, pm_mapping):
-    """Classify positive cells per marker using *sample-wide positive* P25/P75."""
+    """
+    Classify protein-marker-positive cells into low, medium, and high intensity states.
+
+    Parameters
+    ----------
+    target : anndata.AnnData
+        One sample containing binary positivity calls in
+        ``target.obsm["Positivity"]`` and protein intensities in ``target.X``.
+    pm_mapping : pandas.DataFrame
+        Mapping between positivity columns, AnnData intensity variables, and
+        marker short names.
+
+    Returns
+    -------
+    anndata.AnnData
+        The same AnnData object with intensity-state codes stored in
+        ``obsm["pm_intensity_class"]`` and per-protein-marker percentile thresholds
+        stored in ``uns["pm_intensity_thresholds"]``.
+
+    Notes
+    -----
+    Classification is performed independently for each sample and protein marker.
+    Protein-marker-negative cells remain ``Absent``. Among protein-marker-positive cells with
+    finite intensity values:
+
+    * values below the 25th percentile are ``Low``;
+    * values from the 25th through 75th percentile are ``Medium``; and
+    * values above the 75th percentile are ``High``.
+
+    These classes are relative intensity categories within a sample, not
+    universal biological expression thresholds.
+    """
     mapping = _validate_mapping(target, pm_mapping)
     positivity = np.asarray(target.obsm["Positivity"])
     codes = np.full((target.n_obs, target.n_vars), ABSENT, dtype=np.uint8)
@@ -46,12 +113,36 @@ def _classify_sample(target, pm_mapping):
     return target
 
 def _summarize_sample(adata, sample_id, ct_short_names):
-    """Return (marker summary, observed profiles, phenotype overview) DataFrames.
+    """
+    Summarize intensity classes within each discovered phenotype.
 
-    Each phenotype uses the positive-marker pattern saved by SpPrAn at
-    ``adata.uns[f'sub{short_name}_patterns']``. Only observed profiles are
-    enumerated, not all possible combinations. Percentages are percentages
-    *within the phenotype*, not percentages of the entire sample.
+    Parameters
+    ----------
+    adata : anndata.AnnData
+        Classified sample containing intensity-state codes and discovered
+        phenotype assignments.
+    sample_id : str
+        Sample identifier written to the output tables.
+    ct_short_names : list of str
+        Short names of parent cell types explored during phenotype discovery.
+
+    Returns
+    -------
+    marker_summary : pandas.DataFrame
+        Per-phenotype/per-protein-marker counts and percentages of low, medium, and high
+        intensity cells.
+    profile_summary : pandas.DataFrame
+        Observed multi-protein-marker intensity profiles and their frequencies within
+        each phenotype.
+    phenotype_overview : pandas.DataFrame
+        Number of cells, positive protein markers, observed intensity profiles, and
+        frequency of the most common profile for each phenotype.
+
+    Notes
+    -----
+    Only protein-marker-positive members of a discovered phenotype are used when
+    constructing its intensity profile. Reported percentages are within the
+    phenotype, not percentages of all cells in the sample.
     """
     codes = np.asarray(adata.obsm["pm_intensity_class"])
     threshold_info = adata.uns["pm_intensity_thresholds"]
@@ -108,9 +199,44 @@ def _summarize_sample(adata, sample_id, ct_short_names):
     return (pd.DataFrame(marker_rows), pd.DataFrame(profile_rows), pd.DataFrame(overview_rows))
 
 def phenotype_advanced_cell_classification(adata_dicts, ct_short_names, epm_list, epm_short_names, output_dir, save_anndata, overwrite_existing_files):
-    """Classify and summarize samples; export three aggregate CSVs.
+    """
+    Run intensity-aware phenotype characterization across all samples.
 
-    Returns (classified_adatas, marker_df, profile_df, overview_df).
+    Parameters
+    ----------
+    adata_dicts : dict of str to anndata.AnnData
+        Samples containing discovered phenotype assignments and marker
+        positivity/intensity data.
+    ct_short_names : list of str
+        Short names of parent cell populations explored in unsupervised mode.
+    epm_list : list of str
+        Exploratory positivity-protein-marker names.
+    epm_short_names : list of str
+        Short names corresponding positionally to ``epm_list``.
+    output_dir : pathlib.Path
+        SpPrAn output directory.
+    save_anndata : bool
+        Whether classified AnnData objects should be written to disk.
+    overwrite_existing_files : bool
+        Whether existing aggregate CSV outputs may be replaced.
+
+    Returns
+    -------
+    dict of str to anndata.AnnData
+        Updated AnnData objects containing per-cell protein-marker-intensity classes and
+        per-protein-marker threshold metadata.
+
+    Notes
+    -----
+    Three aggregate CSV files are produced:
+
+    * ``Protein marker intensity summary.csv``;
+    * ``Intensity profiles analysis.csv``; and
+    * ``Phenotype intensity summary.csv``.
+
+    Intensity classes are sample-relative. They should be interpreted as
+    within-sample expression-strength categories, not as standardized absolute
+    expression levels across specimens.
     """
     logger.warning(f"Advanced phenotype classification started...")
     adv_dir = output_dir / "Statistics" / "results" / "Advanced cell classification"
@@ -143,7 +269,7 @@ def phenotype_advanced_cell_classification(adata_dicts, ct_short_names, epm_list
     else: summary.to_csv(summary_file, index=False)
     if profiles_file.exists() and not overwrite_existing_files: logger.warning(f"'Intensity profiles analysis.csv' file already exists. Skipping...")
     else: profiles.to_csv(profiles_file, index=False)
-    if overview_file.exists() and not overwrite_existing_files: logger.warning(f"Neighborhood enrichment analysis file already exists. Skipping...")
+    if overview_file.exists() and not overwrite_existing_files: logger.warning(f"'Phenotype intensity summary.csv' file already exists. Skipping...")
     else: overview.to_csv(overview_file, index=False)
 
     adata_path = output_dir / "adata"

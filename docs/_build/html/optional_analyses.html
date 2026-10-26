@@ -1,0 +1,260 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Optional spatial and phenotype analyses &mdash; SpPrAn 0.3.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=4621528c"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="SpPrAn Configuration Builder" href="config_builder.html" />
+    <link rel="prev" title="Analysis modes" href="analysis_modes.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SpPrAn
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="desktop_app.html">Desktop application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analysis_modes.html">Analysis modes</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Optional spatial and phenotype analyses</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#protein-marker-intensity-spatial-plots">Protein-marker intensity spatial plots</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#biological-interpretation">Biological interpretation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#fixed-radius-neighborhood-analysis">Fixed-radius neighborhood analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#neighborhood-enrichment">Neighborhood enrichment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#interaction-matrix">Interaction matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#co-occurrence-analysis">Co-occurrence analysis</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#advanced-phenotype-classification">Advanced phenotype classification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#outputs">Outputs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id1">Biological interpretation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="config_builder.html">SpPrAn Configuration Builder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">Analysis workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Running SpPrAn</a></li>
+<li class="toctree-l1"><a class="reference internal" href="outputs.html">Outputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release_notes.html">Release notes</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Python API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SpPrAn</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Optional spatial and phenotype analyses</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/optional_analyses.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="optional-spatial-and-phenotype-analyses">
+<h1>Optional spatial and phenotype analyses<a class="headerlink" href="#optional-spatial-and-phenotype-analyses" title="Link to this heading"></a></h1>
+<p>SpPrAn 0.3.1 adds three optional analyses to the unsupervised/full workflow.
+They complement phenotype discovery rather than replacing it.</p>
+<section id="protein-marker-intensity-spatial-plots">
+<h2>Protein-marker intensity spatial plots<a class="headerlink" href="#protein-marker-intensity-spatial-plots" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">intensity_spatial_plot</span></code> option creates a spatial map for each sample and
+protein marker.</p>
+<p>Each segmented cell remains at its tissue coordinate and is colored by the
+continuous intensity stored in the AnnData matrix.</p>
+<p>Configuration example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">intensity_spatial_plot</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">dpi</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">150</span>
+<span class="w">  </span><span class="nt">scatter_point_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+</pre></div>
+</div>
+<section id="biological-interpretation">
+<h3>Biological interpretation<a class="headerlink" href="#biological-interpretation" title="Link to this heading"></a></h3>
+<p>These maps answer <strong>where high or low measured protein intensity occurs in the
+tissue</strong>.</p>
+<p>They are conceptually similar to displaying gene expression on a UMAP, except
+that the x/y positions are true tissue coordinates rather than embedding
+coordinates.</p>
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p>The current implementation scales each sample/protein marker plot independently from
+its observed minimum and maximum intensity. Colors should therefore be
+interpreted within a panel and should not be treated as a quantitatively
+harmonized scale across samples.</p>
+</div>
+</section>
+</section>
+<section id="fixed-radius-neighborhood-analysis">
+<h2>Fixed-radius neighborhood analysis<a class="headerlink" href="#fixed-radius-neighborhood-analysis" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">nhood_analysis</span></code> option constructs spatial neighborhoods directly from
+cell coordinates.</p>
+<p>Example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">nhood_analysis</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">nhood_radius_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+<span class="w">  </span><span class="nt">pixel_conversion_rate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">max_distance_coocurrence</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">200</span>
+<span class="w">  </span><span class="nt">dpi</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">150</span>
+</pre></div>
+</div>
+<p>The radius supplied to Squidpy is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>neighborhood_radius_size / pixel_conversion_rate
+</pre></div>
+</div>
+<p>The analysis does not use PCA or expression-space nearest neighbors.</p>
+<section id="neighborhood-enrichment">
+<h3>Neighborhood enrichment<a class="headerlink" href="#neighborhood-enrichment" title="Link to this heading"></a></h3>
+<p>Neighborhood enrichment compares the observed adjacency of major cell
+populations with a permutation-based expectation.</p>
+<p>Positive z-scores indicate population pairs found near each other more often
+than expected; negative values indicate depletion/avoidance.</p>
+<p>SpPrAn exports both the complete heatmap and population-highlighted views.</p>
+</section>
+<section id="interaction-matrix">
+<h3>Interaction matrix<a class="headerlink" href="#interaction-matrix" title="Link to this heading"></a></h3>
+<p>The interaction matrix summarizes direct neighborhood relationships among major
+cell populations using the fixed-radius spatial graph.</p>
+<p>SpPrAn exports a complete matrix plus highlighted views for individual
+populations.</p>
+</section>
+<section id="co-occurrence-analysis">
+<h3>Co-occurrence analysis<a class="headerlink" href="#co-occurrence-analysis" title="Link to this heading"></a></h3>
+<p>Co-occurrence analysis describes how the spatial association of populations
+changes with distance.</p>
+<p><code class="docutils literal notranslate"><span class="pre">max_distance_coocurrence</span></code> controls the largest distance displayed on the
+co-occurrence figure. It changes the displayed x-axis range rather than the
+radius used to construct the neighborhood graph.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Neighborhood association is not equivalent to causal cell-cell
+communication. Spatial proximity may support a biological hypothesis, but
+mechanism requires additional evidence.</p>
+</div>
+</section>
+</section>
+<section id="advanced-phenotype-classification">
+<h2>Advanced phenotype classification<a class="headerlink" href="#advanced-phenotype-classification" title="Link to this heading"></a></h2>
+<p>Set:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">advanced_cell_classification</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</pre></div>
+</div>
+<p>to further characterize discovered phenotypes using protein intensity.</p>
+<p>The initial unsupervised phenotype remains defined by protein marker <strong>positivity</strong>.
+Advanced classification then describes the intensity of positive protein markers.</p>
+<p>For each sample and protein marker:</p>
+<ul class="simple">
+<li><p>protein-marker-negative cells are labeled <code class="docutils literal notranslate"><span class="pre">Absent</span></code>;</p></li>
+<li><p>positive cells below the 25th percentile are <code class="docutils literal notranslate"><span class="pre">Low</span></code>;</p></li>
+<li><p>positive cells from the 25th through 75th percentile are <code class="docutils literal notranslate"><span class="pre">Medium</span></code>; and</p></li>
+<li><p>positive cells above the 75th percentile are <code class="docutils literal notranslate"><span class="pre">High</span></code>.</p></li>
+</ul>
+<p>Thresholds are calculated independently in each sample.</p>
+<section id="outputs">
+<h3>Outputs<a class="headerlink" href="#outputs" title="Link to this heading"></a></h3>
+<p>Advanced classification generates:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Protein</span> <span class="pre">marker</span> <span class="pre">intensity</span> <span class="pre">summary.csv</span></code></dt><dd><p>Low/medium/high counts and proportions for each positive protein marker within each
+discovered phenotype.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Intensity</span> <span class="pre">profiles</span> <span class="pre">analysis.csv</span></code></dt><dd><p>Observed combinations of protein-marker-intensity states within each phenotype and
+their relative frequencies.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Phenotype</span> <span class="pre">intensity</span> <span class="pre">summary.csv</span></code></dt><dd><p>Phenotype-level overview including the number of positive protein markers, number of
+observed intensity profiles, and frequency of the most common profile.</p>
+</dd>
+</dl>
+<p>The intensity classes and threshold metadata are also stored in AnnData when
+AnnData saving is enabled.</p>
+</section>
+<section id="id1">
+<h3>Biological interpretation<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<p>The low/medium/high categories are <strong>sample-relative intensity descriptors</strong>.
+They should not be interpreted as universal expression thresholds across
+patients or experiments without additional normalization/harmonization.</p>
+<p>This distinction is important in tumor-microenvironment analyses: a cell can
+belong to the same positivity-defined phenotype in two tumors while exhibiting
+different relative protein-expression strengths.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="analysis_modes.html" class="btn btn-neutral float-left" title="Analysis modes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="config_builder.html" class="btn btn-neutral float-right" title="SpPrAn Configuration Builder" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -30,7 +30,9 @@ The unsupervised branch:
 #. quantifies those patterns within selected major cell types;
 #. stores discovered phenotype labels/patterns in AnnData;
 #. optionally compares phenotypes between two sample groups; and
-#. optionally summarizes marker intensities within discovered phenotypes.
+#. optionally summarizes protein marker intensities within discovered phenotypes.
+#. optionally summarizes major cell types neighborhood analysis.
+#. optionally describes positive markers within discovered phenotypes using sample-relative low/medium/high intensity states.
 
 Full branch
 -----------
@@ -48,5 +50,8 @@ Questions answered by each mode
 **Unsupervised**
    Which marker combinations are observed within a selected parent population,
    how abundant are they, and do their proportions differ between groups?
+
+   Where is protein abundance located? Which major cell populations spatially associate?
+   How strong is protein marker expression inside an already-discovered phenotype?
 
 Neither mode alone establishes biological lineage or causality.

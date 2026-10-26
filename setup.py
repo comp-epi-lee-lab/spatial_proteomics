@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='sppran',
-    version='0.3.0',
+    version='0.3.1',
     description='A bioinformatic pipeline to analyze spatial proteomics samples using cell types defined by the presence or absence of protein markers',
     author='Sergio Zamora-Erazo',
     packages=find_packages(),

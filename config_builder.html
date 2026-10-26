@@ -449,7 +449,7 @@ button:disabled { opacity: .55; cursor: not-allowed; }
         </label>
         <div id="unsupIntensitySpatialPlotSettings" class="grid" style="margin-top:14px;" hidden>
           <div class="field"><label for="unsupIntensitySpatialDpi">Plot DPI</label><input id="unsupIntensitySpatialDpi" type="number" min="1" value="150" /></div>
-          <div class="field"><label for="unsupIntensitySpatialPointSize">Scatter-point size</label><input id="unsupIntensitySpatialPointSize" type="number" min="0" step="any" value="50" /></div>
+          <div class="field"><label for="unsupIntensitySpatialPointSize">Scatter-point size</label><input id="unsupIntensitySpatialPointSize" type="number" min="0" step="any" value="5" /></div>
         </div>
       </div>
 
@@ -1072,7 +1072,7 @@ function collectUnsupervisedFormData() {
   if (unsupState.intensitySpatialPlot) {
     data.intensity_spatial_plot = {
       dpi: getNum('unsupIntensitySpatialDpi', 150),
-      scatter_point_size: getNum('unsupIntensitySpatialPointSize', 50)
+      scatter_point_size: getNum('unsupIntensitySpatialPointSize', 5)
     };
   }
 
@@ -1080,7 +1080,7 @@ function collectUnsupervisedFormData() {
     data.nhood_analysis = {
       nhood_radius_size: getNum('unsupNhoodRadius', 50),
       pixel_conversion_rate: getNum('unsupPixelConversionRate', 1),
-      max_distance_coocurrence: getNum('unsupMaxDistanceCoocurrence', 200),
+      max_distance_cooccurrence: getNum('unsupMaxDistanceCoocurrence', 200),
       dpi: getNum('unsupNhoodDpi', 150)
     };
   }
@@ -1119,7 +1119,7 @@ function validateUnsupervisedRequiredFields(data) {
   if (data.nhood_analysis) {
     if (!(data.nhood_analysis.nhood_radius_size > 0)) errors.push('neighborhood radius size must be greater than 0');
     if (!(data.nhood_analysis.pixel_conversion_rate > 0)) errors.push('pixel conversion rate must be greater than 0');
-    if (!(data.nhood_analysis.max_distance_coocurrence > 0)) errors.push('maximum co-occurrence distance must be greater than 0');
+    if (!(data.nhood_analysis.max_distance_cooccurrence > 0)) errors.push('maximum co-occurrence distance must be greater than 0');
     if (!(data.nhood_analysis.dpi > 0)) errors.push('neighborhood analysis DPI must be greater than 0');
   }
 
@@ -1173,13 +1173,13 @@ function importUnsupervisedParsedConfig(config, fileName = 'configuration file')
   const intensitySpatialPlot = isPlainObject(config.intensity_spatial_plot) ? config.intensity_spatial_plot : null;
   unsupState.intensitySpatialPlot = !!intensitySpatialPlot;
   document.getElementById('unsupIntensitySpatialDpi').value = String(intensitySpatialPlot && Number.isFinite(Number(intensitySpatialPlot.dpi)) ? Number(intensitySpatialPlot.dpi) : 150);
-  document.getElementById('unsupIntensitySpatialPointSize').value = String(intensitySpatialPlot && Number.isFinite(Number(intensitySpatialPlot.scatter_point_size)) ? Number(intensitySpatialPlot.scatter_point_size) : 50);
+  document.getElementById('unsupIntensitySpatialPointSize').value = String(intensitySpatialPlot && Number.isFinite(Number(intensitySpatialPlot.scatter_point_size)) ? Number(intensitySpatialPlot.scatter_point_size) : 5);
 
   const nhoodAnalysis = isPlainObject(config.nhood_analysis) ? config.nhood_analysis : null;
   unsupState.neighborhoodAnalysis = !!nhoodAnalysis;
   document.getElementById('unsupNhoodRadius').value = String(nhoodAnalysis && Number.isFinite(Number(nhoodAnalysis.nhood_radius_size)) ? Number(nhoodAnalysis.nhood_radius_size) : 50);
   document.getElementById('unsupPixelConversionRate').value = String(nhoodAnalysis && Number.isFinite(Number(nhoodAnalysis.pixel_conversion_rate)) ? Number(nhoodAnalysis.pixel_conversion_rate) : 1);
-  document.getElementById('unsupMaxDistanceCoocurrence').value = String(nhoodAnalysis && Number.isFinite(Number(nhoodAnalysis.max_distance_coocurrence)) ? Number(nhoodAnalysis.max_distance_coocurrence) : 200);
+  document.getElementById('unsupMaxDistanceCoocurrence').value = String(nhoodAnalysis && Number.isFinite(Number(nhoodAnalysis.max_distance_cooccurrence)) ? Number(nhoodAnalysis.max_distance_cooccurrence) : 200);
   document.getElementById('unsupNhoodDpi').value = String(nhoodAnalysis && Number.isFinite(Number(nhoodAnalysis.dpi)) ? Number(nhoodAnalysis.dpi) : 150);
 
   unsupState.advancedCellClassification = config.advanced_cell_classification === true || String(config.advanced_cell_classification).toLowerCase() === 'true';

@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Configuration file &mdash; SpPrAn 0.3.0 documentation</title>
+  <title>Configuration file &mdash; SpPrAn 0.3.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=e259d695"></script>
+      <script src="_static/documentation_options.js?v=4621528c"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -47,6 +47,7 @@
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="desktop_app.html">Desktop application</a></li>
 <li class="toctree-l1"><a class="reference internal" href="analysis_modes.html">Analysis modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optional_analyses.html">Optional spatial and phenotype analyses</a></li>
 <li class="toctree-l1"><a class="reference internal" href="config_builder.html">SpPrAn Configuration Builder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="workflow.html">Analysis workflow</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Configuration file</a><ul>
@@ -189,6 +190,18 @@ must not contain a similar key. Both dictionaries can be empty only at the same 
 </dd>
 <dt><code class="docutils literal notranslate"><span class="pre">protein_markers_for_intensity</span></code></dt><dd><p>Optional list with the protein markers for summarized intensity measurements. Protein marker names
 must be exactly the same as appear in the input files. This list can be empty.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">intensity_spatial_plot</span></code></dt><dd><p>Optional dictionary controlling continuous protein-intensity spatial plots.
+<code class="docutils literal notranslate"><span class="pre">dpi</span></code> defines the plot resolution and <code class="docutils literal notranslate"><span class="pre">scatter_point_size</span></code> controls the size of the plotted cells
+or objects.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">nhood_analysis</span></code></dt><dd><p>Optional fixed-radius neighborhood-analysis settings.
+<code class="docutils literal notranslate"><span class="pre">nhood_radius_size</span></code> controls the neighborhood radius in the input data units, <code class="docutils literal notranslate"><span class="pre">pixel_conversion_rate</span></code> establishes
+the scale between desired units (in terms of the input data units) and pixel units for spatial cell coordinates,
+<code class="docutils literal notranslate"><span class="pre">max_distance_coocurrence</span></code> controls the maximum distance for the co-occurrence plot, and <code class="docutils literal notranslate"><span class="pre">dpi</span></code> defines all
+these plots’ resolution.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">advanced_cell_classification</span></code></dt><dd><p>Boolean enabling low/medium/high protein-intensity characterization within discovered phenotypes.</p>
 </dd>
 </dl>
 </section>

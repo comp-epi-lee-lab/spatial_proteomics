@@ -112,6 +112,21 @@ Unsupervised/full settings
    Optional list with the protein markers for summarized intensity measurements. Protein marker names 
    must be exactly the same as appear in the input files. This list can be empty.
 
+``intensity_spatial_plot``
+   Optional dictionary controlling continuous protein-intensity spatial plots.
+   ``dpi`` defines the plot resolution and ``scatter_point_size`` controls the size of the plotted cells 
+   or objects.
+
+``nhood_analysis``
+   Optional fixed-radius neighborhood-analysis settings.
+   ``nhood_radius_size`` controls the neighborhood radius in the input data units, ``pixel_conversion_rate`` establishes 
+   the scale between desired units (in terms of the input data units) and pixel units for spatial cell coordinates, 
+   ``max_distance_coocurrence`` controls the maximum distance for the co-occurrence plot, and ``dpi`` defines all
+   these plots' resolution.
+
+``advanced_cell_classification``
+   Boolean enabling low/medium/high protein-intensity characterization within discovered phenotypes.
+
 Validation
 ----------
 

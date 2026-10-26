@@ -637,10 +637,10 @@ def _check_yaml(config: Any) -> dict:
             if isinstance(nhood_analysis, dict):
                 nhood_analysis.setdefault("nhood_radius_size", 50)
                 nhood_analysis.setdefault("pixel_conversion_rate", 1)
-                nhood_analysis.setdefault("max_distance_coocurrence", None)
+                nhood_analysis.setdefault("max_distance_cooccurrence", None)
                 nhood_analysis.setdefault("dpi", 150)
 
-                expected_keys = {"nhood_radius_size", "pixel_conversion_rate", "max_distance_coocurrence", "dpi"}
+                expected_keys = {"nhood_radius_size", "pixel_conversion_rate", "max_distance_cooccurrence", "dpi"}
                 unexpected_keys = set(nhood_analysis) - expected_keys
                 if unexpected_keys:
                     error("'nhood_analysis' contains unsupported key(s): " + ", ".join(sorted(unexpected_keys)) + ".")
@@ -653,9 +653,9 @@ def _check_yaml(config: Any) -> dict:
                 if isinstance(conversion_rate, bool) or not isinstance(conversion_rate, (int, float)) or conversion_rate <= 0:
                     error("'nhood_analysis.pixel_conversion_rate' must be a positive number.")
 
-                max_distance = nhood_analysis.get("max_distance_coocurrence")
+                max_distance = nhood_analysis.get("max_distance_cooccurrence")
                 if max_distance is not None and (type(max_distance) is not int or max_distance <= 0):
-                    error("'nhood_analysis.max_distance_coocurrence' must be a positive integer or null/None.")
+                    error("'nhood_analysis.max_distance_cooccurrence' must be a positive integer or null/None.")
 
                 nhood_dpi = nhood_analysis.get("dpi")
                 if isinstance(nhood_dpi, bool) or not isinstance(nhood_dpi, (int, float)) or nhood_dpi <= 0:

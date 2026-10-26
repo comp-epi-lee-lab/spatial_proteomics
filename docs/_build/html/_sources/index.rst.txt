@@ -9,12 +9,12 @@ hierarchical cell populations and subtypes.
 SpPrAn can be run from Python/the command line or from a packaged desktop
 application for users who prefer a graphical workflow.
 
-Version 0.3.0
+Version 0.3.1
 -------------
 
-SpPrAn 0.3.0 introduces separate supervised and unsupervised analysis
-workflows, plus an optional full phenotype-discovery workflow that connects
-exploratory phenotype discovery with the established supervised analysis.
+SpPrAn 0.3.1 expands the unsupervised/full workflow with continuous
+protein-intensity spatial maps, fixed-radius neighborhood analysis, and
+intensity-aware advanced phenotype classification.
 
 .. important::
 
@@ -29,6 +29,7 @@ exploratory phenotype discovery with the established supervised analysis.
    installation
    desktop_app
    analysis_modes
+   optional_analyses
    config_builder
    workflow
    configuration

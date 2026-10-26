@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Python API &mdash; SpPrAn 0.3.0 documentation</title>
+  <title>Python API &mdash; SpPrAn 0.3.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=e259d695"></script>
+      <script src="_static/documentation_options.js?v=4621528c"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -46,6 +46,7 @@
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="desktop_app.html">Desktop application</a></li>
 <li class="toctree-l1"><a class="reference internal" href="analysis_modes.html">Analysis modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optional_analyses.html">Optional spatial and phenotype analyses</a></li>
 <li class="toctree-l1"><a class="reference internal" href="config_builder.html">SpPrAn Configuration Builder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="workflow.html">Analysis workflow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration file</a></li>
@@ -90,7 +91,19 @@
 <li class="toctree-l2"><a class="reference internal" href="#module-spatial_proteomics.cell_proportion_matrix">Unsupervised analysis</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.cell_proportion_matrix.calculate_cell_proportion_matrix"><code class="docutils literal notranslate"><span class="pre">calculate_cell_proportion_matrix()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.phenotype_analysis.unsupervised_phenotype_exploration_analysis"><code class="docutils literal notranslate"><span class="pre">unsupervised_phenotype_exploration_analysis()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-spatial_proteomics.intensity_analysis">Intensity analysis</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.intensity_analysis.calculate_pm_intensity_analysis"><code class="docutils literal notranslate"><span class="pre">calculate_pm_intensity_analysis()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.intensity_analysis.plot_spatial_protein_marker_intensities"><code class="docutils literal notranslate"><span class="pre">plot_spatial_protein_marker_intensities()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-spatial_proteomics.neighborhoods">Neighborhood analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.neighborhoods.neighborhood_by_fixed_distance"><code class="docutils literal notranslate"><span class="pre">neighborhood_by_fixed_distance()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-spatial_proteomics.advanced_cell_classification">Advanced phenotype classification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#spatial_proteomics.advanced_cell_classification.phenotype_advanced_cell_classification"><code class="docutils literal notranslate"><span class="pre">phenotype_advanced_cell_classification()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-spatial_proteomics.cell_proportions">Cell proportions</a><ul>
@@ -354,7 +367,7 @@ matching any rule are labeled <code class="docutils literal notranslate"><span c
 
 <dl class="py function">
 <dt class="sig sig-object py" id="spatial_proteomics.anndata.cleaned_data">
-<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.anndata.</span></span><span class="sig-name descname"><span class="pre">cleaned_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_markers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_subtype_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filetype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'tsv'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/anndata.html#cleaned_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.anndata.cleaned_data" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.anndata.</span></span><span class="sig-name descname"><span class="pre">cleaned_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_markers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_subtype_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thresholds_file_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filetype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'tsv'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/anndata.html#cleaned_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.anndata.cleaned_data" title="Link to this definition"></a></dt>
 <dd><p>Clean object-level spatial proteomics tables and create AnnData objects.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -364,6 +377,7 @@ matching any rule are labeled <code class="docutils literal notranslate"><span c
 <li><p><strong>protein_markers</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Primary positivity-column names used for cell-type classification.</p></li>
 <li><p><strong>cell_subtype_dict</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Hierarchical subtype definitions. Subtype marker columns are retained
 when required for downstream classification.</p></li>
+<li><p><strong>thresholds_file_names</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a><em> | </em><em>&quot;None&quot; value for compatibility in previous iterations</em>) – Object-level threshold files to process.</p></li>
 <li><p><strong>filetype</strong> (<em>{&quot;tsv&quot;</em><em>, </em><em>&quot;csv&quot;}</em><em>, </em><em>default=&quot;tsv&quot;</em>) – Input table format.</p></li>
 </ul>
 </dd>
@@ -430,17 +444,18 @@ AnnData objects from the original object-level input files.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="spatial_proteomics.anndata.filenames">
-<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.anndata.</span></span><span class="sig-name descname"><span class="pre">filenames</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filetype</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/anndata.html#filenames"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.anndata.filenames" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.anndata.</span></span><span class="sig-name descname"><span class="pre">filenames</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_to_check</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filetype</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/anndata.html#filenames"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.anndata.filenames" title="Link to this definition"></a></dt>
 <dd><p>Find SpPrAn object-level input files.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>input_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – Directory containing Visiopharm object-level exports.</p></li>
+<li><p><strong>input_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – Directory containing Visiopharm object-level or thresholds-level exports.</p></li>
+<li><p><strong>file_to_check</strong> (<em>{&quot;_objects&quot;</em><em>, </em><em>&quot;_Thresholds&quot;}</em>) – Selector of object-level or threshold-level files to process.</p></li>
 <li><p><strong>filetype</strong> (<em>{&quot;tsv&quot;</em><em>, </em><em>&quot;csv&quot;}</em>) – Input-file extension.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Files matching <code class="docutils literal notranslate"><span class="pre">*_objects.&lt;filetype&gt;</span></code>.</p>
+<dd class="field-even"><p>Files matching <code class="docutils literal notranslate"><span class="pre">*_objects.&lt;filetype&gt;</span></code> or <code class="docutils literal notranslate"><span class="pre">*_Thresholds.&lt;filetype&gt;</span></code>, according to <code class="docutils literal notranslate"><span class="pre">file_to_check</span></code> value.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a> of <a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)">pathlib.Path</a></p>
@@ -685,7 +700,10 @@ than clusters. When two groups are supplied, common phenotype proportions
 are statistically compared and group-specific phenotypes are reported.</p>
 </dd></dl>
 
-<dl class="py function" id="module-spatial_proteomics.intensity_analysis">
+</section>
+<section id="module-spatial_proteomics.intensity_analysis">
+<span id="intensity-analysis"></span><h2>Intensity analysis<a class="headerlink" href="#module-spatial_proteomics.intensity_analysis" title="Link to this heading"></a></h2>
+<dl class="py function">
 <dt class="sig sig-object py" id="spatial_proteomics.intensity_analysis.calculate_pm_intensity_analysis">
 <span class="sig-prename descclassname"><span class="pre">spatial_proteomics.intensity_analysis.</span></span><span class="sig-name descname"><span class="pre">calculate_pm_intensity_analysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">adata_dicts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">list_ct_short_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which_pm</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/intensity_analysis.html#calculate_pm_intensity_analysis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.intensity_analysis.calculate_pm_intensity_analysis" title="Link to this definition"></a></dt>
 <dd><p>Export protein marker intensity summaries for discovered phenotypes.</p>
@@ -709,6 +727,129 @@ should be summarized. An empty list disables the analysis.</p></li>
 <p class="rubric">Notes</p>
 <p>This is descriptive output for box plot visualization; the function itself
 does not perform inferential tests on marker intensity.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.intensity_analysis.plot_spatial_protein_marker_intensities">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.intensity_analysis.</span></span><span class="sig-name descname"><span class="pre">plot_spatial_protein_marker_intensities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">adata_dicts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'viridis'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">point_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dpi</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">150</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/intensity_analysis.html#plot_spatial_protein_marker_intensities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.intensity_analysis.plot_spatial_protein_marker_intensities" title="Link to this definition"></a></dt>
+<dd><p>Plot spatial protein-marker intensity for every sample and protein marker.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>adata_dicts</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> of </em><em>str to anndata.AnnData</em>) – Samples containing spatial coordinates in <code class="docutils literal notranslate"><span class="pre">obsm[&quot;spatial&quot;]</span></code> and
+protein-marker intensities in <code class="docutils literal notranslate"><span class="pre">X</span></code>.</p></li>
+<li><p><strong>output_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – SpPrAn output directory.</p></li>
+<li><p><strong>cmap</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><em>default=&quot;viridis&quot;</em>) – Matplotlib colormap used for intensity values.</p></li>
+<li><p><strong>point_size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>default=1</em>) – Scatter-point size for individual cells.</p></li>
+<li><p><strong>dpi</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>default=150</em>) – Output image resolution.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>One PNG per sample and protein marker is written under
+<code class="docutils literal notranslate"><span class="pre">plots/Spatial</span> <span class="pre">protein</span> <span class="pre">markers</span> <span class="pre">intensity</span> <span class="pre">plots</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Each plot colors individual segmented cells by continuous protein-marker
+intensity, analogous to displaying gene expression on a single-cell
+embedding but retaining the cells’ actual tissue coordinates.</p>
+<p>The current implementation scales each sample/protein marker independently using
+its observed minimum and maximum intensity. Consequently, colors should not
+be compared quantitatively between different sample panels unless a common
+scale is introduced.</p>
+</dd></dl>
+
+</section>
+<section id="module-spatial_proteomics.neighborhoods">
+<span id="neighborhood-analysis"></span><h2>Neighborhood analysis<a class="headerlink" href="#module-spatial_proteomics.neighborhoods" title="Link to this heading"></a></h2>
+<p>Fixed-radius spatial neighborhood analyses for SpPrAn.</p>
+<p>This module constructs spatial-neighbor graphs from single-cell coordinates and
+summarizes relationships among major marker-defined cell populations using
+Squidpy neighborhood enrichment, interaction matrices, and co-occurrence
+analysis.</p>
+<p>Neighborhoods are defined geometrically from a user-specified physical/image
+radius rather than from PCA or expression-space nearest neighbors.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.neighborhoods.neighborhood_by_fixed_distance">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.neighborhoods.</span></span><span class="sig-name descname"><span class="pre">neighborhood_by_fixed_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">adata_dicts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dpi</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_anndata</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite_existing_files</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neighborhood_radius_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_conversion_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_distance_coocurrence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/neighborhoods.html#neighborhood_by_fixed_distance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.neighborhoods.neighborhood_by_fixed_distance" title="Link to this definition"></a></dt>
+<dd><p>Run fixed-radius neighborhood analysis for all samples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>adata_dicts</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> of </em><em>str to anndata.AnnData</em>) – Per-sample annotated single-cell spatial proteomics data.</p></li>
+<li><p><strong>output_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – SpPrAn output directory.</p></li>
+<li><p><strong>dpi</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Resolution of exported neighborhood plots.</p></li>
+<li><p><strong>save_anndata</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether AnnData objects containing neighborhood results should be saved.</p></li>
+<li><p><strong>overwrite_existing_files</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether existing plot files may be replaced.</p></li>
+<li><p><strong>neighborhood_radius_size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>default=50</em>) – User-facing neighborhood radius.</p></li>
+<li><p><strong>pixel_conversion_rate</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>default=1</em>) – Conversion factor between the user-facing radius unit and the spatial
+coordinate unit stored in AnnData.</p></li>
+<li><p><strong>max_distance_coocurrence</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><em>None</em><em>, </em><em>default=None</em>) – Optional maximum distance shown in co-occurrence plots.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>AnnData objects containing the computed spatial-neighbor graph and
+Squidpy neighborhood-analysis results.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a> of str to anndata.AnnData</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The radius supplied to Squidpy is calculated as
+<code class="docutils literal notranslate"><span class="pre">neighborhood_radius_size</span> <span class="pre">/</span> <span class="pre">pixel_conversion_rate</span></code>.</p>
+<p>This analysis defines neighborhoods from tissue/image coordinates. It does
+not require PCA, UMAP, or expression-space nearest-neighbor construction.</p>
+</dd></dl>
+
+</section>
+<section id="module-spatial_proteomics.advanced_cell_classification">
+<span id="advanced-phenotype-classification"></span><h2>Advanced phenotype classification<a class="headerlink" href="#module-spatial_proteomics.advanced_cell_classification" title="Link to this heading"></a></h2>
+<p>Intensity-aware characterization of discovered SpPrAn phenotypes.</p>
+<p>After unsupervised marker-pattern discovery, this module further stratifies
+positive-marker intensities within each sample into low, medium, and high
+categories. Thresholds are calculated from the distribution of positive cells
+for each marker using the 25th and 75th percentiles.</p>
+<p>This analysis adds expression-strength information to existing discovered
+phenotypes; it does not redefine the original positivity-based phenotype.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="spatial_proteomics.advanced_cell_classification.phenotype_advanced_cell_classification">
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.advanced_cell_classification.</span></span><span class="sig-name descname"><span class="pre">phenotype_advanced_cell_classification</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">adata_dicts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ct_short_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epm_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epm_short_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_anndata</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite_existing_files</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/advanced_cell_classification.html#phenotype_advanced_cell_classification"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.advanced_cell_classification.phenotype_advanced_cell_classification" title="Link to this definition"></a></dt>
+<dd><p>Run intensity-aware phenotype characterization across all samples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>adata_dicts</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> of </em><em>str to anndata.AnnData</em>) – Samples containing discovered phenotype assignments and marker
+positivity/intensity data.</p></li>
+<li><p><strong>ct_short_names</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Short names of parent cell populations explored in unsupervised mode.</p></li>
+<li><p><strong>epm_list</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Exploratory positivity-protein-marker names.</p></li>
+<li><p><strong>epm_short_names</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Short names corresponding positionally to <code class="docutils literal notranslate"><span class="pre">epm_list</span></code>.</p></li>
+<li><p><strong>output_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>pathlib.Path</em></a>) – SpPrAn output directory.</p></li>
+<li><p><strong>save_anndata</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether classified AnnData objects should be written to disk.</p></li>
+<li><p><strong>overwrite_existing_files</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether existing aggregate CSV outputs may be replaced.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Updated AnnData objects containing per-cell protein-marker-intensity classes and
+per-protein-marker threshold metadata.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a> of str to anndata.AnnData</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Three aggregate CSV files are produced:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Protein</span> <span class="pre">marker</span> <span class="pre">intensity</span> <span class="pre">summary.csv</span></code>;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Intensity</span> <span class="pre">profiles</span> <span class="pre">analysis.csv</span></code>; and</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Phenotype</span> <span class="pre">intensity</span> <span class="pre">summary.csv</span></code>.</p></li>
+</ul>
+<p>Intensity classes are sample-relative. They should be interpreted as
+within-sample expression-strength categories, not as standardized absolute
+expression levels across specimens.</p>
 </dd></dl>
 
 </section>

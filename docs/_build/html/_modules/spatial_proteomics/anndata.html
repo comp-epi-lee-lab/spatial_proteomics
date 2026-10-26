@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>spatial_proteomics.anndata &mdash; SpPrAn 0.3.0 documentation</title>
+  <title>spatial_proteomics.anndata &mdash; SpPrAn 0.3.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../../_static/documentation_options.js?v=4621528c"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -44,6 +44,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../desktop_app.html">Desktop application</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../analysis_modes.html">Analysis modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../optional_analyses.html">Optional spatial and phenotype analyses</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../config_builder.html">SpPrAn Configuration Builder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../workflow.html">Analysis workflow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../configuration.html">Configuration file</a></li>
@@ -132,21 +133,23 @@
 
 <div class="viewcode-block" id="filenames">
 <a class="viewcode-back" href="../../api.html#spatial_proteomics.anndata.filenames">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">filenames</span><span class="p">(</span><span class="n">input_dir</span><span class="p">,</span> <span class="n">filetype</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">filenames</span><span class="p">(</span><span class="n">input_dir</span><span class="p">,</span> <span class="n">file_to_check</span><span class="p">,</span> <span class="n">filetype</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Find SpPrAn object-level input files.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    input_dir : pathlib.Path</span>
-<span class="sd">        Directory containing Visiopharm object-level exports.</span>
+<span class="sd">        Directory containing Visiopharm object-level or thresholds-level exports.</span>
+<span class="sd">    file_to_check : {"_objects", "_Thresholds"}</span>
+<span class="sd">        Selector of object-level or threshold-level files to process.</span>
 <span class="sd">    filetype : {"tsv", "csv"}</span>
 <span class="sd">        Input-file extension.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    list of pathlib.Path</span>
-<span class="sd">        Files matching ``*_objects.&lt;filetype&gt;``.</span>
+<span class="sd">        Files matching ``*_objects.&lt;filetype&gt;`` or ``*_Thresholds.&lt;filetype&gt;``, according to ``file_to_check`` value.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -159,15 +162,16 @@
 <span class="sd">    """</span>
     <span class="k">if</span> <span class="n">input_dir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
         <span class="n">entries</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">input_dir</span><span class="o">.</span><span class="n">iterdir</span><span class="p">())</span>
-        <span class="n">filenames</span> <span class="o">=</span> <span class="p">[</span><span class="n">entry</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">entries</span> <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">is_file</span><span class="p">()</span> <span class="ow">and</span> <span class="n">entry</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">f</span><span class="s2">"*_objects.</span><span class="si">{</span><span class="n">filetype</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">entry</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"._"</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">entry</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"."</span><span class="p">)]</span>  <span class="c1"># Exclude hidden files and macOS resource forks</span>
+        <span class="n">filenames</span> <span class="o">=</span> <span class="p">[</span><span class="n">entry</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">entries</span> <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">is_file</span><span class="p">()</span> <span class="ow">and</span> <span class="n">entry</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">f</span><span class="s2">"*</span><span class="si">{</span><span class="n">file_to_check</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">filetype</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">entry</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"._"</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">entry</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"."</span><span class="p">)]</span>  <span class="c1"># Exclude hidden files and macOS resource forks</span>
         <span class="k">return</span> <span class="n">filenames</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Input directory '</span><span class="si">{</span><span class="n">input_dir</span><span class="si">}</span><span class="s2">' doesn't exists or it's misspelled."</span><span class="p">)</span></div>
+        <span class="k">if</span> <span class="n">file_to_check</span> <span class="o">==</span> <span class="s2">"_objects"</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Input directory '</span><span class="si">{</span><span class="n">input_dir</span><span class="si">}</span><span class="s2">' doesn't exists or it's misspelled."</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Thresholds directory '</span><span class="si">{</span><span class="n">input_dir</span><span class="si">}</span><span class="s2">' doesn't exists or it's misspelled."</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="cleaned_data">
 <a class="viewcode-back" href="../../api.html#spatial_proteomics.anndata.cleaned_data">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">cleaned_data</span><span class="p">(</span><span class="n">file_names</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">protein_markers</span><span class="p">,</span> <span class="n">cell_subtype_dict</span><span class="p">,</span> <span class="n">filetype</span><span class="o">=</span><span class="s1">'tsv'</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">cleaned_data</span><span class="p">(</span><span class="n">file_names</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">protein_markers</span><span class="p">,</span> <span class="n">cell_subtype_dict</span><span class="p">,</span> <span class="n">thresholds_file_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">filetype</span><span class="o">=</span><span class="s1">'tsv'</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Clean object-level spatial proteomics tables and create AnnData objects.</span>
 
@@ -182,6 +186,8 @@
 <span class="sd">    cell_subtype_dict : dict</span>
 <span class="sd">        Hierarchical subtype definitions. Subtype marker columns are retained</span>
 <span class="sd">        when required for downstream classification.</span>
+<span class="sd">    thresholds_file_names : list of pathlib.Path | "None" value for compatibility in previous iterations</span>
+<span class="sd">        Object-level threshold files to process.</span>
 <span class="sd">    filetype : {"tsv", "csv"}, default="tsv"</span>
 <span class="sd">        Input table format.</span>
 
@@ -206,10 +212,15 @@
     <span class="n">data_dicts</span>     <span class="o">=</span> <span class="p">{}</span>
     <span class="n">filename_dicts</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">file_names</span><span class="p">)</span><span class="o">!=</span><span class="mi">0</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">file_names</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">thresholds_file_names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">thresholds_file_names</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">file_names</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">file_names</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">thresholds_file_names</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Total input files and threshold files do not match. Please verify that each input file has its corresponding threshold file before running it again. Skipping the use of thresholds in this run..."</span><span class="p">)</span>
+            <span class="n">thresholds_file_names</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">file_names</span><span class="p">)</span> 
+        <span class="k">for</span> <span class="n">filename</span><span class="p">,</span><span class="n">thresholds_filename</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">file_names</span><span class="p">,</span><span class="n">thresholds_file_names</span><span class="p">):</span>
             <span class="n">separator</span> <span class="o">=</span> <span class="s1">'</span><span class="se">\t</span><span class="s1">'</span> <span class="k">if</span> <span class="n">filetype</span><span class="o">==</span><span class="s1">'tsv'</span> <span class="k">else</span> <span class="s1">','</span>
             <span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="n">separator</span><span class="p">)</span>
+            <span class="n">threshold_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">thresholds_filename</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="n">separator</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="k">if</span> <span class="n">thresholds_filename</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
             <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="s1">'Positivity - DAPI (MV - NUC)'</span><span class="p">])</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
                 <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="s1">'Positivity - DAPI (MV - NUC)'</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span><span class="p">]</span>                                                           <span class="c1"># filter out cells without nucleus</span>
             <span class="k">else</span><span class="p">:</span> <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"WARNING: This pipeline uses 'Positivity - DAPI' for filtering out cells without nucleus. However, such column was not found. Continue without filtering..."</span><span class="p">)</span>
@@ -221,6 +232,7 @@
             <span class="n">data</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">"Name"</span><span class="p">:</span><span class="s2">"cellID"</span><span class="p">},</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             
             <span class="n">pos_cols</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">[(</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s1">'Positivity'</span><span class="p">))</span><span class="o">&amp;</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s1">'MV'</span><span class="p">))]</span>               <span class="c1"># identify columns that says if protein marker is present (1) or abscent (0)</span>
+            <span class="n">thresholds_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">pm</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"Positivity - "</span><span class="p">,</span><span class="s2">""</span><span class="p">)</span> <span class="k">for</span> <span class="n">pm</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="n">pos_cols</span><span class="p">]</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>                                <span class="c1"># identify threshold columns from positivity columns</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pos_cols</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> 
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"WARNING: No protein marker valid name was found in Sample </span><span class="si">{</span><span class="n">name_of_file</span><span class="p">[</span><span class="o">-</span><span class="mi">14</span><span class="p">:</span><span class="o">-</span><span class="mi">12</span><span class="p">]</span><span class="si">}</span><span class="s2">. Skipping this sample from analysis..."</span><span class="p">)</span>
                 <span class="k">continue</span>
@@ -256,6 +268,10 @@
 
             <span class="n">columns_pos</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="s1">'cellID'</span><span class="p">,</span> <span class="s1">'X-coordinate'</span><span class="p">,</span> <span class="s1">'Y-coordinate'</span><span class="p">])]</span>                          <span class="c1"># keep spatial columns</span>
             <span class="n">data_temp</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">intensities_columns</span><span class="p">]</span><span class="c1">#.iloc[:,1:]</span>
+            <span class="k">if</span> <span class="n">thresholds_filename</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">threshold_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">pm_i</span><span class="p">:{</span><span class="s2">"Lower Threshold"</span><span class="p">:</span> <span class="n">threshold_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">"Lower Threshold"</span><span class="p">,</span><span class="n">pm_t</span><span class="p">],</span> <span class="s2">"Upper Threshold"</span> <span class="p">:</span> <span class="n">threshold_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">"Upper Threshold"</span><span class="p">,</span><span class="n">pm_t</span><span class="p">]}</span> <span class="k">for</span> <span class="n">pm_t</span><span class="p">,</span> <span class="n">pm_i</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">thresholds_cols</span><span class="p">,</span> <span class="n">intensities_columns</span><span class="p">)}</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">threshold_dict</span> <span class="o">=</span> <span class="s2">"No protein marker intensities thresholds were passed"</span>
             <span class="n">adata</span> <span class="o">=</span> <span class="n">AnnData</span><span class="p">(</span>                                                                                                   <span class="c1"># generate AnnData file to include spatial data</span>
                 <span class="n">data_temp</span><span class="o">.</span><span class="n">set_index</span><span class="p">((</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">data_temp</span><span class="o">.</span><span class="n">index</span><span class="p">)),</span>
                 <span class="n">obsm</span><span class="o">=</span><span class="p">{</span>
@@ -265,7 +281,8 @@
                 <span class="p">},</span>
                 <span class="n">uns</span><span class="o">=</span><span class="p">{</span>
                     <span class="s2">"spatial"</span><span class="p">:{</span><span class="s2">"unique"</span><span class="p">:{}},</span>
-                    <span class="s2">"filename_id"</span><span class="p">:{</span><span class="n">name_of_file</span><span class="p">:</span> <span class="n">name_of_file</span><span class="p">[</span><span class="o">-</span><span class="mi">14</span><span class="p">:</span><span class="o">-</span><span class="mi">12</span><span class="p">]}</span>
+                    <span class="s2">"filename_id"</span><span class="p">:{</span><span class="n">name_of_file</span><span class="p">:</span> <span class="n">name_of_file</span><span class="p">[</span><span class="o">-</span><span class="mi">14</span><span class="p">:</span><span class="o">-</span><span class="mi">12</span><span class="p">]},</span>
+                    <span class="s2">"thresholds"</span><span class="p">:</span> <span class="n">threshold_dict</span>
                 <span class="p">}</span>
             <span class="p">)</span>
 
@@ -726,15 +743,19 @@
 <span class="sd">        If no AnnData objects can be generated from the configured input files.</span>
 <span class="sd">    """</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Generating anndata files for analysis..."</span><span class="p">)</span>
-    <span class="n">file_names</span> <span class="o">=</span> <span class="n">filenames</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">'workspace'</span><span class="p">][</span><span class="s1">'input_dir'</span><span class="p">],</span> <span class="n">config</span><span class="p">[</span><span class="s1">'workspace'</span><span class="p">][</span><span class="s1">'filetype'</span><span class="p">])</span>
+    <span class="n">file_names</span> <span class="o">=</span> <span class="n">filenames</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">'workspace'</span><span class="p">][</span><span class="s1">'input_dir'</span><span class="p">],</span> <span class="s2">"_objects"</span><span class="p">,</span> <span class="n">config</span><span class="p">[</span><span class="s1">'workspace'</span><span class="p">][</span><span class="s1">'filetype'</span><span class="p">])</span>
+    <span class="k">if</span> <span class="s1">'threshold_dir'</span> <span class="ow">in</span> <span class="n">config</span><span class="p">[</span><span class="s2">"workspace"</span><span class="p">]:</span>
+        <span class="n">thresholds_file_names</span> <span class="o">=</span> <span class="n">filenames</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">'workspace'</span><span class="p">][</span><span class="s1">'threshold_dir'</span><span class="p">],</span> <span class="s2">"_Thresholds"</span><span class="p">,</span> <span class="n">config</span><span class="p">[</span><span class="s1">'workspace'</span><span class="p">][</span><span class="s1">'filetype'</span><span class="p">])</span> <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">'workspace'</span><span class="p">][</span><span class="s1">'threshold_dir'</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">else</span><span class="p">:</span> <span class="n">thresholds_file_names</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">cell_type_dict</span> <span class="o">=</span> <span class="n">create_cell_type_dict</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">'protein_markers'</span><span class="p">],</span> <span class="n">config</span><span class="p">[</span><span class="s1">'cell_types'</span><span class="p">])</span>
     <span class="n">sub_cell_type_dict</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'sub_cell_types'</span><span class="p">]</span> <span class="k">if</span> <span class="s1">'sub_cell_types'</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">else</span> <span class="p">{}</span>
     <span class="n">data_dicts</span><span class="p">,</span> <span class="n">adata_dicts</span> <span class="o">=</span> <span class="n">cleaned_data</span><span class="p">(</span>
-        <span class="n">file_names</span>        <span class="o">=</span> <span class="n">file_names</span><span class="p">,</span> 
-        <span class="n">output_dir</span>        <span class="o">=</span> <span class="n">output_dir</span><span class="p">,</span> 
-        <span class="n">protein_markers</span>   <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'protein_markers'</span><span class="p">],</span>
-        <span class="n">cell_subtype_dict</span> <span class="o">=</span> <span class="n">sub_cell_type_dict</span><span class="p">,</span>
-        <span class="n">filetype</span>          <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'workspace'</span><span class="p">][</span><span class="s1">'filetype'</span><span class="p">],</span>
+        <span class="n">file_names</span>            <span class="o">=</span> <span class="n">file_names</span><span class="p">,</span> 
+        <span class="n">output_dir</span>            <span class="o">=</span> <span class="n">output_dir</span><span class="p">,</span> 
+        <span class="n">protein_markers</span>       <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'protein_markers'</span><span class="p">],</span>
+        <span class="n">cell_subtype_dict</span>     <span class="o">=</span> <span class="n">sub_cell_type_dict</span><span class="p">,</span>
+        <span class="n">thresholds_file_names</span> <span class="o">=</span> <span class="n">thresholds_file_names</span><span class="p">,</span>
+        <span class="n">filetype</span>              <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'workspace'</span><span class="p">][</span><span class="s1">'filetype'</span><span class="p">],</span>
     <span class="p">)</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">adata_dicts</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"No anndata files were generated. Please review the configuration file."</span><span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Anndata generated!"</span><span class="p">)</span>

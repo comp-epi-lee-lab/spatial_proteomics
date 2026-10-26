@@ -1,7 +1,7 @@
 Analysis modes
 ==============
 
-SpPrAn 0.3.0 provides two user-facing choices in the Configuration Builder:
+SpPrAn provides two user-facing choices in the Configuration Builder:
 **Supervised** and **Unsupervised**. A third configuration value, ``full``, is
 used when optional full phenotype discovery is enabled.
 
@@ -46,6 +46,14 @@ The workflow can generate:
 * optional two-group phenotype comparisons; and
 * optional protein-marker intensity summaries.
 
+Version 0.3.1 additionally provides optional:
+
+* continuous protein-marker intensity spatial maps;
+* fixed-radius neighborhood analysis; and
+* advanced low/medium/high phenotype-intensity characterization.
+
+See :doc:`optional_analyses`.
+
 Two-group comparison
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -65,11 +73,11 @@ Group-specific phenotypes are also reported.
    sample size, phenotype-detection frequency, effect magnitude, multiple-test
    correction, and experimental design.
 
-Marker-intensity summaries
+Protein-marker-intensity summaries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Selected protein-marker intensities can be summarized within discovered
-phenotypes. SpPrAn exports Tukey-style box-plot summary values and outliers for
+phenotypes. SpPrAn exports Tukey-style box-plot summary values and complete intensity-data tables for
 downstream visualization.
 
 Full phenotype discovery

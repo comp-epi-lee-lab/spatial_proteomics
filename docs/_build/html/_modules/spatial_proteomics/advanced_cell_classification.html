@@ -1,0 +1,395 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>spatial_proteomics.advanced_cell_classification &mdash; SpPrAn 0.3.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=4621528c"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            SpPrAn
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../desktop_app.html">Desktop application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../analysis_modes.html">Analysis modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../optional_analyses.html">Optional spatial and phenotype analyses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../config_builder.html">SpPrAn Configuration Builder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../workflow.html">Analysis workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../configuration.html">Configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Running SpPrAn</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../outputs.html">Outputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release notes</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">Python API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">SpPrAn</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">spatial_proteomics.advanced_cell_classification</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for spatial_proteomics.advanced_cell_classification</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">Intensity-aware characterization of discovered SpPrAn phenotypes.</span>
+
+<span class="sd">After unsupervised marker-pattern discovery, this module further stratifies</span>
+<span class="sd">positive-marker intensities within each sample into low, medium, and high</span>
+<span class="sd">categories. Thresholds are calculated from the distribution of positive cells</span>
+<span class="sd">for each marker using the 25th and 75th percentiles.</span>
+
+<span class="sd">This analysis adds expression-strength information to existing discovered</span>
+<span class="sd">phenotypes; it does not redefine the original positivity-based phenotype.</span>
+<span class="sd">"""</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">spatial_proteomics.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">save_anndata_files</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1"># Intensity-state codes stored in ``adata.obsm["pm_intensity_class"]``.</span>
+<span class="c1"># ``ABSENT`` indicates a marker-negative cell; LOW/MEDIUM/HIGH apply only to</span>
+<span class="c1"># cells already called positive by the upstream positivity data.</span>
+<span class="n">ABSENT</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">LOW</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">MEDIUM</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">HIGH</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">MISSING</span> <span class="o">=</span> <span class="mi">255</span>
+<span class="n">LABELS</span> <span class="o">=</span> <span class="p">{</span><span class="n">ABSENT</span><span class="p">:</span> <span class="s2">"Absent"</span><span class="p">,</span> <span class="n">LOW</span><span class="p">:</span> <span class="s2">"Low"</span><span class="p">,</span> <span class="n">MEDIUM</span><span class="p">:</span> <span class="s2">"Medium"</span><span class="p">,</span> <span class="n">HIGH</span><span class="p">:</span> <span class="s2">"High"</span><span class="p">,</span> <span class="n">MISSING</span><span class="p">:</span> <span class="s2">"Missing"</span><span class="p">}</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_validate_mapping</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span> <span class="n">pm_mapping</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Resolve positivity-protein-marker metadata to AnnData intensity columns.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    adata : anndata.AnnData</span>
+<span class="sd">        Sample whose ``var_names`` contain protein-intensity variables.</span>
+<span class="sd">    pm_mapping : pandas.DataFrame</span>
+<span class="sd">        Rows containing positivity-column name, intensity-variable name, and</span>
+<span class="sd">        protein-marker short name.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    list of tuple</span>
+<span class="sd">        Valid mappings containing positivity name, intensity variable, short</span>
+<span class="sd">        name, positivity-column index, and AnnData intensity-column index.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Mapping rows whose intensity variable is absent from ``adata.var_names`` are</span>
+<span class="sd">    skipped.</span>
+<span class="sd">    """</span>
+    <span class="n">var_index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span><span class="n">adata</span><span class="o">.</span><span class="n">var_names</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">pos_idx</span><span class="p">,</span> <span class="p">(</span><span class="n">pos_name</span><span class="p">,</span> <span class="n">intensity_name</span><span class="p">,</span> <span class="n">pm_short_name</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pm_mapping</span><span class="o">.</span><span class="n">itertuples</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">intensity_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">var_index</span><span class="p">:</span> <span class="k">continue</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">str</span><span class="p">(</span><span class="n">pos_name</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">intensity_name</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">pm_short_name</span><span class="p">),</span> <span class="n">pos_idx</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">var_index</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">intensity_name</span><span class="p">))))</span>
+        <span class="c1"># results contains =  positivity name, intensity name, short name, positivity index, X index</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_classify_sample</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">pm_mapping</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Classify protein-marker-positive cells into low, medium, and high intensity states.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    target : anndata.AnnData</span>
+<span class="sd">        One sample containing binary positivity calls in</span>
+<span class="sd">        ``target.obsm["Positivity"]`` and protein intensities in ``target.X``.</span>
+<span class="sd">    pm_mapping : pandas.DataFrame</span>
+<span class="sd">        Mapping between positivity columns, AnnData intensity variables, and</span>
+<span class="sd">        marker short names.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    anndata.AnnData</span>
+<span class="sd">        The same AnnData object with intensity-state codes stored in</span>
+<span class="sd">        ``obsm["pm_intensity_class"]`` and per-protein-marker percentile thresholds</span>
+<span class="sd">        stored in ``uns["pm_intensity_thresholds"]``.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Classification is performed independently for each sample and protein marker.</span>
+<span class="sd">    Protein-marker-negative cells remain ``Absent``. Among protein-marker-positive cells with</span>
+<span class="sd">    finite intensity values:</span>
+
+<span class="sd">    * values below the 25th percentile are ``Low``;</span>
+<span class="sd">    * values from the 25th through 75th percentile are ``Medium``; and</span>
+<span class="sd">    * values above the 75th percentile are ``High``.</span>
+
+<span class="sd">    These classes are relative intensity categories within a sample, not</span>
+<span class="sd">    universal biological expression thresholds.</span>
+<span class="sd">    """</span>
+    <span class="n">mapping</span> <span class="o">=</span> <span class="n">_validate_mapping</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">pm_mapping</span><span class="p">)</span>
+    <span class="n">positivity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s2">"Positivity"</span><span class="p">])</span>
+    <span class="n">codes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">target</span><span class="o">.</span><span class="n">n_obs</span><span class="p">,</span> <span class="n">target</span><span class="o">.</span><span class="n">n_vars</span><span class="p">),</span> <span class="n">ABSENT</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+    <span class="n">thresholds</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">pos_name</span><span class="p">,</span> <span class="n">intensity_name</span><span class="p">,</span> <span class="n">short_name</span><span class="p">,</span> <span class="n">p_idx</span><span class="p">,</span> <span class="n">x_idx</span> <span class="ow">in</span> <span class="n">mapping</span><span class="p">:</span>
+        <span class="n">calls</span> <span class="o">=</span> <span class="n">positivity</span><span class="p">[:,</span> <span class="n">p_idx</span><span class="p">]</span>
+        <span class="n">is_positive</span> <span class="o">=</span> <span class="n">calls</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">X</span><span class="p">[:,</span> <span class="n">x_idx</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">valid</span> <span class="o">=</span> <span class="n">is_positive</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+        <span class="n">codes</span><span class="p">[</span><span class="n">is_positive</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">values</span><span class="p">),</span> <span class="n">x_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">MISSING</span>
+        <span class="k">if</span> <span class="n">valid</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="n">p25</span><span class="p">,</span> <span class="n">p75</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="n">valid</span><span class="p">],</span> <span class="p">[</span><span class="mi">25</span><span class="p">,</span> <span class="mi">75</span><span class="p">])</span>
+            <span class="n">codes</span><span class="p">[</span><span class="n">valid</span><span class="p">,</span> <span class="n">x_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">MEDIUM</span>
+            <span class="n">codes</span><span class="p">[</span><span class="n">valid</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">values</span> <span class="o">&lt;</span> <span class="n">p25</span><span class="p">),</span> <span class="n">x_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">LOW</span>
+            <span class="n">codes</span><span class="p">[</span><span class="n">valid</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">values</span> <span class="o">&gt;</span> <span class="n">p75</span><span class="p">),</span> <span class="n">x_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">HIGH</span>
+        <span class="k">else</span><span class="p">:</span> <span class="n">p25</span><span class="p">,</span> <span class="n">p75</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="n">thresholds</span><span class="p">[</span><span class="n">pos_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"intensity_protein_marker"</span><span class="p">:</span> <span class="n">intensity_name</span><span class="p">,</span> <span class="s2">"pm_short_name"</span><span class="p">:</span> <span class="n">short_name</span><span class="p">,</span> <span class="s2">"p25"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">p25</span><span class="p">),</span> <span class="s2">"p75"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">p75</span><span class="p">),</span> <span class="s2">"n_positive"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">is_positive</span><span class="o">.</span><span class="n">sum</span><span class="p">()),</span> <span class="s2">"n_valid"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">valid</span><span class="o">.</span><span class="n">sum</span><span class="p">()),}</span>
+    <span class="n">target</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s2">"pm_intensity_class"</span><span class="p">]</span> <span class="o">=</span> <span class="n">codes</span>
+    <span class="n">target</span><span class="o">.</span><span class="n">uns</span><span class="p">[</span><span class="s2">"pm_intensity_thresholds"</span><span class="p">]</span> <span class="o">=</span> <span class="n">thresholds</span>
+    <span class="n">target</span><span class="o">.</span><span class="n">uns</span><span class="p">[</span><span class="s2">"pm_intensity_labels"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">):</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">LABELS</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="k">return</span> <span class="n">target</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_summarize_sample</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span> <span class="n">sample_id</span><span class="p">,</span> <span class="n">ct_short_names</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Summarize intensity classes within each discovered phenotype.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    adata : anndata.AnnData</span>
+<span class="sd">        Classified sample containing intensity-state codes and discovered</span>
+<span class="sd">        phenotype assignments.</span>
+<span class="sd">    sample_id : str</span>
+<span class="sd">        Sample identifier written to the output tables.</span>
+<span class="sd">    ct_short_names : list of str</span>
+<span class="sd">        Short names of parent cell types explored during phenotype discovery.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    marker_summary : pandas.DataFrame</span>
+<span class="sd">        Per-phenotype/per-protein-marker counts and percentages of low, medium, and high</span>
+<span class="sd">        intensity cells.</span>
+<span class="sd">    profile_summary : pandas.DataFrame</span>
+<span class="sd">        Observed multi-protein-marker intensity profiles and their frequencies within</span>
+<span class="sd">        each phenotype.</span>
+<span class="sd">    phenotype_overview : pandas.DataFrame</span>
+<span class="sd">        Number of cells, positive protein markers, observed intensity profiles, and</span>
+<span class="sd">        frequency of the most common profile for each phenotype.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Only protein-marker-positive members of a discovered phenotype are used when</span>
+<span class="sd">    constructing its intensity profile. Reported percentages are within the</span>
+<span class="sd">    phenotype, not percentages of all cells in the sample.</span>
+<span class="sd">    """</span>
+    <span class="n">codes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">adata</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s2">"pm_intensity_class"</span><span class="p">])</span>
+    <span class="n">threshold_info</span> <span class="o">=</span> <span class="n">adata</span><span class="o">.</span><span class="n">uns</span><span class="p">[</span><span class="s2">"pm_intensity_thresholds"</span><span class="p">]</span>
+
+    <span class="n">marker_rows</span><span class="p">,</span> <span class="n">profile_rows</span><span class="p">,</span> <span class="n">overview_rows</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">short_name</span> <span class="ow">in</span> <span class="n">ct_short_names</span><span class="p">:</span>
+        <span class="n">host_col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"sub</span><span class="si">{</span><span class="n">short_name</span><span class="si">}</span><span class="s2"> phenotype"</span>
+        <span class="n">patterns_key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"sub</span><span class="si">{</span><span class="n">short_name</span><span class="si">}</span><span class="s2">_patterns"</span>
+        <span class="n">assignments</span> <span class="o">=</span> <span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="n">host_col</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">phenotype</span><span class="p">,</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="n">adata</span><span class="o">.</span><span class="n">uns</span><span class="p">[</span><span class="n">patterns_key</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">selected</span> <span class="o">=</span> <span class="p">(</span><span class="n">assignments</span> <span class="o">==</span> <span class="n">phenotype</span><span class="p">)</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+            <span class="n">n_cells</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">selected</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">n_cells</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="n">positive</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span> <span class="k">for</span> <span class="n">m</span><span class="p">,</span> <span class="n">present</span> <span class="ow">in</span> <span class="n">pattern</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">present</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="n">columns</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">marker</span> <span class="ow">in</span> <span class="n">positive</span><span class="p">:</span>
+                <span class="n">intensity_name</span> <span class="o">=</span> <span class="n">threshold_info</span><span class="p">[</span><span class="n">marker</span><span class="p">][</span><span class="s2">"intensity_protein_marker"</span><span class="p">]</span>
+                <span class="c1"># pm_short_name = threshold_info[marker]["pm_short_name"]</span>
+                <span class="n">x_idx</span> <span class="o">=</span> <span class="n">adata</span><span class="o">.</span><span class="n">var_names</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">intensity_name</span><span class="p">)</span>
+                <span class="n">columns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">codes</span><span class="p">[</span><span class="n">selected</span><span class="p">,</span> <span class="n">x_idx</span><span class="p">])</span>
+                <span class="n">counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">codes</span><span class="p">[</span><span class="n">selected</span><span class="p">,</span> <span class="n">x_idx</span><span class="p">],</span> <span class="n">minlength</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span>
+                <span class="n">marker_rows</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                    <span class="s2">"Sample"</span><span class="p">:</span> <span class="n">sample_id</span><span class="p">,</span> <span class="s2">"Cell type"</span><span class="p">:</span> <span class="n">short_name</span><span class="p">,</span>
+                    <span class="s2">"Phenotype"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">phenotype</span><span class="p">),</span> <span class="s2">"Protein marker"</span><span class="p">:</span> <span class="n">marker</span><span class="p">,</span>
+                    <span class="s2">"Total cells"</span><span class="p">:</span> <span class="n">n_cells</span><span class="p">,</span>
+                    <span class="s2">"Total low intensity cells"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">counts</span><span class="p">[</span><span class="n">LOW</span><span class="p">]),</span> <span class="s2">"Total medium intensity cells"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">counts</span><span class="p">[</span><span class="n">MEDIUM</span><span class="p">]),</span>
+                    <span class="s2">"Total high intensity cells"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">counts</span><span class="p">[</span><span class="n">HIGH</span><span class="p">]),</span>
+                    <span class="s2">"Low intensity cells proportion (%)"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">counts</span><span class="p">[</span><span class="n">LOW</span><span class="p">]</span> <span class="o">/</span> <span class="n">n_cells</span> <span class="o">*</span> <span class="mi">100</span><span class="p">,</span><span class="mi">4</span><span class="p">),</span>
+                    <span class="s2">"Medium intensity cells proportion (%)"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">counts</span><span class="p">[</span><span class="n">MEDIUM</span><span class="p">]</span> <span class="o">/</span> <span class="n">n_cells</span> <span class="o">*</span> <span class="mi">100</span><span class="p">,</span><span class="mi">4</span><span class="p">),</span>
+                    <span class="s2">"High intensity cells proportion (%)"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">counts</span><span class="p">[</span><span class="n">HIGH</span><span class="p">]</span> <span class="o">/</span> <span class="n">n_cells</span> <span class="o">*</span> <span class="mi">100</span><span class="p">,</span><span class="mi">4</span><span class="p">),</span>
+                <span class="p">})</span>
+            <span class="k">if</span> <span class="n">columns</span><span class="p">:</span>
+                <span class="n">observed</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">(</span><span class="n">columns</span><span class="p">),</span> <span class="n">columns</span><span class="o">=</span><span class="n">positive</span><span class="p">)</span>
+                <span class="n">counts_by_profile</span> <span class="o">=</span> <span class="n">observed</span><span class="o">.</span><span class="n">value_counts</span><span class="p">(</span><span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dropna</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">profile_tuple</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">counts_by_profile</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">positive</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">profile_tuple</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span> <span class="n">profile_tuple</span> <span class="o">=</span> <span class="p">(</span><span class="n">profile_tuple</span><span class="p">,)</span>
+                    <span class="n">profile_rows</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                        <span class="s2">"Sample"</span><span class="p">:</span> <span class="n">sample_id</span><span class="p">,</span> <span class="s2">"Cell type"</span><span class="p">:</span> <span class="n">short_name</span><span class="p">,</span>
+                        <span class="s2">"Phenotype"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">phenotype</span><span class="p">),</span>
+                        <span class="s2">"Intensity profile"</span><span class="p">:</span> <span class="s2">" | "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">threshold_info</span><span class="p">[</span><span class="n">marker</span><span class="p">][</span><span class="s2">"pm_short_name"</span><span class="p">]</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">LABELS</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">code</span><span class="p">)]</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">marker</span><span class="p">,</span> <span class="n">code</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">positive</span><span class="p">,</span> <span class="n">profile_tuple</span><span class="p">)),</span>
+                        <span class="s2">"Total cells in the profile"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">count</span><span class="p">),</span> <span class="s2">"Percentage (%)"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">count</span><span class="p">)</span> <span class="o">/</span> <span class="n">n_cells</span> <span class="o">*</span> <span class="mi">100</span><span class="p">,</span><span class="mi">4</span><span class="p">),</span>
+                    <span class="p">})</span>
+                <span class="n">n_profiles</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">counts_by_profile</span><span class="p">)</span>
+                <span class="n">top_pct</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">counts_by_profile</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="n">n_cells</span> <span class="o">*</span> <span class="mi">100</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">n_profiles</span><span class="p">,</span> <span class="n">top_pct</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">4</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="n">overview_rows</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                <span class="s2">"Sample"</span><span class="p">:</span> <span class="n">sample_id</span><span class="p">,</span> <span class="s2">"Cell type"</span><span class="p">:</span> <span class="n">short_name</span><span class="p">,</span>
+                <span class="s2">"Phenotype"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">phenotype</span><span class="p">),</span> <span class="s2">"Total cells"</span><span class="p">:</span> <span class="n">n_cells</span><span class="p">,</span>
+                <span class="s2">"Total of positive protein markers in the phenotype"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">positive</span><span class="p">),</span>
+                <span class="s2">"Total of observed profiles"</span><span class="p">:</span> <span class="n">n_profiles</span><span class="p">,</span>
+                <span class="s2">"Most common profile proportion (%)"</span><span class="p">:</span> <span class="n">top_pct</span><span class="p">,</span>
+            <span class="p">})</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">marker_rows</span><span class="p">),</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">profile_rows</span><span class="p">),</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">overview_rows</span><span class="p">))</span>
+
+<div class="viewcode-block" id="phenotype_advanced_cell_classification">
+<a class="viewcode-back" href="../../api.html#spatial_proteomics.advanced_cell_classification.phenotype_advanced_cell_classification">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">phenotype_advanced_cell_classification</span><span class="p">(</span><span class="n">adata_dicts</span><span class="p">,</span> <span class="n">ct_short_names</span><span class="p">,</span> <span class="n">epm_list</span><span class="p">,</span> <span class="n">epm_short_names</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">save_anndata</span><span class="p">,</span> <span class="n">overwrite_existing_files</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Run intensity-aware phenotype characterization across all samples.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    adata_dicts : dict of str to anndata.AnnData</span>
+<span class="sd">        Samples containing discovered phenotype assignments and marker</span>
+<span class="sd">        positivity/intensity data.</span>
+<span class="sd">    ct_short_names : list of str</span>
+<span class="sd">        Short names of parent cell populations explored in unsupervised mode.</span>
+<span class="sd">    epm_list : list of str</span>
+<span class="sd">        Exploratory positivity-protein-marker names.</span>
+<span class="sd">    epm_short_names : list of str</span>
+<span class="sd">        Short names corresponding positionally to ``epm_list``.</span>
+<span class="sd">    output_dir : pathlib.Path</span>
+<span class="sd">        SpPrAn output directory.</span>
+<span class="sd">    save_anndata : bool</span>
+<span class="sd">        Whether classified AnnData objects should be written to disk.</span>
+<span class="sd">    overwrite_existing_files : bool</span>
+<span class="sd">        Whether existing aggregate CSV outputs may be replaced.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict of str to anndata.AnnData</span>
+<span class="sd">        Updated AnnData objects containing per-cell protein-marker-intensity classes and</span>
+<span class="sd">        per-protein-marker threshold metadata.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Three aggregate CSV files are produced:</span>
+
+<span class="sd">    * ``Protein marker intensity summary.csv``;</span>
+<span class="sd">    * ``Intensity profiles analysis.csv``; and</span>
+<span class="sd">    * ``Phenotype intensity summary.csv``.</span>
+
+<span class="sd">    Intensity classes are sample-relative. They should be interpreted as</span>
+<span class="sd">    within-sample expression-strength categories, not as standardized absolute</span>
+<span class="sd">    expression levels across specimens.</span>
+<span class="sd">    """</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Advanced phenotype classification started..."</span><span class="p">)</span>
+    <span class="n">adv_dir</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"Statistics"</span> <span class="o">/</span> <span class="s2">"results"</span> <span class="o">/</span> <span class="s2">"Advanced cell classification"</span>
+    <span class="n">adv_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">summary_parts</span>  <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">profile_parts</span>  <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">overview_parts</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">pm_mapping</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"results"</span> <span class="o">/</span> <span class="s2">"Positivity column names.csv"</span><span class="p">)</span>
+    <span class="n">pm_mapping</span><span class="p">[</span><span class="s2">"Short names"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">pm_mapping</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s1">'DAPI'</span> <span class="ow">in</span> <span class="n">pm_mapping</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span><span class="s1">'Positivity column names'</span><span class="p">]:</span> <span class="n">pm_mapping</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="s2">"Short names"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"DAPI"</span>
+        <span class="k">else</span><span class="p">:</span> <span class="n">pm_mapping</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="s2">"Short names"</span><span class="p">]</span> <span class="o">=</span> <span class="n">epm_short_names</span><span class="p">[</span><span class="n">epm_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">pm_mapping</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span><span class="s1">'Positivity column names'</span><span class="p">]))]</span>
+
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">adata</span> <span class="ow">in</span> <span class="n">adata_dicts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">adata</span> <span class="o">=</span> <span class="n">_classify_sample</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span> <span class="n">pm_mapping</span><span class="p">)</span>
+        <span class="n">marker_df</span><span class="p">,</span> <span class="n">profile_df</span><span class="p">,</span> <span class="n">overview_df</span> <span class="o">=</span> <span class="n">_summarize_sample</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">),</span> <span class="n">ct_short_names</span><span class="p">)</span>
+        <span class="n">summary_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">marker_df</span><span class="p">)</span>
+        <span class="n">profile_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">profile_df</span><span class="p">)</span>
+        <span class="n">overview_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">overview_df</span><span class="p">)</span>
+    <span class="n">combine</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">frames</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">frames</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">if</span> <span class="n">frames</span> <span class="k">else</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+    <span class="n">summary</span><span class="p">,</span> <span class="n">profiles</span><span class="p">,</span> <span class="n">overview</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">combine</span><span class="p">,</span> <span class="p">(</span><span class="n">summary_parts</span><span class="p">,</span> <span class="n">profile_parts</span><span class="p">,</span> <span class="n">overview_parts</span><span class="p">))</span>
+
+    <span class="n">summary_file</span> <span class="o">=</span> <span class="n">adv_dir</span> <span class="o">/</span> <span class="s2">"Protein marker intensity summary.csv"</span>
+    <span class="n">profiles_file</span> <span class="o">=</span> <span class="n">adv_dir</span> <span class="o">/</span> <span class="s2">"Intensity profiles analysis.csv"</span>
+    <span class="n">overview_file</span> <span class="o">=</span> <span class="n">adv_dir</span> <span class="o">/</span> <span class="s2">"Phenotype intensity summary.csv"</span>
+    
+    <span class="k">if</span> <span class="n">summary_file</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">overwrite_existing_files</span><span class="p">:</span> <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'Protein marker intensity summary.csv' file already exists. Skipping..."</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span> <span class="n">summary</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">summary_file</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">profiles_file</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">overwrite_existing_files</span><span class="p">:</span> <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'Intensity profiles analysis.csv' file already exists. Skipping..."</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span> <span class="n">profiles</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">profiles_file</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">overview_file</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">overwrite_existing_files</span><span class="p">:</span> <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'Phenotype intensity summary.csv' file already exists. Skipping..."</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span> <span class="n">overview</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">overview_file</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">adata_path</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"adata"</span>
+    <span class="k">if</span> <span class="n">save_anndata</span><span class="p">:</span> <span class="n">save_anndata_files</span><span class="p">(</span><span class="n">adata_dicts</span><span class="p">,</span> <span class="n">adata_path</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Advanced phenotype classification finished!"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">adata_dicts</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

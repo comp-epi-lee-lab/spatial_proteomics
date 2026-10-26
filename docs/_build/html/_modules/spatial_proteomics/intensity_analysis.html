@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>spatial_proteomics.intensity_analysis &mdash; SpPrAn 0.3.0 documentation</title>
+  <title>spatial_proteomics.intensity_analysis &mdash; SpPrAn 0.3.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../../_static/documentation_options.js?v=4621528c"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -44,6 +44,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../desktop_app.html">Desktop application</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../analysis_modes.html">Analysis modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../optional_analyses.html">Optional spatial and phenotype analyses</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../config_builder.html">SpPrAn Configuration Builder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../workflow.html">Analysis workflow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../configuration.html">Configuration file</a></li>
@@ -82,6 +83,11 @@
              
   <h1>Source code for spatial_proteomics.intensity_analysis</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_read_intensities</span><span class="p">(</span><span class="n">adata_dicts</span><span class="p">,</span> <span class="n">which_pm</span> <span class="o">=</span> <span class="s1">'all'</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
@@ -133,6 +139,10 @@
 <span class="sd">    -------</span>
 <span class="sd">    pandas.Series</span>
 <span class="sd">        Sorted outlier intensity values.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    It is currently not used by ``_intensities_data``.</span>
 <span class="sd">    """</span>
     <span class="n">q1</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">pm_name</span><span class="p">]</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mf">0.25</span><span class="p">)</span>
     <span class="n">q3</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">pm_name</span><span class="p">]</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mf">0.75</span><span class="p">)</span>
@@ -160,12 +170,19 @@
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    None</span>
-<span class="sd">        Per-sample/per-phenotype summaries and outlier tables are written as CSV.</span>
+<span class="sd">        Per-sample/per-phenotype Tukey box-plot summaries and complete intensity-data </span>
+<span class="sd">        tables are written as CSV files.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Long marker-defined phenotype names are mapped to compact IDs such as</span>
+<span class="sd">    ``subTumor_P001`` for output filenames. A per-sample phenotype-mapping CSV</span>
+<span class="sd">    preserves the correspondence between compact IDs and complete phenotype names.</span>
 <span class="sd">    """</span>
-    <span class="n">intensities_csv_dir_phen</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"results"</span> <span class="o">/</span> <span class="s2">"Intensity analysis"</span> <span class="o">/</span> <span class="s2">"By phenotype"</span>
-    <span class="n">intensities_csv_dir_phen</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">adata</span> <span class="ow">in</span> <span class="n">adata_dicts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">intensities_csv_dir_phen</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"results"</span> <span class="o">/</span> <span class="s2">"Intensity analysis by phenotype"</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">intensities_csv_dir_phen</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">intensity_df</span> <span class="o">=</span> <span class="n">intensities_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
         <span class="n">pm_list</span> <span class="o">=</span> <span class="n">intensity_df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
 
@@ -173,19 +190,32 @@
             <span class="n">host_column</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"sub</span><span class="si">{</span><span class="n">short_ct_name</span><span class="si">}</span><span class="s2"> phenotype"</span>
             
             <span class="n">list_host_names</span> <span class="o">=</span> <span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="n">host_column</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="n">n_digits</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">list_host_names</span><span class="p">))))</span>
+            <span class="n">phenotype_ids</span> <span class="o">=</span> <span class="p">{</span><span class="n">phenotype</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"sub</span><span class="si">{</span><span class="n">short_ct_name</span><span class="si">}</span><span class="s2">_P</span><span class="si">{</span><span class="n">i</span><span class="si">:</span><span class="s2">0</span><span class="si">{</span><span class="n">n_digits</span><span class="si">}</span><span class="s2">d</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">phenotype</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">list_host_names</span><span class="p">)}</span>
+            <span class="n">mapping</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">"Phenotype ID"</span><span class="p">:</span> <span class="p">[</span><span class="n">pvals</span> <span class="k">for</span> <span class="n">pvals</span> <span class="ow">in</span> <span class="n">phenotype_ids</span><span class="o">.</span><span class="n">values</span><span class="p">()],</span> <span class="s2">"Phenotype"</span><span class="p">:</span> <span class="p">[</span><span class="n">pkeys</span> <span class="k">for</span> <span class="n">pkeys</span> <span class="ow">in</span> <span class="n">phenotype_ids</span><span class="o">.</span><span class="n">keys</span><span class="p">()]})</span>
+            <span class="n">intensities_csv_dir_phen_ext</span> <span class="o">=</span> <span class="n">intensities_csv_dir_phen</span> <span class="o">/</span> <span class="n">short_ct_name</span>
+            <span class="n">intensities_csv_dir_phen_ext</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">mapping</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">intensities_csv_dir_phen</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"Phenotype mapping - Sample </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> - sub</span><span class="si">{</span><span class="n">short_ct_name</span><span class="si">}</span><span class="s2">.csv"</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">mapping</span> <span class="o">=</span> <span class="n">mapping</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">'Phenotype'</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">phenotype</span> <span class="ow">in</span> <span class="n">list_host_names</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">phenotype</span><span class="p">):</span>
                     <span class="k">continue</span>
-                <span class="n">title_name_1</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Box plot data - Sample </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">host_column</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">phenotype</span><span class="si">}</span><span class="s2">"</span>
-                <span class="n">save_namefile_1</span> <span class="o">=</span> <span class="n">intensities_csv_dir_phen</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">title_name_1</span><span class="si">}</span><span class="s2">.csv"</span>
-                <span class="n">title_name_2</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Box plot data - Sample </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">host_column</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">phenotype</span><span class="si">}</span><span class="s2"> - outliers"</span>
-                <span class="n">save_namefile_2</span> <span class="o">=</span> <span class="n">intensities_csv_dir_phen</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">title_name_2</span><span class="si">}</span><span class="s2">.csv"</span>
 
                 <span class="n">cell_ids</span> <span class="o">=</span> <span class="n">adata</span><span class="o">.</span><span class="n">obs_names</span><span class="p">[</span><span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="n">host_column</span><span class="p">]</span> <span class="o">==</span> <span class="n">phenotype</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
                 <span class="n">filtered_df</span> <span class="o">=</span> <span class="n">intensity_df</span><span class="p">[</span><span class="n">intensity_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">cell_ids</span><span class="p">)]</span>
+                <span class="n">text_total_cells</span> <span class="o">=</span> <span class="s2">"(1 cell)"</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">filtered_df</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">filtered_df</span><span class="p">)</span><span class="si">}</span><span class="s2"> cells)"</span>
+
+                <span class="n">title_name_1</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Box plot data - Sample </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">host_column</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">mapping</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">phenotype</span><span class="p">,</span><span class="s2">"Phenotype ID"</span><span class="p">]</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">text_total_cells</span><span class="si">}</span><span class="s2">"</span>
+                <span class="n">save_namefile_1</span> <span class="o">=</span> <span class="n">intensities_csv_dir_phen_ext</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">title_name_1</span><span class="si">}</span><span class="s2">.csv"</span>
+                <span class="c1"># title_name_2 = f"Box plot data - Sample {k} - {host_column} - {phenotype} - outliers"</span>
+                <span class="c1"># save_namefile_2 = intensities_csv_dir_phen_ext / f"{title_name_2}.csv"</span>
+
+                <span class="n">title_name_3</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Intensity data - Sample </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">host_column</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">mapping</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">phenotype</span><span class="p">,</span><span class="s2">"Phenotype ID"</span><span class="p">]</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">text_total_cells</span><span class="si">}</span><span class="s2">"</span>
+                <span class="n">save_namefile_3</span> <span class="o">=</span> <span class="n">intensities_csv_dir_phen_ext</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">title_name_3</span><span class="si">}</span><span class="s2">.csv"</span>
 
                 <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">'Metric'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'Lower_Whisker'</span><span class="p">,</span> <span class="s1">'Q1'</span><span class="p">,</span> <span class="s1">'Median (Q2)'</span><span class="p">,</span> <span class="s1">'Q3'</span><span class="p">,</span> <span class="s1">'Upper_Whisker'</span><span class="p">]}</span><span class="o">|</span><span class="p">{</span> <span class="n">pm_name</span><span class="p">:</span> <span class="n">_boxplot_calculation</span><span class="p">(</span><span class="n">filtered_df</span><span class="p">,</span><span class="n">pm_name</span><span class="p">)</span> <span class="k">for</span> <span class="n">pm_name</span> <span class="ow">in</span> <span class="n">pm_list</span> <span class="p">})</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">save_namefile_1</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-                <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span> <span class="n">pm_name</span><span class="p">:</span> <span class="n">_boxplot_outliers</span><span class="p">(</span><span class="n">filtered_df</span><span class="p">,</span><span class="n">pm_name</span><span class="p">)</span> <span class="k">for</span> <span class="n">pm_name</span> <span class="ow">in</span> <span class="n">pm_list</span> <span class="p">})</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">save_namefile_2</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="c1"># pd.DataFrame({ pm_name: _boxplot_outliers(filtered_df,pm_name) for pm_name in pm_list }).to_csv(save_namefile_2, index=False)</span>
+                <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span> <span class="n">pm_name</span><span class="p">:</span> <span class="n">filtered_df</span><span class="p">[</span><span class="n">pm_name</span><span class="p">]</span> <span class="k">for</span> <span class="n">pm_name</span> <span class="ow">in</span> <span class="n">pm_list</span> <span class="p">})</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">save_namefile_3</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
 <div class="viewcode-block" id="calculate_pm_intensity_analysis">
 <a class="viewcode-back" href="../../api.html#spatial_proteomics.intensity_analysis.calculate_pm_intensity_analysis">[docs]</a>
@@ -220,6 +250,108 @@
         <span class="n">epm_list</span> <span class="o">=</span> <span class="n">positivity_column_names</span><span class="p">[</span><span class="n">positivity_column_names</span><span class="p">[</span><span class="s2">"Positivity column names"</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">which_pm</span><span class="p">)][</span><span class="s2">"Name appearing in anndata file"</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
         <span class="n">intensities_dict</span> <span class="o">=</span> <span class="n">_read_intensities</span><span class="p">(</span><span class="n">adata_dicts</span><span class="p">,</span> <span class="n">epm_list</span><span class="p">)</span>
         <span class="n">_intensities_data</span><span class="p">(</span><span class="n">intensities_dict</span><span class="p">,</span> <span class="n">adata_dicts</span><span class="p">,</span> <span class="n">list_ct_short_name</span><span class="p">,</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"Statistics"</span><span class="p">)</span></div>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_getting_vmin_n_vmax</span> <span class="p">(</span><span class="n">adata_dicts</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Calculate cross-sample protein-marker-intensity limits from stored thresholds.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    adata_dicts : dict of str to anndata.AnnData</span>
+<span class="sd">        Samples containing protein marker thresholds in ``adata.uns["thresholds"]``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict of str to tuple of float</span>
+<span class="sd">        Global minimum/maximum threshold limits for each protein marker.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    This helper is intended to support consistent color scales across samples.</span>
+<span class="sd">    It is currently not used by ``plot_spatial_protein_marker_intensities``.</span>
+<span class="sd">    """</span>
+    <span class="n">marker_limits</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">positivity_columns</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">adata</span> <span class="ow">in</span> <span class="n">adata_dicts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="c1"># adata.uns["thresholds"] ={ "pm_intensities" : { "low_treshold": "vaue", high_treshold" : "value"} }</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">adata</span><span class="o">.</span><span class="n">uns</span><span class="p">[</span><span class="s2">"thresholds"</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span> <span class="k">continue</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">positivity_columns</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">positivity_columns</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">adata</span><span class="o">.</span><span class="n">var_names</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">pm</span> <span class="ow">in</span> <span class="n">positivity_columns</span><span class="p">:</span>
+                <span class="n">marker_limits</span><span class="p">[</span><span class="n">pm</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">adata</span><span class="o">.</span><span class="n">uns</span><span class="p">[</span><span class="s2">"thresholds"</span><span class="p">][</span><span class="n">pm</span><span class="p">][</span><span class="s2">"low_treshold"</span><span class="p">],</span> <span class="n">adata</span><span class="o">.</span><span class="n">uns</span><span class="p">[</span><span class="s2">"thresholds"</span><span class="p">][</span><span class="n">pm</span><span class="p">][</span><span class="s2">"high_treshold"</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">pm</span> <span class="ow">in</span> <span class="n">positivity_columns</span><span class="p">:</span>
+                <span class="n">vmin_temp</span><span class="p">,</span> <span class="n">vmax_temp</span> <span class="o">=</span> <span class="n">marker_limits</span><span class="p">[</span><span class="n">pm</span><span class="p">]</span>
+                <span class="n">marker_limits</span><span class="p">[</span><span class="n">pm</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="nb">min</span><span class="p">(</span><span class="n">vmin_temp</span><span class="p">,</span> <span class="n">adata</span><span class="o">.</span><span class="n">uns</span><span class="p">[</span><span class="s2">"thresholds"</span><span class="p">][</span><span class="n">pm</span><span class="p">][</span><span class="s2">"low_treshold"</span><span class="p">]),</span>
+                    <span class="nb">max</span><span class="p">(</span><span class="n">vmax_temp</span><span class="p">,</span> <span class="n">adata</span><span class="o">.</span><span class="n">uns</span><span class="p">[</span><span class="s2">"thresholds"</span><span class="p">][</span><span class="n">pm</span><span class="p">][</span><span class="s2">"high_treshold"</span><span class="p">])</span>
+                <span class="p">)</span>
+    <span class="k">return</span> <span class="n">marker_limits</span>
+
+<div class="viewcode-block" id="plot_spatial_protein_marker_intensities">
+<a class="viewcode-back" href="../../api.html#spatial_proteomics.intensity_analysis.plot_spatial_protein_marker_intensities">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_spatial_protein_marker_intensities</span><span class="p">(</span><span class="n">adata_dicts</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span> <span class="n">point_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">150</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Plot spatial protein-marker intensity for every sample and protein marker.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    adata_dicts : dict of str to anndata.AnnData</span>
+<span class="sd">        Samples containing spatial coordinates in ``obsm["spatial"]`` and</span>
+<span class="sd">        protein-marker intensities in ``X``.</span>
+<span class="sd">    output_dir : pathlib.Path</span>
+<span class="sd">        SpPrAn output directory.</span>
+<span class="sd">    cmap : str, default="viridis"</span>
+<span class="sd">        Matplotlib colormap used for intensity values.</span>
+<span class="sd">    point_size : float, default=1</span>
+<span class="sd">        Scatter-point size for individual cells.</span>
+<span class="sd">    dpi : int or float, default=150</span>
+<span class="sd">        Output image resolution.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+<span class="sd">        One PNG per sample and protein marker is written under</span>
+<span class="sd">        ``plots/Spatial protein markers intensity plots``.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Each plot colors individual segmented cells by continuous protein-marker</span>
+<span class="sd">    intensity, analogous to displaying gene expression on a single-cell</span>
+<span class="sd">    embedding but retaining the cells' actual tissue coordinates.</span>
+
+<span class="sd">    The current implementation scales each sample/protein marker independently using</span>
+<span class="sd">    its observed minimum and maximum intensity. Consequently, colors should not</span>
+<span class="sd">    be compared quantitatively between different sample panels unless a common</span>
+<span class="sd">    scale is introduced.</span>
+<span class="sd">    """</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Generating protein markers' intensities spatial plots..."</span><span class="p">)</span>
+    <span class="n">intensity_dir</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"plots"</span> <span class="o">/</span> <span class="s2">"Spatial protein markers intensity plots"</span>
+    <span class="n">intensity_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1"># marker_limits = _getting_vmin_n_vmax (adata_dicts)</span>
+    <span class="n">marker_limits</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">adata</span> <span class="ow">in</span> <span class="n">adata_dicts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">intensity_dir_2</span> <span class="o">=</span> <span class="n">intensity_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">intensity_dir_2</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">adata</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s2">"spatial"</span><span class="p">]</span>
+        <span class="n">matrix</span> <span class="o">=</span> <span class="n">adata</span><span class="o">.</span><span class="n">X</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">marker</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">adata</span><span class="o">.</span><span class="n">var_names</span><span class="p">):</span>
+            <span class="n">intensities</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">matrix</span><span class="p">[:,</span> <span class="n">idx</span><span class="p">])</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">marker_limits</span><span class="p">)</span><span class="o">!=</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">marker</span> <span class="ow">in</span> <span class="n">marker_limits</span><span class="p">:</span> <span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span> <span class="o">=</span> <span class="n">marker_limits</span><span class="p">[</span><span class="n">marker</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">vmin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">intensities</span><span class="p">)</span>
+                <span class="n">vmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">intensities</span><span class="p">)</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+            <span class="n">scatter</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">coords</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">coords</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="n">intensities</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="n">point_size</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span> <span class="n">edgecolors</span><span class="o">=</span><span class="s2">"none"</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rasterized</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">"equal"</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">"off"</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">scatter</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Protein intensity"</span><span class="p">)</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">intensity_dir_2</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"Spatial intensity plot - Sample </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">marker</span><span class="si">}</span><span class="s2">.png"</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="n">dpi</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="s2">"white"</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Intensities spatial plots generated!"</span><span class="p">)</span></div>
 
 </pre></div>
 

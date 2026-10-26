@@ -6,7 +6,7 @@ sys.path.insert(0, str(ROOT))
 
 project = "SpPrAn"
 author = "Sergio Zamora-Erazo"
-release = "0.3.0"
+release = "0.3.1"
 
 extensions = [
     "sphinx.ext.autodoc",

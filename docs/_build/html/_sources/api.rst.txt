@@ -48,7 +48,24 @@ Unsupervised analysis
    :members:
    :show-inheritance:
 
+Intensity analysis
+------------------
+
 .. automodule:: spatial_proteomics.intensity_analysis
+   :members:
+   :show-inheritance:
+
+Neighborhood analysis
+---------------------
+
+.. automodule:: spatial_proteomics.neighborhoods
+   :members:
+   :show-inheritance:
+
+Advanced phenotype classification
+---------------------------------
+
+.. automodule:: spatial_proteomics.advanced_cell_classification
    :members:
    :show-inheritance:
 

@@ -50,8 +50,20 @@ Statistical results
    and Welch t-tests. Benjamini--Hochberg FDR-adjusted p-values are exported.
 
 Intensity outputs
-   For selected markers, SpPrAn exports per-phenotype Tukey box-plot summaries
-   and outlier values.
+   For selected markers, SpPrAn exports per-phenotype Tukey box-plot summaries,
+   complete intensity-data tables, and protein-intensity spatial maps.
+
+(**New in v0.3.1**) Neighborhood analysis outputs
+   When selected, SpPrAn exports neighborhood-enrichment and interaction-matrix 
+   overview heatmaps, and distance-dependent co-occurrence plots per sample.
+
+(**New in v0.3.1**) Advanced phenotype classification
+   When selected, SpPrAn reports:
+   
+   - Low/medium/high intensity abundance for positive markers within each
+   phenotype.
+   - Observed combinations of marker-intensity states and their frequencies.
+   - Phenotype-level summary of intensity-profile complexity.
 
 Full-mode outputs
 -----------------
@@ -65,6 +77,12 @@ Interpretation
 Phenotype proportions are conditional on the parent population used for
 discovery. For example, a phenotype representing 20% of T cells does not necessarily
 represent 20% of all cells in the tumor.
+
+Neighborhood outputs describe spatial association rather than causal
+communication.
+
+Advanced intensity classes are relative within each sample and should not be
+interpreted as absolute cross-sample expression categories.
 
 Statistical results should be interpreted together with detection frequency,
 effect magnitude, biological sample size, multiple-testing adjustment, and

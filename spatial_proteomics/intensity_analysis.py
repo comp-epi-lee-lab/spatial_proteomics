@@ -55,6 +55,10 @@ def _boxplot_outliers(df,pm_name):
     -------
     pandas.Series
         Sorted outlier intensity values.
+
+    Notes
+    -----
+    It is currently not used by ``_intensities_data``.
     """
     q1 = df[pm_name].quantile(0.25)
     q3 = df[pm_name].quantile(0.75)
@@ -82,7 +86,14 @@ def _intensities_data(intensities_dict,adata_dicts,list_ct_short_name,output_dir
     Returns
     -------
     None
-        Per-sample/per-phenotype summaries and outlier tables are written as CSV.
+        Per-sample/per-phenotype Tukey box-plot summaries and complete intensity-data 
+        tables are written as CSV files.
+
+    Notes
+    -----
+    Long marker-defined phenotype names are mapped to compact IDs such as
+    ``subTumor_P001`` for output filenames. A per-sample phenotype-mapping CSV
+    preserves the correspondence between compact IDs and complete phenotype names.
     """
 
     for k, adata in adata_dicts.items():
@@ -155,6 +166,24 @@ def calculate_pm_intensity_analysis(adata_dicts, list_ct_short_name, output_dir,
         _intensities_data(intensities_dict, adata_dicts, list_ct_short_name, output_dir / "Statistics")
 
 def _getting_vmin_n_vmax (adata_dicts):
+    """
+    Calculate cross-sample protein-marker-intensity limits from stored thresholds.
+
+    Parameters
+    ----------
+    adata_dicts : dict of str to anndata.AnnData
+        Samples containing protein marker thresholds in ``adata.uns["thresholds"]``.
+
+    Returns
+    -------
+    dict of str to tuple of float
+        Global minimum/maximum threshold limits for each protein marker.
+
+    Notes
+    -----
+    This helper is intended to support consistent color scales across samples.
+    It is currently not used by ``plot_spatial_protein_marker_intensities``.
+    """
     marker_limits = {}
     positivity_columns = []
     for k, adata in adata_dicts.items():
@@ -175,7 +204,38 @@ def _getting_vmin_n_vmax (adata_dicts):
 
 def plot_spatial_protein_marker_intensities(adata_dicts, output_dir, cmap="viridis", point_size=1, dpi=150):
     """
-    Save one spatial intensity PNG per protein marker.
+    Plot spatial protein-marker intensity for every sample and protein marker.
+
+    Parameters
+    ----------
+    adata_dicts : dict of str to anndata.AnnData
+        Samples containing spatial coordinates in ``obsm["spatial"]`` and
+        protein-marker intensities in ``X``.
+    output_dir : pathlib.Path
+        SpPrAn output directory.
+    cmap : str, default="viridis"
+        Matplotlib colormap used for intensity values.
+    point_size : float, default=1
+        Scatter-point size for individual cells.
+    dpi : int or float, default=150
+        Output image resolution.
+
+    Returns
+    -------
+    None
+        One PNG per sample and protein marker is written under
+        ``plots/Spatial protein markers intensity plots``.
+
+    Notes
+    -----
+    Each plot colors individual segmented cells by continuous protein-marker
+    intensity, analogous to displaying gene expression on a single-cell
+    embedding but retaining the cells' actual tissue coordinates.
+
+    The current implementation scales each sample/protein marker independently using
+    its observed minimum and maximum intensity. Consequently, colors should not
+    be compared quantitatively between different sample panels unless a common
+    scale is introduced.
     """
     logger.warning(f"Generating protein markers' intensities spatial plots...")
     intensity_dir = output_dir / "plots" / "Spatial protein markers intensity plots"

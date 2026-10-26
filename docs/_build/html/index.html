@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SpPrAn documentation &mdash; SpPrAn 0.3.0 documentation</title>
+  <title>SpPrAn documentation &mdash; SpPrAn 0.3.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=e259d695"></script>
+      <script src="_static/documentation_options.js?v=4621528c"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -46,6 +46,7 @@
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="desktop_app.html">Desktop application</a></li>
 <li class="toctree-l1"><a class="reference internal" href="analysis_modes.html">Analysis modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optional_analyses.html">Optional spatial and phenotype analyses</a></li>
 <li class="toctree-l1"><a class="reference internal" href="config_builder.html">SpPrAn Configuration Builder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="workflow.html">Analysis workflow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration file</a></li>
@@ -90,11 +91,11 @@ classified using user-defined protein-marker rules and can be organized into
 hierarchical cell populations and subtypes.</p>
 <p>SpPrAn can be run from Python/the command line or from a packaged desktop
 application for users who prefer a graphical workflow.</p>
-<section id="version-0-3-0">
-<h2>Version 0.3.0<a class="headerlink" href="#version-0-3-0" title="Link to this heading"></a></h2>
-<p>SpPrAn 0.3.0 introduces separate supervised and unsupervised analysis
-workflows, plus an optional full phenotype-discovery workflow that connects
-exploratory phenotype discovery with the established supervised analysis.</p>
+<section id="version-0-3-1">
+<h2>Version 0.3.1<a class="headerlink" href="#version-0-3-1" title="Link to this heading"></a></h2>
+<p>SpPrAn 0.3.1 expands the unsupervised/full workflow with continuous
+protein-intensity spatial maps, fixed-radius neighborhood analysis, and
+intensity-aware advanced phenotype classification.</p>
 <div class="admonition important">
 <p class="admonition-title">Important</p>
 <p>SpPrAn phenotypes are protein-marker-defined operational annotations. Their
@@ -122,6 +123,12 @@ segmentation strategy, staining performance, and positivity thresholds.</p>
 <li class="toctree-l2"><a class="reference internal" href="analysis_modes.html#unsupervised-mode">Unsupervised mode</a></li>
 <li class="toctree-l2"><a class="reference internal" href="analysis_modes.html#full-phenotype-discovery">Full phenotype discovery</a></li>
 <li class="toctree-l2"><a class="reference internal" href="analysis_modes.html#biological-interpretation">Biological interpretation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="optional_analyses.html">Optional spatial and phenotype analyses</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="optional_analyses.html#protein-marker-intensity-spatial-plots">Protein-marker intensity spatial plots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optional_analyses.html#fixed-radius-neighborhood-analysis">Fixed-radius neighborhood analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optional_analyses.html#advanced-phenotype-classification">Advanced phenotype classification</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="config_builder.html">SpPrAn Configuration Builder</a><ul>
@@ -168,6 +175,7 @@ segmentation strategy, staining performance, and positivity thresholds.</p>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="release_notes.html">Release notes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="release_notes.html#sppran-0-3-1">SpPrAn 0.3.1</a></li>
 <li class="toctree-l2"><a class="reference internal" href="release_notes.html#sppran-0-3-0">SpPrAn 0.3.0</a></li>
 </ul>
 </li>
@@ -182,6 +190,9 @@ segmentation strategy, staining performance, and positivity thresholds.</p>
 <li class="toctree-l2"><a class="reference internal" href="api.html#module-spatial_proteomics.anndata">AnnData processing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api.html#module-spatial_proteomics.supervised_mode">Mode dispatch</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api.html#module-spatial_proteomics.cell_proportion_matrix">Unsupervised analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-spatial_proteomics.intensity_analysis">Intensity analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-spatial_proteomics.neighborhoods">Neighborhood analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-spatial_proteomics.advanced_cell_classification">Advanced phenotype classification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api.html#module-spatial_proteomics.cell_proportions">Cell proportions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api.html#module-spatial_proteomics.spatial_plot">Spatial plotting</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api.html#module-spatial_proteomics.utils">Utilities</a></li>

@@ -26,8 +26,18 @@ def _apply_unsupervised_mode(adata_dicts, config):
 
     Notes
     -----
-    This workflow performs exploratory protein marker-pattern discovery within
-    user-defined major cell types. It is not latent-space clustering.
+    The core workflow performs exploratory marker-pattern discovery within
+    user-defined major cell types. Optional v0.3.1 analyses are executed when
+    present/enabled in the configuration:
+
+    * ``intensity_spatial_plot`` generates continuous marker-intensity spatial maps.
+    * ``nhood_analysis`` performs fixed-radius neighborhood enrichment,
+    interaction-matrix, and co-occurrence analyses.
+    * ``advanced_cell_classification`` characterizes discovered phenotypes using
+    low/medium/high marker-intensity states.
+
+    These analyses complement rather than replace the original positivity-based
+    phenotype discovery.
     """
     output_dir = config['workspace']['output_dir']
     calculate_cell_proportion_matrix(

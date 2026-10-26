@@ -1,10 +1,10 @@
 # Spatial Proteomics Analysis (SpPrAn)
 
-**SpPrAn (Spatial Proteomics Analysis)** is a Python-based pipeline for analyzing single-cell spatial proteomics data exported from Visiopharm®. It classifies cells using protein-marker positivity rules, supports hierarchical cell subtypes, provides exploratory phenotype discovery, generates spatial and statistical outputs, and reports cell-population counts and proportions.
+**SpPrAn (Spatial Proteomics Analysis)** is a Python-based pipeline for analyzing single-cell spatial proteomics data exported from Visiopharm®. It supports protein-marker-rule-based cell annotation, exploratory phenotype discovery, spatial analysis, protein-marker-intensity characterization, and population-level statistical summaries.
 
 SpPrAn is intended for research-grade analyses in cancer biology, tumor-microenvironment studies, and other academic or translational spatial proteomics applications.
 
-**Current source version: 0.3.0**
+**Current source version: 0.3.1**
 
 ## Key features
 
@@ -13,25 +13,26 @@ SpPrAn is intended for research-grade analyses in cancer biology, tumor-microenv
 - Choose between **supervised** and **unsupervised** analysis workflows.
 - In supervised mode, define hierarchical cell subtypes directly from protein-marker rules.
 - In unsupervised mode, discover observed protein-marker-defined phenotypes within selected major cell types.
+- Optionally run **full phenotype discovery**, converting discovered patterns into subtype definitions for the supervised workflow.
 - Optionally compare discovered phenotypes between two sample groups.
-- Optionally export protein-marker intensity summaries for discovered phenotypes.
-- Optionally run **full phenotype discovery**, which converts discovered phenotypes into subtype definitions and continues through the supervised workflow.
+- Export descriptive protein-marker intensity data by discovered phenotypes.
+- Run fixed-radius neighborhood analysis, including neighborhood enrichment, interaction matrices, and distance-dependent co-occurrence.
 - Store annotated single-cell spatial proteomics data as AnnData (`.h5ad`) files for downstream analysis.
 - Generate overview, highlighted, custom spatial phenotype plots, and optional pie plots.
 - Calculate cell counts and proportions.
 - Visualize protein-marker-defined cell-type and subtype hierarchies.
-- Create or edit YAML configuration files using the browser-based **SpPrAn Configuration Builder**.
-- Run the pipeline either from the command line or through the desktop graphical interface.
+- Create or edit YAML configuration files using the local browser-based **SpPrAn Configuration Builder**.
+- Run SpPrAn either from the command line or through the desktop graphical interface.
 
 ## Analysis modes
 
-SpPrAn 0.3.0 introduces separate analysis modes for hypothesis-driven and exploratory spatial-proteomics workflows.
+Since version 0.3.0, SpPrAn introduces separate analysis modes for hypothesis-driven and exploratory spatial-proteomics workflows.
 
 ### Supervised mode
 
-In **supervised mode**, the user defines both major cell types and, when desired, nested subtypes using protein-marker presence/absence rules.
+In **supervised mode**, the user defines both major cell types and optional nested subtypes using protein-marker presence/absence rules.
 
-This mode is appropriate when the expected biological populations are already known from the marker panel or experimental hypothesis.
+This hypothesis-driven workflow is appropriate when biologically expected populations are known in advance from the marker panel or study design.
 
 Supervised mode includes:
 
@@ -56,6 +57,9 @@ The unsupervised workflow can:
 - optionally compare two user-defined sample groups;
 - perform Mann–Whitney and Welch t-test comparisons with FDR-corrected results; and
 - optionally export protein-marker-intensity summaries for downstream boxplot analysis.
+- (**New in v0.3.1**) generate protein-marker intensity spatial plots;
+- (**New in v0.3.1**) perform fixed-radius neighborhood analysis;
+- (**New in v0.3.1**) optionally perform advanced phenotype classification to discovered phenotypes;
 
 ### Full phenotype discovery
 
@@ -69,11 +73,11 @@ This option is useful when the goal is to discover protein-marker-defined phenot
 
 ## Documentation
 
-SpPrAn documentation includes download and startup, command-line and desktop-app usage, configuration creation, analysis-mode selection, use of the SpPrAn Configuration Builder, protein-marker-based cell-type/subtype definitions, unsupervised phenotype discovery, output interpretation, and Python API documentation.
-
-Documentation is available here:
+Full documentation is available at:
 
 https://sppran.readthedocs.io/en/latest/
+
+The documentation covers installation, the desktop GUI, supervised/unsupervised/full workflows, Configuration Builder usage, neighborhood analysis, advanced phenotype classification, outputs, interpretation, and the Python API.
 
 ## Ways to use SpPrAn
 
@@ -157,6 +161,8 @@ The builder can:
 - define hierarchical subtypes in supervised mode;
 - select parent populations and exploratory protein markers in unsupervised mode;
 - optionally configure two-group phenotype comparison;
+- (**New in v0.3.1**) optionally configure neighborhood analysis;
+- (**New in v0.3.1**) optionally select advanced phenotype classification;
 - optionally select protein markers for intensity summaries;
 - optionally enable full phenotype discovery;
 - assign colors;
@@ -225,8 +231,10 @@ These can include:
 - protein-marker-pattern mappings for observed phenotypes;
 - optional common/unique phenotype tables for two-group comparisons;
 - optional Mann–Whitney and Welch t-test results with FDR correction;
-- phenotype-proportion comparison plots; and
-- optional protein-marker intensity summary tables for discovered phenotypes.
+- phenotype-proportion comparison plots;
+- optional protein-marker intensity summary tables and spatial plots for discovered phenotypes;
+- optional neighborhood enrichment, interaction matrices, and distance-dependent co-occurrence plots; and
+- optional phenotype-level overview tables, including protein-marker-level intensity and phenotype-level intensity summaries, and observed multi-protein-marker intensity profiles.
 
 ### Full phenotype-discovery outputs
 
@@ -234,7 +242,7 @@ Full mode first produces the exploratory outputs and then reuses discovered prot
 
 Detailed output descriptions and interpretation guidance are provided in the documentation.
 
-## Interpretation
+## Biological interpretation
 
 SpPrAn assigns or discovers **protein-marker-defined phenotypes**. These labels should not be interpreted as independent biological ground truth.
 
@@ -249,6 +257,12 @@ Immune cells
 represents nested protein-marker-based phenotype definitions, not by itself a developmental lineage or differentiation trajectory.
 
 Likewise, a phenotype discovered in unsupervised mode represents an observed combination of positivity states among the selected exploratory protein markers within a defined parent population. Its biological meaning requires interpretation using the experimental protein-marker panel and cancer/tissue context.
+
+The new "Advanced phenotype classification" adds **relative intensity information** to positive markers in discovered phenotypes; it does not redefine phenotype identity. Moreover, this classification is performed independently within each sample using the positive-cell intensity distribution for each marker.
+
+In protein-marker-based intensity spatial plots, the intensity color scales are calculated independently for each sample and marker. Color values should therefore be interpreted within a plot rather than compared quantitatively across different sample panels.
+
+Neighborhood outputs quantify spatial association, not causal cell-cell communication. Enrichment or co-occurrence can identify spatial organization consistent with biological interaction, but biological mechanism requires independent evidence.
 
 ## Citation
 
@@ -284,5 +298,4 @@ Bug reports, questions, and suggestions can be submitted through the GitHub Issu
 
 **Sergio Zamora-Erazo, Ph.D.**  
 Philadelphia, PA, USA
-
 [sergio.zamorae@gmail.com](mailto:sergio.zamorae@gmail.com)

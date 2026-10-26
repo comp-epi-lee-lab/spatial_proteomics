@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use SpPrAn in your research, please cite the software using these metadata. Publications that have used SpPrAn are listed under references."
 title: "SpPrAn: Spatial Proteomics Analysis"
 type: software
-version: 0.3.0
+version: 0.3.1
 repository-code: "https://github.com/comp-epi-lee-lab/spatial_proteomics"
 url: "https://sppran.readthedocs.io/en/stable/"
 authors:
