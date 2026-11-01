@@ -68,7 +68,7 @@ def _boxplot_outliers(df,pm_name):
     outliers = df[(df[pm_name] < lower_bound) | (df[pm_name] > upper_bound)][pm_name].sort_values()
     return pd.Series(outliers)
 
-def _intensities_data(intensities_dict,adata_dicts,list_ct_short_name,output_dir):
+def _intensities_data(intensities_dict,adata_dicts,list_ct_short_name,df_pm_names,output_dir):
     """
     Export box plot summary data by discovered phenotype.
 
@@ -80,6 +80,8 @@ def _intensities_data(intensities_dict,adata_dicts,list_ct_short_name,output_dir
         AnnData objects containing discovered phenotype labels.
     list_ct_short_name : list of str
         Short names of explored parent populations.
+    df_intensity_pm_names :  pandas.DataFrame
+        DataFrame with all the protein marker names for the intensity analysis.
     output_dir : pathlib.Path
         Base directory for intensity analysis results.
 
@@ -116,6 +118,7 @@ def _intensities_data(intensities_dict,adata_dicts,list_ct_short_name,output_dir
             for phenotype in list_host_names:
                 if pd.isna(phenotype):
                     continue
+                which_pm_in_phenotype = [df_pm_names.loc[pm]["Name appearing in anndata file"] for pm,pmi_val in adata.uns[f'sub{short_ct_name}_patterns'][phenotype].items() if pmi_val=="1"]
 
                 cell_ids = adata.obs_names[adata.obs[host_column] == phenotype].tolist()
                 filtered_df = intensity_df[intensity_df.index.isin(cell_ids)]
@@ -129,9 +132,9 @@ def _intensities_data(intensities_dict,adata_dicts,list_ct_short_name,output_dir
                 title_name_3 = f"Intensity data - Sample {k} - {host_column} - {mapping.loc[phenotype,"Phenotype ID"]} {text_total_cells}"
                 save_namefile_3 = intensities_csv_dir_phen_ext / f"{title_name_3}.csv"
 
-                pd.DataFrame({'Metric': ['Lower_Whisker', 'Q1', 'Median (Q2)', 'Q3', 'Upper_Whisker']}|{ pm_name: _boxplot_calculation(filtered_df,pm_name) for pm_name in pm_list }).to_csv(save_namefile_1, index=False)
+                pd.DataFrame({'Metric': ['Lower_Whisker', 'Q1', 'Median (Q2)', 'Q3', 'Upper_Whisker']}|{ pm_name: _boxplot_calculation(filtered_df,pm_name) for pm_name in which_pm_in_phenotype }).to_csv(save_namefile_1, index=False)
                 # pd.DataFrame({ pm_name: _boxplot_outliers(filtered_df,pm_name) for pm_name in pm_list }).to_csv(save_namefile_2, index=False)
-                pd.DataFrame({ pm_name: filtered_df[pm_name] for pm_name in pm_list }).to_csv(save_namefile_3, index=False)
+                pd.DataFrame({ pm_name: filtered_df[pm_name] for pm_name in which_pm_in_phenotype }).to_csv(save_namefile_3, index=False)
 
 def calculate_pm_intensity_analysis(adata_dicts, list_ct_short_name, output_dir, which_pm):
     """
@@ -161,9 +164,11 @@ def calculate_pm_intensity_analysis(adata_dicts, list_ct_short_name, output_dir,
     """
     if len(which_pm)!=0:
         positivity_column_names = pd.read_csv(output_dir / "results" / "Positivity column names.csv")
-        epm_list = positivity_column_names[positivity_column_names["Positivity column names"].isin(which_pm)]["Name appearing in anndata file"].tolist()
+        positivity_column_names = positivity_column_names[positivity_column_names["Positivity column names"].isin(which_pm)].copy()
+        epm_list = positivity_column_names["Name appearing in anndata file"].tolist()
+        positivity_column_names = positivity_column_names.set_index("Positivity column names")
         intensities_dict = _read_intensities(adata_dicts, epm_list)
-        _intensities_data(intensities_dict, adata_dicts, list_ct_short_name, output_dir / "Statistics")
+        _intensities_data(intensities_dict, adata_dicts, list_ct_short_name, positivity_column_names, output_dir / "Statistics")
 
 def _getting_vmin_n_vmax (adata_dicts):
     """

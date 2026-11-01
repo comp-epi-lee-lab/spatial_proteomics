@@ -246,7 +246,11 @@ def _co_occurrence_analysis(adata, sample, save_dir, dpi, overwrite_existing_fil
         else:
             sq.pl.co_occurrence(adata, cluster_key="clusters", clusters=cell_type, figsize=(8, 5))
             if max_distance is not None:
-                for ax in plt.gcf().axes: ax.set_xlim(right=max_distance)
+                for ax in plt.gcf().axes: 
+                    ax.set_xlim(right=max_distance)
+                    ax.set_ylabel("Co-occurrence ratio")
+                    ax.axhline(y=1, color="gray", linestyle="--", alpha=0.6) # "Ratio = 1 (no relative enrichment)"
+                    ax.annotate("Ratio = 1\n(no relative\nenrichment)", xy=(1.1, 0), xycoords="axes fraction", xytext=(0, 5), textcoords="offset points", ha="center", va="bottom", fontsize=9, color="gray")
             plt.savefig(save_namefile,dpi=dpi,bbox_inches=None, pil_kwargs={"compress_level": 1},)
             plt.close()
 
@@ -290,6 +294,7 @@ def neighborhood_by_fixed_distance(adata_dicts, output_dir, dpi, save_anndata, o
     """
     logger.warning(f"Neighborhood analysis started...")
     radius_conversion = neighborhood_radius_size / pixel_conversion_rate
+    max_distance_conversion = max_distance_cooccurrence / pixel_conversion_rate
     save_dir = output_dir / "Statistics" / "plots" / "Neighborhood analysis"
     save_dir.mkdir(parents=True, exist_ok=True)
 
@@ -299,7 +304,7 @@ def neighborhood_by_fixed_distance(adata_dicts, output_dir, dpi, save_anndata, o
         sq.gr.spatial_neighbors(adata,radius=radius_conversion, coord_type = 'generic')
         _neighborhood_enrichment_analysis(adata,k,save_dir = save_dir_2,dpi=dpi, overwrite_existing_files=overwrite_existing_files)
         _interaction_matrix_analysis(adata,k,save_dir = save_dir_2,dpi=dpi, overwrite_existing_files=overwrite_existing_files)
-        _co_occurrence_analysis(adata,k,save_dir = save_dir_2, dpi=dpi, overwrite_existing_files=overwrite_existing_files, max_distance = max_distance_cooccurrence)
+        _co_occurrence_analysis(adata,k,save_dir = save_dir_2, dpi=dpi, overwrite_existing_files=overwrite_existing_files, max_distance = max_distance_conversion)
 
     adata_path = output_dir / "adata"
     if save_anndata: save_anndata_files(adata_dicts,adata_dir=adata_path)

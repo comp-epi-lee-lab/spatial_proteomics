@@ -129,7 +129,7 @@ def _filtering_phenotypes(df_tt,subCT_dict, dictionary, samples_id, subCT_OG_dic
         values_sample_name_list.append([val for val in list_sample_name_temp])
         values_list_cond.append([val*100 for val in list_temp_cond])
         values_sample_name_list_cond.append([val for val in list_sample_name_temp_cond])
-        frequency_list_cond.append(f"{len(frequency_cond)} / {how_many_samples}")
+        frequency_list_cond.append(f"{len(frequency_cond)} out of {how_many_samples}")
     df_tt['Proportion Average'] = mean_list
     df_tt['Standard deviation'] = std_list
     df_tt['Proportions'] = values_list
@@ -209,48 +209,48 @@ def _common_n_unique_phenotypes(df_phenotypes_ctrl, name_ctrl, df_phenotypes_trt
     
     df_together = df_phenotypes_ctrl.loc[together_list].sort_values(by="Conditional Proportion Average", ascending=False)
     df_together = df_together[["Phenotype","Conditional Proportion Average", 'Conditional Sample Frequency', "Conditional Proportions", "Proportion Average"]].copy()
-    df_together = df_together.rename(columns={"Conditional Proportion Average": f"Detected {name_ctrl} %", "Conditional Sample Frequency": f"Detected Sample Frequency in {name_ctrl}", "Conditional Proportions": f"Detected {name_ctrl} Prop Values", "Proportion Average": f"Filtered {name_ctrl} %",})
-    df_together[f"Detected {name_trtmnt} %"] = (df_phenotypes_trtmnt.loc[together_list]["Conditional Proportion Average"]*100).round(2)
-    df_together[f"Detected {name_trtmnt} Prop Values"] = df_phenotypes_trtmnt.loc[together_list]["Conditional Proportions"]
-    df_together[f"Filtered {name_trtmnt} %"] = (df_phenotypes_trtmnt.loc[together_list]["Proportion Average"]*100).round(2)
-    df_together[f"Detected {name_ctrl} %"] = (df_together[f"Detected {name_ctrl} %"]*100).round(2)
-    df_together[f"Filtered {name_ctrl} %"] = (df_together[f"Filtered {name_ctrl} %"]*100).round(2)
-    df_together[f"Detected Difference {name_trtmnt}-{name_ctrl}"] =  df_together[f"Detected {name_trtmnt} %"] - df_together[f"Detected {name_ctrl} %"]
+    df_together = df_together.rename(columns={"Conditional Proportion Average": f"Detected {name_ctrl} average %", "Conditional Sample Frequency": f"Detected Sample Frequency in {name_ctrl}", "Conditional Proportions": f"Detected {name_ctrl} Proportion Values", "Proportion Average": f"No filter {name_ctrl} average %",})
+    df_together[f"Detected {name_trtmnt} average %"] = (df_phenotypes_trtmnt.loc[together_list]["Conditional Proportion Average"]*100).round(2)
+    df_together[f"Detected {name_trtmnt} Proportion Values"] = df_phenotypes_trtmnt.loc[together_list]["Conditional Proportions"]
+    df_together[f"No filter {name_trtmnt} average %"] = (df_phenotypes_trtmnt.loc[together_list]["Proportion Average"]*100).round(2)
+    df_together[f"Detected {name_ctrl} average %"] = (df_together[f"Detected {name_ctrl} average %"]*100).round(2)
+    df_together[f"No filter {name_ctrl} average %"] = (df_together[f"No filter {name_ctrl} average %"]*100).round(2)
+    df_together[f"Detected Difference {name_trtmnt}-{name_ctrl}"] =  df_together[f"Detected {name_trtmnt} average %"] - df_together[f"Detected {name_ctrl} average %"]
     df_together['Interpretation'] = [f"Increase after {name_trtmnt}" if value>0 else f"Decrease after {name_trtmnt}" for value in df_together[f"Detected Difference {name_trtmnt}-{name_ctrl}"]]
     df_together[f"Detected Sample Frequency in {name_trtmnt}"] = df_phenotypes_trtmnt.loc[together_list]["Conditional Sample Frequency"]
     df_together = df_together[[
         "Phenotype",
-        f"Detected {name_ctrl} %",
-        f"Detected {name_trtmnt} %",
+        f"Detected {name_ctrl} average %",
+        f"Detected {name_trtmnt} average %",
         f"Detected Difference {name_trtmnt}-{name_ctrl}",
         "Interpretation",
         f"Detected Sample Frequency in {name_ctrl}",
         f"Detected Sample Frequency in {name_trtmnt}",
-        f"Detected {name_ctrl} Prop Values",
-        f"Detected {name_trtmnt} Prop Values",
-        f"Filtered {name_ctrl} %",
-        f"Filtered {name_trtmnt} %",
+        f"Detected {name_ctrl} Proportion Values",
+        f"Detected {name_trtmnt} Proportion Values",
+        f"No filter {name_ctrl} average %",
+        f"No filter {name_trtmnt} average %",
     ]].copy()
     
     df_unique_ctrl = df_phenotypes_ctrl.loc[list_unique_ctrl].sort_values(by="Conditional Proportion Average", ascending=False)
-    df_unique_ctrl = df_unique_ctrl[["Phenotype","Conditional Proportion Average", "Proportion Average", "Treatment"]].copy()
-    df_unique_ctrl = df_unique_ctrl.rename(columns={"Conditional Proportion Average":"Detected %","Proportion Average":"Filtered %","Treatment":"Condition"})
-    df_unique_ctrl["Detected %"] = (df_unique_ctrl["Detected %"]*100).round(2)
-    df_unique_ctrl["Filtered %"] = (df_unique_ctrl["Filtered %"]*100).round(2)
+    df_unique_ctrl = df_unique_ctrl[["Phenotype","Conditional Proportion Average", "Proportion Average", "Treatment", "Conditional Sample Frequency"]].copy()
+    df_unique_ctrl = df_unique_ctrl.rename(columns={"Conditional Proportion Average":"Detected average %","Proportion Average":"No filter average %","Treatment":"Condition", "Conditional Sample Frequency":"Detected Sample Frequency"})
+    df_unique_ctrl["Detected average %"] = (df_unique_ctrl["Detected average %"]*100).round(2)
+    df_unique_ctrl["No filter average %"] = (df_unique_ctrl["No filter average %"]*100).round(2)
 
     df_unique_trtmnt = df_phenotypes_trtmnt.loc[list_unique_trtmnt].sort_values(by="Proportion Average", ascending=False)
-    df_unique_trtmnt = df_unique_trtmnt[["Phenotype","Conditional Proportion Average","Proportion Average","Treatment"]].copy()
-    df_unique_trtmnt = df_unique_trtmnt.rename(columns={"Conditional Proportion Average": "Detected %", "Proportion Average": "Filtered %","Treatment":"Condition"})
-    df_unique_trtmnt["Detected %"] = (df_unique_trtmnt["Detected %"]*100).round(2)
-    df_unique_trtmnt["Filtered %"] = (df_unique_trtmnt["Filtered %"]*100).round(2)
+    df_unique_trtmnt = df_unique_trtmnt[["Phenotype","Conditional Proportion Average","Proportion Average","Treatment", "Conditional Sample Frequency"]].copy()
+    df_unique_trtmnt = df_unique_trtmnt.rename(columns={"Conditional Proportion Average": "Detected average %", "Proportion Average": "No filter average %","Treatment":"Condition", "Conditional Sample Frequency":"Detected Sample Frequency"})
+    df_unique_trtmnt["Detected average %"] = (df_unique_trtmnt["Detected average %"]*100).round(2)
+    df_unique_trtmnt["No filter average %"] = (df_unique_trtmnt["No filter average %"]*100).round(2)
     
     if save_namefile_all.exists() and not overwrite_existing_files: 
         logger.warning(f"File 'Common sub{short_ct_name}.csv' already exists...")
         return pd.read_csv(save_namefile_all, index_col=0)
 
     df_together.to_csv(save_namefile_all)
-    df_together[f"{name_ctrl} Prop Values"] = df_phenotypes_ctrl.loc[together_list].sort_values(by="Conditional Proportion Average", ascending=False)["Proportions"].copy()
-    df_together[f"{name_trtmnt} Prop Values"] = df_phenotypes_trtmnt.loc[together_list]["Proportions"]
+    df_together[f"{name_ctrl} Proportion Values"] = df_phenotypes_ctrl.loc[together_list].sort_values(by="Conditional Proportion Average", ascending=False)["Proportions"].copy()
+    df_together[f"{name_trtmnt} Proportion Values"] = df_phenotypes_trtmnt.loc[together_list]["Proportions"]
     df_unique_ctrl.to_csv(save_namefile_ctrl)
     df_unique_trtmnt.to_csv(save_namefile_trtmnt)
 
@@ -432,8 +432,8 @@ def _common_phenotypes_differences_analysis(df_together, name_ctrl, name_trtmnt,
 
     Notes
     -----
-    The function performs two-sided Mann–Whitney U and Welch independent-sample
-    t-tests. Benjamini–Hochberg FDR-adjusted p-values are also calculated.
+    The function performs two-sided Mann-Whitney U and Welch independent-sample
+    t-tests. Benjamini-Hochberg FDR-adjusted p-values are also calculated.
 
     Statistical interpretation should consider biological sample size,
     phenotype detection frequency, effect magnitude, and multiplicity.
@@ -447,7 +447,7 @@ def _common_phenotypes_differences_analysis(df_together, name_ctrl, name_trtmnt,
     if save_namefile.exists() and not overwrite_existing_files: 
         logger.warning(f"'proportion differences analysis' csv file already exists...")
         results_table = pd.read_csv(save_namefile, index_col=0)
-        pvals   = list(results_table['Mann–Whitney p-value'])
+        pvals   = list(results_table['Mann-Whitney p-value'])
         pvals_m = list(results_table['Raw p-value'])
     else:
         cell_types = df_together.index  # rows are cell types
@@ -456,8 +456,8 @@ def _common_phenotypes_differences_analysis(df_together, name_ctrl, name_trtmnt,
         summary = []
         
         for cell in cell_types:
-            ctrl_vals = df_together.loc[cell,f"Detected {name_ctrl} Prop Values"]
-            treat_vals = df_together.loc[cell,f"Detected {name_trtmnt} Prop Values"]
+            ctrl_vals = df_together.loc[cell,f"Detected {name_ctrl} Proportion Values"]
+            treat_vals = df_together.loc[cell,f"Detected {name_trtmnt} Proportion Values"]
             
             # mean ± SD
             ctrl_mean, ctrl_sd = np.mean(ctrl_vals), np.std(ctrl_vals, ddof=1)
@@ -476,9 +476,9 @@ def _common_phenotypes_differences_analysis(df_together, name_ctrl, name_trtmnt,
                 "Cell type": cell,
                 "Control (mean ± SD)": f"{ctrl_mean:.2f} ± {ctrl_sd:.2f}",
                 "Treatment (mean ± SD)": f"{treat_mean:.2f} ± {treat_sd:.2f}",
-                "Control (median [IQR])": f"{ctrl_med:.2f} [{ctrl_q1:.2f}–{ctrl_q3:.2f}]",
-                "Treatment (median [IQR])": f"{treat_med:.2f} [{treat_q1:.2f}–{treat_q3:.2f}]",
-                "Mann–Whitney p-value": pval,
+                "Control (median [IQR])": f"{ctrl_med:.2f} [{ctrl_q1:.2f}-{ctrl_q3:.2f}]",
+                "Treatment (median [IQR])": f"{treat_med:.2f} [{treat_q1:.2f}-{treat_q3:.2f}]",
+                "Mann-Whitney p-value": pval,
                 "Raw p-value": pval_m
             })
         
@@ -494,10 +494,10 @@ def _common_phenotypes_differences_analysis(df_together, name_ctrl, name_trtmnt,
             row["FDR-corrected RAW p-value"] = fdr_pvals_m[i]
         
         results_table = pd.DataFrame(summary)
-        results_table.to_csv(save_namefile)
+        results_table.to_csv(save_namefile, encoding="utf-8-sig")
 
-    _plotting_table(df_together, name_ctrl, name_trtmnt, pvals,   caption_text = "", short_ct_name=short_ct_name, plots_dir=plots_dir, test_name = "Mann–Whitney", filter_applied = filter_applied, second_filter = second_filter, overwrite_existing_files=overwrite_existing_files, ctrl_values_column=f"Detected {name_ctrl} Prop Values", trtmnt_values_column=f"Detected {name_trtmnt} Prop Values") # t test
-    _plotting_table(df_together, name_ctrl, name_trtmnt, pvals_m, caption_text = "", short_ct_name=short_ct_name, plots_dir=plots_dir, test_name = "t-test",       filter_applied = filter_applied, second_filter = second_filter, overwrite_existing_files=overwrite_existing_files, ctrl_values_column=f"Detected {name_ctrl} Prop Values", trtmnt_values_column=f"Detected {name_trtmnt} Prop Values") # Mann–Whitney
+    _plotting_table(df_together, name_ctrl, name_trtmnt, pvals,   caption_text = "", short_ct_name=short_ct_name, plots_dir=plots_dir, test_name = "Mann-Whitney", filter_applied = filter_applied, second_filter = second_filter, overwrite_existing_files=overwrite_existing_files, ctrl_values_column=f"Detected {name_ctrl} Proportion Values", trtmnt_values_column=f"Detected {name_trtmnt} Proportion Values") # t test
+    _plotting_table(df_together, name_ctrl, name_trtmnt, pvals_m, caption_text = "", short_ct_name=short_ct_name, plots_dir=plots_dir, test_name = "t-test",       filter_applied = filter_applied, second_filter = second_filter, overwrite_existing_files=overwrite_existing_files, ctrl_values_column=f"Detected {name_ctrl} Proportion Values", trtmnt_values_column=f"Detected {name_trtmnt} Proportion Values") # Mann-Whitney
 
 
 def _naming_phenotypes(CST_markers, initials_CST, short_ct_name, observed_numbers):

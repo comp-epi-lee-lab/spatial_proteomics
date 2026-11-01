@@ -4,7 +4,7 @@
 
 SpPrAn is intended for research-grade analyses in cancer biology, tumor-microenvironment studies, and other academic or translational spatial proteomics applications.
 
-**Current source version: 0.3.1**
+**Current source version: 0.3.2**
 
 ## Key features
 

@@ -9,7 +9,7 @@ The module is also used as the entry point for packaged macOS and Windows
 desktop distributions.
 """
 
-# Version 0.3.1
+# Version 0.3.2
 
 import os
 import sys
@@ -141,7 +141,7 @@ class SpPrAnGUI:
         self.config_label_2 = WrappingLabel(self.main_frame, text="")
         self.config_label_2.pack(pady=10, expand=True, fill=tk.X)
 
-        self.text_area = scrolledtext.ScrolledText(self.main_frame, wrap=tk.WORD, height=22, width=85, font=("Courier", 10))
+        self.text_area = scrolledtext.ScrolledText(self.main_frame, wrap=tk.WORD, height=22, width=85, font=("Courier", 14))
         self.run_button = Button(self.main_frame, text="Run analysis", command=self.run_pipeline, width=25, state=tk.DISABLED)
 
     def reset_frame(self):
@@ -158,7 +158,7 @@ class SpPrAnGUI:
         """Create the runtime log view used while the pipeline is executing."""
         self.btn2 = tk.Button(self.log_frame, text="Restart", command=self.reset_frame, state=tk.DISABLED)
         Label(self.log_frame, text="Run SpPrAn", font=("Helvetica", 16, "bold")).pack(pady=10)
-        self.log_text = scrolledtext.ScrolledText(self.log_frame, wrap=tk.WORD, height=22, width=85, font=("Courier", 10))
+        self.log_text = scrolledtext.ScrolledText(self.log_frame, wrap=tk.WORD, height=22, width=85, font=("Courier", 14))
         self.log_text.pack(padx=5, pady=5, expand=True, fill=tk.BOTH)
         self.done_button = Button(self.log_frame, text="Back to Main Menu", command=self.show_main_frame, state=tk.DISABLED, width=20)
         self.done_button.pack(pady=10)
@@ -314,10 +314,12 @@ class SpPrAnGUI:
                 if item == "__DONE__":
                     self.done_button.config(text="Back to Main Menu", state=tk.NORMAL)
                     messagebox.showinfo("Sp", "SpPrAn analysis pipeline finished.")
+                    self.log_text.configure(state='disabled')
                     continue
                 elif "[SpPrAn STOPPED] An error occurred:" in item:
                     self.log_text.insert(tk.END, item)
                     self.log_text.see(tk.END)
+                    self.log_text.configure(state='disabled')
                     self.done_button.pack_forget()
                     self.btn2.config(state=tk.NORMAL)
                     self.btn2.pack(pady=10)
