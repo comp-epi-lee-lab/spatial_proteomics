@@ -217,7 +217,7 @@ are generated together with the cell-type proportion matrices.
 
 The **Overwrite existing outputs?** and **Save AnnData files?** are exactly the same as in the supervised configuration.
 
-"Optional spatial and phenotype analyses" section (**New in v0.3.1**)
+"Optional spatial and phenotype analyses" section
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In this settings section, users optionally may choose additional analyses and plots to generate after phenotype discovery. 

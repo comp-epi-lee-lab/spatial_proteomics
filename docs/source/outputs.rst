@@ -1,7 +1,11 @@
 Outputs
 =======
 
-Outputs depend on the analysis mode.
+Outputs depend on the selected analysis mode and optional analyses.
+
+This page provides a short overview. For the detailed user-oriented explanation
+of filenames, columns, calculations, biological interpretation, and common
+misinterpretations, see :doc:`output_guide`.
 
 Shared outputs
 --------------
@@ -53,11 +57,11 @@ Intensity outputs
    For selected markers, SpPrAn exports per-phenotype Tukey box-plot summaries,
    complete intensity-data tables, and protein-intensity spatial maps.
 
-(**New in v0.3.1**) Neighborhood analysis outputs
+Neighborhood analysis outputs
    When selected, SpPrAn exports neighborhood-enrichment and interaction-matrix 
    overview heatmaps, and distance-dependent co-occurrence plots per sample.
 
-(**New in v0.3.1**) Advanced phenotype classification
+Advanced phenotype classification
    When selected, SpPrAn reports:
    
    - Low/medium/high intensity abundance for positive markers within each

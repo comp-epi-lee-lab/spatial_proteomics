@@ -36,8 +36,8 @@ def _highlighted_by_labels(data_to_analyze, labels, target_row, idx, x_axis_fig_
         Row index of ``target_row``.
     x_axis_fig_size, y_axis_fig_size : float
         Figure dimensions in inches.
-    v_bound : float
-        Symmetric color-scale bound.
+    v_bound : float or tuple
+        Symmetric color-scale bound if it is float; 0-to-1 color-scale if it is tuple.
     rotation : float
         X-axis label rotation in degrees.
     bottom : float
@@ -57,8 +57,16 @@ def _highlighted_by_labels(data_to_analyze, labels, target_row, idx, x_axis_fig_
         The highlighted heatmap is written to disk.
     """
     # idx = labels.get_loc(target_row)
+    if isinstance(v_bound, tuple):
+        vmin = v_bound[0]
+        vmax = v_bound[1]
+        ticks_interval = [v_bound[0], sum(v_bound)/len(v_bound), v_bound[1]]
+    else: 
+        vmin=-v_bound
+        vmax=v_bound
+        ticks_interval = [-v_bound, 0, v_bound]
     plt.figure(figsize=(x_axis_fig_size, y_axis_fig_size))
-    ax = sns.heatmap(data_to_analyze[[idx], :], xticklabels=labels, yticklabels=[target_row], cmap="viridis", vmin=-v_bound, vmax=v_bound, annot=True, fmt=".2f", cbar_kws={'label': label_title, "ticks": [-v_bound, 0, v_bound]})
+    ax = sns.heatmap(data_to_analyze[[idx], :], xticklabels=labels, yticklabels=[target_row], cmap="viridis", vmin=vmin, vmax=vmax, annot=True, fmt=".2f", cbar_kws={'label': label_title, "ticks": ticks_interval})
     plt.title(title)
     ax.collections[0].colorbar.ax.yaxis.set_label_position("left")
     plt.xticks(rotation=rotation, ha='right')
@@ -100,12 +108,13 @@ def _highlight_analysis(adata, sample_idx, save_dir, dpi, overwrite_existing_fil
         data_to_analyze = adata.uns["clusters_nhood_enrichment"]["zscore"] 
         h_title = "Neighborhood Enrichment"
         h_label_title='z-score'
+        v_bound = np.nanmax(np.abs(data_to_analyze))
     else:
         data_to_analyze = adata.uns["clusters_interactions"] 
         h_title = "Interaction Matrix"
         h_label_title='Interaction proportion'
+        v_bound = (0,1)
     labels = adata.obs["clusters"].cat.categories
-    v_bound = np.nanmax(np.abs(data_to_analyze))
     max_chars = max([len(lbl) for lbl in labels])
     bottom = min(0.25 + 0.008 * max_chars, 0.75)
     x_axis_fig_size = 5 + 5*((len(labels)-1)//3)
@@ -197,7 +206,7 @@ def _interaction_matrix_analysis(adata,sample_idx,save_dir,dpi,overwrite_existin
         logger.warning(f"Interaction matrix analysis file already exists. Skipping...")
         return
     else:
-        sq.gr.interaction_matrix(adata, cluster_key="clusters")
+        sq.gr.interaction_matrix(adata, cluster_key="clusters", normalized=True)
         sq.pl.interaction_matrix(adata, cluster_key="clusters", figsize=(7, 5), show=False)
         fig = plt.gcf()
         fig.set_layout_engine(None)

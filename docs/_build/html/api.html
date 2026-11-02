@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Python API &mdash; SpPrAn 0.3.1 documentation</title>
+  <title>Python API &mdash; SpPrAn 0.3.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=4621528c"></script>
+      <script src="_static/documentation_options.js?v=71d9d8e6"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -52,6 +52,7 @@
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration file</a></li>
 <li class="toctree-l1"><a class="reference internal" href="usage.html">Running SpPrAn</a></li>
 <li class="toctree-l1"><a class="reference internal" href="outputs.html">Outputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="output_guide.html">Understanding SpPrAn outputs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="release_notes.html">Release notes</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Developer reference</span></p>
@@ -774,7 +775,7 @@ analysis.</p>
 radius rather than from PCA or expression-space nearest neighbors.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="spatial_proteomics.neighborhoods.neighborhood_by_fixed_distance">
-<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.neighborhoods.</span></span><span class="sig-name descname"><span class="pre">neighborhood_by_fixed_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">adata_dicts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dpi</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_anndata</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite_existing_files</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neighborhood_radius_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_conversion_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_distance_coocurrence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/neighborhoods.html#neighborhood_by_fixed_distance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.neighborhoods.neighborhood_by_fixed_distance" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">spatial_proteomics.neighborhoods.</span></span><span class="sig-name descname"><span class="pre">neighborhood_by_fixed_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">adata_dicts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dpi</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_anndata</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite_existing_files</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neighborhood_radius_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_conversion_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_distance_cooccurrence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial_proteomics/neighborhoods.html#neighborhood_by_fixed_distance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spatial_proteomics.neighborhoods.neighborhood_by_fixed_distance" title="Link to this definition"></a></dt>
 <dd><p>Run fixed-radius neighborhood analysis for all samples.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -787,7 +788,7 @@ radius rather than from PCA or expression-space nearest neighbors.</p>
 <li><p><strong>neighborhood_radius_size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>default=50</em>) – User-facing neighborhood radius.</p></li>
 <li><p><strong>pixel_conversion_rate</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>default=1</em>) – Conversion factor between the user-facing radius unit and the spatial
 coordinate unit stored in AnnData.</p></li>
-<li><p><strong>max_distance_coocurrence</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><em>None</em><em>, </em><em>default=None</em>) – Optional maximum distance shown in co-occurrence plots.</p></li>
+<li><p><strong>max_distance_cooccurrence</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><em>None</em><em>, </em><em>default=None</em>) – Optional maximum distance shown in co-occurrence plots.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>

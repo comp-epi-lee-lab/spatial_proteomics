@@ -10,7 +10,7 @@ Distribution
 Packaged Windows and macOS applications are available through `GitHub
 Releases <https://github.com/comp-epi-lee-lab/spatial_proteomics/releases>`_. Current supported platforms:
 
-* **v0.2.5-beta.1**:
+* **v0.3.2**:
 
     * Windows 11 (x86_64 - 64-bit Intel or AMD processors)
     * Windows 11 (ARM64 / Copilot+ PCs)

@@ -1,6 +1,28 @@
 Release notes
 =============
 
+SpPrAn 0.3.2
+------------
+
+Version 0.3.2 is a maintenance release focused on bug fixes and refinements to
+phenotype-level protein-intensity and neighborhood analysis exports.
+
+Changed
+~~~~~~~
+
+* Phenotype-specific box-plot and complete-intensity CSV files are restricted
+  to protein markers that are positive in the discovered phenotype definition.
+* Interaction matrix heatmaps now show interaction row-normalized proportions
+  instead of interaction counts for better understanding.
+* Minor stability and bug fixes across the v0.3.1 workflow.
+
+Documentation
+~~~~~~~~~~~~~
+
+* Added a comprehensive user-oriented output guide explaining what each major
+  SpPrAn output represents, how it is calculated, how to interpret it
+  biologically, and which conclusions should not be drawn from it.
+
 SpPrAn 0.3.1
 ------------
 

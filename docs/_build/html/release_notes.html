@@ -6,21 +6,21 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Release notes &mdash; SpPrAn 0.3.1 documentation</title>
+  <title>Release notes &mdash; SpPrAn 0.3.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=4621528c"></script>
+      <script src="_static/documentation_options.js?v=71d9d8e6"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Python API" href="api.html" />
-    <link rel="prev" title="Outputs" href="outputs.html" /> 
+    <link rel="prev" title="Understanding SpPrAn outputs" href="output_guide.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -53,7 +53,13 @@
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration file</a></li>
 <li class="toctree-l1"><a class="reference internal" href="usage.html">Running SpPrAn</a></li>
 <li class="toctree-l1"><a class="reference internal" href="outputs.html">Outputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="output_guide.html">Understanding SpPrAn outputs</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Release notes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#sppran-0-3-2">SpPrAn 0.3.2</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#changed">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#documentation">Documentation</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#sppran-0-3-1">SpPrAn 0.3.1</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#added">Added</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#configuration-builder">Configuration Builder</a></li>
@@ -99,6 +105,29 @@
              
   <section id="release-notes">
 <h1>Release notes<a class="headerlink" href="#release-notes" title="Link to this heading"></a></h1>
+<section id="sppran-0-3-2">
+<h2>SpPrAn 0.3.2<a class="headerlink" href="#sppran-0-3-2" title="Link to this heading"></a></h2>
+<p>Version 0.3.2 is a maintenance release focused on bug fixes and refinements to
+phenotype-level protein-intensity and neighborhood analysis exports.</p>
+<section id="changed">
+<h3>Changed<a class="headerlink" href="#changed" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Phenotype-specific box-plot and complete-intensity CSV files are restricted
+to protein markers that are positive in the discovered phenotype definition.</p></li>
+<li><p>Interaction matrix heatmaps now show interaction row-normalized proportions
+instead of interaction counts for better understanding.</p></li>
+<li><p>Minor stability and bug fixes across the v0.3.1 workflow.</p></li>
+</ul>
+</section>
+<section id="documentation">
+<h3>Documentation<a class="headerlink" href="#documentation" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Added a comprehensive user-oriented output guide explaining what each major
+SpPrAn output represents, how it is calculated, how to interpret it
+biologically, and which conclusions should not be drawn from it.</p></li>
+</ul>
+</section>
+</section>
 <section id="sppran-0-3-1">
 <h2>SpPrAn 0.3.1<a class="headerlink" href="#sppran-0-3-1" title="Link to this heading"></a></h2>
 <p>Version 0.3.1 expands the unsupervised/full workflow introduced in v0.3.0.</p>
@@ -172,7 +201,7 @@ configurations.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="outputs.html" class="btn btn-neutral float-left" title="Outputs" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="output_guide.html" class="btn btn-neutral float-left" title="Understanding SpPrAn outputs" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="api.html" class="btn btn-neutral float-right" title="Python API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

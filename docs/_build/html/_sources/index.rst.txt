@@ -9,12 +9,11 @@ hierarchical cell populations and subtypes.
 SpPrAn can be run from Python/the command line or from a packaged desktop
 application for users who prefer a graphical workflow.
 
-Version 0.3.1
+Version 0.3.2
 -------------
 
-SpPrAn 0.3.1 expands the unsupervised/full workflow with continuous
-protein-intensity spatial maps, fixed-radius neighborhood analysis, and
-intensity-aware advanced phenotype classification.
+SpPrAn 0.3.2 is a maintenance release focused on bug fixes and refinements to
+phenotype-level protein-intensity and box-plot exports.
 
 .. important::
 
@@ -35,6 +34,7 @@ intensity-aware advanced phenotype classification.
    configuration
    usage
    outputs
+   output_guide
    release_notes
 
 .. toctree::

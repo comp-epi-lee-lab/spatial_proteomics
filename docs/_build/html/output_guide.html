@@ -1,0 +1,931 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Understanding SpPrAn outputs &mdash; SpPrAn 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=71d9d8e6"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Release notes" href="release_notes.html" />
+    <link rel="prev" title="Outputs" href="outputs.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SpPrAn
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="desktop_app.html">Desktop application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analysis_modes.html">Analysis modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optional_analyses.html">Optional spatial and phenotype analyses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_builder.html">SpPrAn Configuration Builder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">Analysis workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Running SpPrAn</a></li>
+<li class="toctree-l1"><a class="reference internal" href="outputs.html">Outputs</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Understanding SpPrAn outputs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#key-concepts">Key concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#where-should-i-look-first">Where should I look first?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#shared-metadata-outputs">Shared metadata outputs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#adata-sample-id-h5ad"><code class="docutils literal notranslate"><span class="pre">adata/Sample_&lt;ID&gt;.h5ad</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#results-samples-id-csv"><code class="docutils literal notranslate"><span class="pre">results/Samples</span> <span class="pre">Id.csv</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#results-positivity-column-names-csv"><code class="docutils literal notranslate"><span class="pre">results/Positivity</span> <span class="pre">column</span> <span class="pre">names.csv</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#results-population-cell-type-subsets-csv"><code class="docutils literal notranslate"><span class="pre">results/&lt;population&gt;/Cell</span> <span class="pre">type</span> <span class="pre">subsets.csv</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#results-population-all-cell-type-definitions-csv"><code class="docutils literal notranslate"><span class="pre">results/&lt;population&gt;/All</span> <span class="pre">cell</span> <span class="pre">type</span> <span class="pre">definitions.csv</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#supervised-mode-outputs">Supervised mode outputs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#results-cell-count-report-cell-type-proportions-report-sample-id-csv"><code class="docutils literal notranslate"><span class="pre">results/Cell</span> <span class="pre">count</span> <span class="pre">report/Cell</span> <span class="pre">type</span> <span class="pre">proportions</span> <span class="pre">report</span> <span class="pre">-</span> <span class="pre">Sample</span> <span class="pre">&lt;ID&gt;.csv</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#results-population-cell-type-proportions-sample-csv"><code class="docutils literal notranslate"><span class="pre">results/&lt;population&gt;/Cell</span> <span class="pre">type</span> <span class="pre">proportions</span> <span class="pre">-</span> <span class="pre">Sample</span> <span class="pre">...</span> <span class="pre">.csv</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#plots-cell-phenotype-hierarchy-png"><code class="docutils literal notranslate"><span class="pre">plots/Cell</span> <span class="pre">phenotype</span> <span class="pre">hierarchy.png</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#supervised-spatial-population-plots">Supervised spatial population plots</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#unsupervised-mode-outputs">Unsupervised mode outputs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#statistics-results-general-cell-type-proportions-matrix-csv"><code class="docutils literal notranslate"><span class="pre">Statistics/results/General/Cell</span> <span class="pre">type</span> <span class="pre">proportions</span> <span class="pre">matrix.csv</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pie-plots">Pie plots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#statistics-results-sub-cell-type-name-cell-proportions-sub-cell-type-name-cell-proportions-sample-csv"><code class="docutils literal notranslate"><span class="pre">Statistics/results/sub&lt;cell_type_name&gt;</span> <span class="pre">cell</span> <span class="pre">proportions/sub&lt;cell_type_name&gt;</span> <span class="pre">cell</span> <span class="pre">proportions</span> <span class="pre">-</span> <span class="pre">Sample</span> <span class="pre">...</span> <span class="pre">.csv</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#statistics-results-phenotypes-proportion-phenotypes-proportion-matrix-sub-cell-type-name-csv"><code class="docutils literal notranslate"><span class="pre">Statistics/results/Phenotypes</span> <span class="pre">proportion/Phenotypes</span> <span class="pre">proportion</span> <span class="pre">matrix</span> <span class="pre">-</span> <span class="pre">sub&lt;cell_type_name&gt;.csv</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#two-group-phenotype-comparison">Two-group phenotype comparison</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#statistics-results-sub-cell-type-name-split-test-analysis-common-sub-cell-type-name-csv"><code class="docutils literal notranslate"><span class="pre">Statistics/results/sub&lt;cell_type_name&gt;</span> <span class="pre">split</span> <span class="pre">test</span> <span class="pre">analysis/Common</span> <span class="pre">sub&lt;cell_type_name&gt;.csv</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#statistics-results-sub-cell-type-name-split-test-analysis-unique-sub-cell-type-name-group-csv"><code class="docutils literal notranslate"><span class="pre">Statistics/results/sub&lt;cell_type_name&gt;</span> <span class="pre">split</span> <span class="pre">test</span> <span class="pre">analysis/Unique</span> <span class="pre">sub&lt;cell_type_name&gt;</span> <span class="pre">-</span> <span class="pre">&lt;Group&gt;.csv</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#statistics-results-sub-cell-type-name-split-test-analysis-common-sub-cell-type-name-proportion-differences-analysis-csv"><code class="docutils literal notranslate"><span class="pre">Statistics/results/sub&lt;cell_type_name&gt;</span> <span class="pre">split</span> <span class="pre">test</span> <span class="pre">analysis/Common</span> <span class="pre">sub&lt;cell_type_name&gt;</span> <span class="pre">proportion</span> <span class="pre">differences</span> <span class="pre">analysis.csv</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#phenotype-difference-plots">Phenotype-difference plots</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#phenotype-specific-continuous-intensity-outputs">Phenotype-specific continuous intensity outputs</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#statistics-results-intensity-analysis-by-phenotype-sample-phenotype-mapping-sample-id-sub-cell-type-name-csv"><code class="docutils literal notranslate"><span class="pre">Statistics/results/Intensity</span> <span class="pre">analysis</span> <span class="pre">by</span> <span class="pre">phenotype/&lt;sample&gt;/Phenotype</span> <span class="pre">mapping</span> <span class="pre">-</span> <span class="pre">Sample</span> <span class="pre">&lt;ID&gt;</span> <span class="pre">-</span> <span class="pre">sub&lt;cell_type_name&gt;.csv</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#statistics-results-intensity-analysis-by-phenotype-sample-cell-type-name-box-plot-data-sample-phenotype-id-n-cells-csv"><code class="docutils literal notranslate"><span class="pre">Statistics/results/Intensity</span> <span class="pre">analysis</span> <span class="pre">by</span> <span class="pre">phenotype/&lt;sample&gt;/&lt;cell_type_name&gt;/Box</span> <span class="pre">plot</span> <span class="pre">data</span> <span class="pre">-</span> <span class="pre">Sample</span> <span class="pre">...</span> <span class="pre">-</span> <span class="pre">&lt;Phenotype</span> <span class="pre">ID&gt;</span> <span class="pre">(&lt;N&gt;</span> <span class="pre">cells).csv</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#statistics-results-intensity-analysis-by-phenotype-sample-cell-type-name-intensity-data-sample-phenotype-id-n-cells-csv"><code class="docutils literal notranslate"><span class="pre">Statistics/results/Intensity</span> <span class="pre">analysis</span> <span class="pre">by</span> <span class="pre">phenotype/&lt;sample&gt;/&lt;cell_type_name&gt;/Intensity</span> <span class="pre">data</span> <span class="pre">-</span> <span class="pre">Sample</span> <span class="pre">...</span> <span class="pre">-</span> <span class="pre">&lt;Phenotype</span> <span class="pre">ID&gt;</span> <span class="pre">(&lt;N&gt;</span> <span class="pre">cells).csv</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#spatial-protein-intensity-plots">Spatial protein-intensity plots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#advanced-phenotype-classification-outputs">Advanced phenotype-classification outputs</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#statistics-results-advanced-cell-classification-protein-marker-intensity-summary-csv"><code class="docutils literal notranslate"><span class="pre">Statistics/results/Advanced</span> <span class="pre">cell</span> <span class="pre">classification/Protein</span> <span class="pre">marker</span> <span class="pre">intensity</span> <span class="pre">summary.csv</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#statistics-results-advanced-cell-classification-intensity-profiles-analysis-csv"><code class="docutils literal notranslate"><span class="pre">Statistics/results/Advanced</span> <span class="pre">cell</span> <span class="pre">classification/Intensity</span> <span class="pre">profiles</span> <span class="pre">analysis.csv</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#statistics-results-advanced-cell-classification-phenotype-intensity-summary-csv"><code class="docutils literal notranslate"><span class="pre">Statistics/results/Advanced</span> <span class="pre">cell</span> <span class="pre">classification/Phenotype</span> <span class="pre">intensity</span> <span class="pre">summary.csv</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#fixed-radius-neighborhood-outputs">Fixed-radius neighborhood outputs</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#interaction-matrix-heatmaps">Interaction matrix heatmaps</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#neighborhood-enrichment-plots">Neighborhood enrichment plots</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#co-occurrence-plots">Co-occurrence plots</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#full-mode-outputs">Full mode outputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#what-sppran-can-and-cannot-establish">What SpPrAn can and cannot establish</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="release_notes.html">Release notes</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Python API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SpPrAn</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Understanding SpPrAn outputs</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/output_guide.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="understanding-sppran-outputs">
+<h1>Understanding SpPrAn outputs<a class="headerlink" href="#understanding-sppran-outputs" title="Link to this heading"></a></h1>
+<p>This page is a user-oriented guide to the files and figures produced by SpPrAn.
+For each output, it explains what the output represents, how SpPrAn calculates
+it, how to interpret it biologically, and which conclusions should not be drawn
+from it.</p>
+<p>The exact output tree depends on the selected analysis mode and optional
+analyses.</p>
+<hr class="docutils" />
+<hr class="docutils" />
+<section id="key-concepts">
+<h2>Key concepts<a class="headerlink" href="#key-concepts" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Cell type/subtype</strong>: a population defined by user-specified protein marker rules.</p></li>
+<li><p><strong>Discovered phenotype</strong>: an observed binary combination of exploratory protein marker
+positivity states within a user-defined parent population.</p></li>
+<li><p><strong>Protein marker intensity</strong>: the continuous measured signal for a protein marker.</p></li>
+<li><p><strong>Spatial neighborhood</strong>: cells whose tissue coordinates satisfy the
+configured fixed-radius neighborhood rule.</p></li>
+</ul>
+<p>These are different analytical layers and should not be treated as equivalent.</p>
+<hr class="docutils" />
+</section>
+<hr class="docutils" />
+<section id="where-should-i-look-first">
+<h2>Where should I look first?<a class="headerlink" href="#where-should-i-look-first" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><strong>How many cells of each population do I have?</strong></dt><dd><p>Start with <code class="docutils literal notranslate"><span class="pre">results/Cell</span> <span class="pre">count</span> <span class="pre">report/Cell</span> <span class="pre">type</span> <span class="pre">proportions</span> <span class="pre">report</span> <span class="pre">-</span> <span class="pre">Sample</span>
+<span class="pre">&lt;ID&gt;.csv</span></code> report for the <strong>Supervised mode</strong>, and also available in the <strong>Unsupervised
+mode</strong> when “<em>Full Phenotype Discovery</em>” (FPD) option is activated. When is not activated,
+start with <code class="docutils literal notranslate"><span class="pre">Statistics/results/General/Cell</span> <span class="pre">type</span> <span class="pre">proportions</span> <span class="pre">matrix.csv</span></code> report.</p>
+</dd>
+<dt><strong>Where in the tissue are located each population?</strong></dt><dd><p>If the spatial plotting option was configured, use the spatial plots located in the
+<code class="docutils literal notranslate"><span class="pre">plots/&lt;population&gt;</span></code> folders. Here, <code class="docutils literal notranslate"><span class="pre">&lt;population&gt;</span></code> refers to <code class="docutils literal notranslate"><span class="pre">General</span></code>
+or <strong>the names of the cell types or subtypes</strong>.</p>
+</dd>
+<dt><strong>What fraction of a parent population belongs to a subtype?</strong></dt><dd><p>For the Supervised mode and Unsupervised mode with FPD option, use <code class="docutils literal notranslate"><span class="pre">%</span> <span class="pre">of</span> <span class="pre">parent</span></code> column
+in the cell-type proportions report.
+For the Unsupervised mode without FPD option, use the <code class="docutils literal notranslate"><span class="pre">Statistics/results/Phenotypes</span>
+<span class="pre">proportion/Phenotypes</span> <span class="pre">proportion</span> <span class="pre">matrix</span> <span class="pre">-</span> <span class="pre">subtype.csv</span></code> report.</p>
+</dd>
+<dt><strong>Which protein marker combinations occur inside a selected parent population?</strong></dt><dd><p>In the Unsupervised mode, use <code class="docutils literal notranslate"><span class="pre">Statistics/results/subtype</span> <span class="pre">cell</span> <span class="pre">proportions/subtype</span>
+<span class="pre">cell</span> <span class="pre">proportions</span> <span class="pre">-</span> <span class="pre">Sample</span> <span class="pre">...</span> <span class="pre">.csv</span></code> for discovered phenotypes.
+In the Supervised mode, since all cell types and subtypes were defined by the user, it is
+known which protein marker combination is occurring inside a parent population. However,
+it can be consulted in <code class="docutils literal notranslate"><span class="pre">results/&lt;population&gt;/All</span> <span class="pre">cell</span> <span class="pre">type</span> <span class="pre">definitions.csv</span></code> reports.</p>
+</dd>
+<dt><strong>Does a phenotype proportion differ between two groups?</strong></dt><dd><p>If the option was activated, use the plots located in the <code class="docutils literal notranslate"><span class="pre">Statistics/plots/phenotypes</span>
+<span class="pre">differences</span> <span class="pre">analysis</span></code> folder together with the <code class="docutils literal notranslate"><span class="pre">'Statistics/results/subtype</span> <span class="pre">split</span> <span class="pre">test</span>
+<span class="pre">analysis/Common</span> <span class="pre">subtype</span> <span class="pre">proportion</span> <span class="pre">differences</span> <span class="pre">analysis.csv'</span></code> tables. As a suggestion,
+do not rely only on the plot or on a nominal p-value.</p>
+</dd>
+<dt><strong>How strong is protein marker expression inside a discovered phenotype?</strong></dt><dd><p>If protein markers were selected, use the phenotype-specific box-plot/intensity CSVs located in
+the <code class="docutils literal notranslate"><span class="pre">Statistics/results/Intensity</span> <span class="pre">analysis</span> <span class="pre">by</span> <span class="pre">phenotype</span></code> folder.
+If “<em>Advanced phenotype classification</em>” option was activated, use the advanced classification
+outputs located in the <code class="docutils literal notranslate"><span class="pre">Statistics/results/Advanced</span> <span class="pre">cell</span> <span class="pre">classification</span></code> folder.</p>
+</dd>
+<dt><strong>Where in the tissue is a protein highly expressed?</strong></dt><dd><p>If the protein marker intensity spatial plotting option was activated, use the spatial protein
+marker intensity plots located in the <code class="docutils literal notranslate"><span class="pre">plots/Spatial</span> <span class="pre">protein</span> <span class="pre">markers</span> <span class="pre">intensity</span> <span class="pre">plots</span></code> folder.</p>
+</dd>
+<dt><strong>Which major populations are spatially associated?</strong></dt><dd><p>If the “<em>Neighborhood analysis</em>” option was activated, use neighborhood enrichment, interaction
+matrices, and co-occurrence plots together, located in the <code class="docutils literal notranslate"><span class="pre">Statistics/plots/Neighborhood</span>
+<span class="pre">analysis</span></code> folder.</p>
+</dd>
+<dt><strong>What can I do if I want to extend or redo the analyses?</strong></dt><dd><p>If <em>saving the AnnData files</em> option was set to <em>Yes</em>, use the AnnData files located in the
+<code class="docutils literal notranslate"><span class="pre">adata</span></code> folder. Here’s a tutorial on how to use AnnData files:
+<a class="reference external" href="https://anndata.readthedocs.io/en/latest/tutorials/notebooks/getting-started.html">Getting started with anndata</a>.</p>
+</dd>
+</dl>
+<hr class="docutils" />
+</section>
+<hr class="docutils" />
+<section id="shared-metadata-outputs">
+<h2>Shared metadata outputs<a class="headerlink" href="#shared-metadata-outputs" title="Link to this heading"></a></h2>
+<section id="adata-sample-id-h5ad">
+<h3><code class="docutils literal notranslate"><span class="pre">adata/Sample_&lt;ID&gt;.h5ad</span></code><a class="headerlink" href="#adata-sample-id-h5ad" title="Link to this heading"></a></h3>
+<p>The AnnData file is the reusable single-cell data object generated by SpPrAn.
+Depending on the workflow, it can contain:</p>
+<ul class="simple">
+<li><p>continuous protein marker intensities;</p></li>
+<li><p>tissue coordinates;</p></li>
+<li><p>positivity calls;</p></li>
+<li><p>major cell-type labels;</p></li>
+<li><p>hierarchical subtype annotations;</p></li>
+<li><p>discovered phenotype labels and protein marker patterns;</p></li>
+<li><p>neighborhood-analysis results; and</p></li>
+<li><p>advanced intensity classifications.</p></li>
+</ul>
+<p>AnnData is a data container. An annotation stored in it reflects the rules and
+analyses applied by SpPrAn; it is not independent biological ground truth.</p>
+</section>
+<hr class="docutils" />
+<section id="results-samples-id-csv">
+<h3><code class="docutils literal notranslate"><span class="pre">results/Samples</span> <span class="pre">Id.csv</span></code><a class="headerlink" href="#results-samples-id-csv" title="Link to this heading"></a></h3>
+<p>This maps the internal SpPrAn sample ID to the original input filename.</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Samples</span> <span class="pre">Id</span></code></dt><dd><p>Short identifier used in SpPrAn filenames and AnnData files.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Samples</span> <span class="pre">filename</span></code></dt><dd><p>Original object-table filename.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>This is metadata, not a biological result. It is primarily an audit trail for
+linking outputs back to source specimens.</p>
+</section>
+<hr class="docutils" />
+<section id="results-positivity-column-names-csv">
+<h3><code class="docutils literal notranslate"><span class="pre">results/Positivity</span> <span class="pre">column</span> <span class="pre">names.csv</span></code><a class="headerlink" href="#results-positivity-column-names-csv" title="Link to this heading"></a></h3>
+<p>This maps the original Visiopharm positivity columns to the continuous
+protein-marker-intensity variables stored in AnnData.</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Positivity</span> <span class="pre">column</span> <span class="pre">names</span></code></dt><dd><p>Binary positivity variables used for protein-marker-rule classification.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Name</span> <span class="pre">appearing</span> <span class="pre">in</span> <span class="pre">anndata</span> <span class="pre">file</span></code></dt><dd><p>Corresponding continuous intensity variable.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>A positive/negative call and a continuous intensity measurement are not the same
+thing. Positivity defines phenotype membership; intensity describes signal
+strength.</p>
+</section>
+<hr class="docutils" />
+<section id="results-population-cell-type-subsets-csv">
+<h3><code class="docutils literal notranslate"><span class="pre">results/&lt;population&gt;/Cell</span> <span class="pre">type</span> <span class="pre">subsets.csv</span></code><a class="headerlink" href="#results-population-cell-type-subsets-csv" title="Link to this heading"></a></h3>
+<p>This records logical subset relationships inferred from the configured protein marker
+definitions.</p>
+<p>SpPrAn compares expanded binary protein marker rules to determine whether one definition
+is contained within another.</p>
+<p>Interpret this as a relationship between <strong>analytical protein marker definitions</strong>.</p>
+<p>Do not interpret it as a developmental lineage, differentiation trajectory, or
+evidence that one population transforms into another.</p>
+</section>
+<hr class="docutils" />
+<section id="results-population-all-cell-type-definitions-csv">
+<h3><code class="docutils literal notranslate"><span class="pre">results/&lt;population&gt;/All</span> <span class="pre">cell</span> <span class="pre">type</span> <span class="pre">definitions.csv</span></code><a class="headerlink" href="#results-population-all-cell-type-definitions-csv" title="Link to this heading"></a></h3>
+<p>This is an audit table of the protein marker rules used for the relevant populations,
+including logical/intersection definitions generated during hierarchy
+resolution.</p>
+<p>It tells the user <strong>how SpPrAn defined a population</strong>. It does not establish
+that the protein marker combination is biologically specific in every tissue context.</p>
+<hr class="docutils" />
+</section>
+</section>
+<hr class="docutils" />
+<section id="supervised-mode-outputs">
+<h2>Supervised mode outputs<a class="headerlink" href="#supervised-mode-outputs" title="Link to this heading"></a></h2>
+<section id="results-cell-count-report-cell-type-proportions-report-sample-id-csv">
+<h3><code class="docutils literal notranslate"><span class="pre">results/Cell</span> <span class="pre">count</span> <span class="pre">report/Cell</span> <span class="pre">type</span> <span class="pre">proportions</span> <span class="pre">report</span> <span class="pre">-</span> <span class="pre">Sample</span> <span class="pre">&lt;ID&gt;.csv</span></code><a class="headerlink" href="#results-cell-count-report-cell-type-proportions-report-sample-id-csv" title="Link to this heading"></a></h3>
+<p>This is the main supervised summary of population abundance.</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Sample</span></code></dt><dd><p>Sample identifier.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Population</span></code></dt><dd><p>Major cell type or subtype.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Parent</span> <span class="pre">population</span></code></dt><dd><p>Immediate analytical parent.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Count</span></code></dt><dd><p>Number of cells assigned to the population.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">%</span> <span class="pre">of</span> <span class="pre">parent</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">Count</span> <span class="pre">/</span> <span class="pre">number</span> <span class="pre">of</span> <span class="pre">cells</span> <span class="pre">in</span> <span class="pre">the</span> <span class="pre">immediate</span> <span class="pre">parent</span> <span class="pre">population</span></code> expressed as percentage.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">%</span> <span class="pre">of</span> <span class="pre">total</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">Count</span> <span class="pre">/</span> <span class="pre">total</span> <span class="pre">cells</span> <span class="pre">in</span> <span class="pre">the</span> <span class="pre">sample</span></code> expressed as percentage.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>These percentages answer different questions. A subtype can represent a large
+fraction of its parent while remaining rare in the whole tissue.</p>
+<p>Use <code class="docutils literal notranslate"><span class="pre">%</span> <span class="pre">of</span> <span class="pre">parent</span></code> for within-lineage/compositional questions and <code class="docutils literal notranslate"><span class="pre">%</span> <span class="pre">of</span>
+<span class="pre">total</span></code> for tissue-wide abundance.</p>
+<p>Do not infer recruitment, proliferation, survival, differentiation, or function
+from a proportion alone.</p>
+</section>
+<hr class="docutils" />
+<section id="results-population-cell-type-proportions-sample-csv">
+<h3><code class="docutils literal notranslate"><span class="pre">results/&lt;population&gt;/Cell</span> <span class="pre">type</span> <span class="pre">proportions</span> <span class="pre">-</span> <span class="pre">Sample</span> <span class="pre">...</span> <span class="pre">.csv</span></code><a class="headerlink" href="#results-population-cell-type-proportions-sample-csv" title="Link to this heading"></a></h3>
+<p>The columns are cell populations. The two main rows are:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Total</span> <span class="pre">cells</span> <span class="pre">in</span> <span class="pre">cell</span> <span class="pre">type</span></code></dt><dd><p>Number of cells assigned to each displayed population.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Percentage</span></code></dt><dd><p>Percentage relative to the current analytical universe.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For <code class="docutils literal notranslate"><span class="pre">General</span></code>, the denominator is all cells in the sample. For a subtype
+folder, the denominator is the parent-population size.</p>
+</div>
+<p>Do not compare percentages from different hierarchy levels without checking
+their denominators.</p>
+</section>
+<hr class="docutils" />
+<section id="plots-cell-phenotype-hierarchy-png">
+<h3><code class="docutils literal notranslate"><span class="pre">plots/Cell</span> <span class="pre">phenotype</span> <span class="pre">hierarchy.png</span></code><a class="headerlink" href="#plots-cell-phenotype-hierarchy-png" title="Link to this heading"></a></h3>
+<p>This visualizes the configured supervised hierarchy and associated protein marker
+rules.</p>
+<p>The parent-child structure represents nested analytical definitions, not
+pseudotime or biological lineage.</p>
+</section>
+<hr class="docutils" />
+<section id="supervised-spatial-population-plots">
+<h3>Supervised spatial population plots<a class="headerlink" href="#supervised-spatial-population-plots" title="Link to this heading"></a></h3>
+<p>Overview plots show all configured populations at their measured tissue
+coordinates. Highlight plots emphasize one selected population against the
+remaining cells.</p>
+<p>These plots are useful for visualizing infiltration, compartmentalization,
+clustering, and exclusion patterns.</p>
+<p>Visual proximity is descriptive. It is not itself a statistical neighborhood
+result and does not establish cell-cell communication.</p>
+<hr class="docutils" />
+</section>
+</section>
+<hr class="docutils" />
+<section id="unsupervised-mode-outputs">
+<h2>Unsupervised mode outputs<a class="headerlink" href="#unsupervised-mode-outputs" title="Link to this heading"></a></h2>
+<section id="statistics-results-general-cell-type-proportions-matrix-csv">
+<h3><code class="docutils literal notranslate"><span class="pre">Statistics/results/General/Cell</span> <span class="pre">type</span> <span class="pre">proportions</span> <span class="pre">matrix.csv</span></code><a class="headerlink" href="#statistics-results-general-cell-type-proportions-matrix-csv" title="Link to this heading"></a></h3>
+<p>Rows are samples and columns are major populations. Values are the percentages
+calculated from the sample-specific proportion tables.</p>
+<p>This is useful for comparing broad composition among specimens.</p>
+<p>Because the values are compositional, an increase in one population can occur
+partly because another population decreased. This matrix is not an absolute
+cell-density measurement unless sampled area/cell recovery are independently
+accounted for.</p>
+</section>
+<hr class="docutils" />
+<section id="pie-plots">
+<h3>Pie plots<a class="headerlink" href="#pie-plots" title="Link to this heading"></a></h3>
+<p>Path:</p>
+<p><code class="docutils literal notranslate"><span class="pre">Statistics/plots/General/pie_plots/</span></code></p>
+<p>Pie plots are visual representations of the same composition used in the
+proportion matrices.</p>
+<p>They are descriptive graphics, not statistical tests.</p>
+</section>
+<hr class="docutils" />
+<section id="statistics-results-sub-cell-type-name-cell-proportions-sub-cell-type-name-cell-proportions-sample-csv">
+<h3><code class="docutils literal notranslate"><span class="pre">Statistics/results/sub&lt;cell_type_name&gt;</span> <span class="pre">cell</span> <span class="pre">proportions/sub&lt;cell_type_name&gt;</span> <span class="pre">cell</span> <span class="pre">proportions</span> <span class="pre">-</span> <span class="pre">Sample</span> <span class="pre">...</span> <span class="pre">.csv</span></code><a class="headerlink" href="#statistics-results-sub-cell-type-name-cell-proportions-sub-cell-type-name-cell-proportions-sample-csv" title="Link to this heading"></a></h3>
+<p>The columns are:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Phenotype</span></code></dt><dd><p>Machine-readable discovered phenotype.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Total</span> <span class="pre">cells</span></code></dt><dd><p>Number of parent-population cells assigned to the phenotype.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Proportion</span></code></dt><dd><p>Percentage of the selected parent population represented by the phenotype.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Markers</span> <span class="pre">name</span></code></dt><dd><p>Human-readable protein-marker-pattern description.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>SpPrAn encodes each selected parent cell’s exploratory-protein-marker positivity pattern
+and groups identical observed patterns. The proportion denominator is the parent
+population, not all cells in the tissue.</p>
+<div class="admonition important" id="detection-filter">
+<p class="admonition-title">Important</p>
+<p>The default <strong>detection filter</strong> keeps non-zero phenotypes with a within-parent
+proportion of at least 0.5%.</p>
+</div>
+<p>A discovered phenotype is not automatically a novel biological cell type.
+Rare patterns can reflect biology, sampling, positivity thresholds,
+segmentation, or technical variation.</p>
+</section>
+<hr class="docutils" />
+<section id="statistics-results-phenotypes-proportion-phenotypes-proportion-matrix-sub-cell-type-name-csv">
+<h3><code class="docutils literal notranslate"><span class="pre">Statistics/results/Phenotypes</span> <span class="pre">proportion/Phenotypes</span> <span class="pre">proportion</span> <span class="pre">matrix</span> <span class="pre">-</span> <span class="pre">sub&lt;cell_type_name&gt;.csv</span></code><a class="headerlink" href="#statistics-results-phenotypes-proportion-phenotypes-proportion-matrix-sub-cell-type-name-csv" title="Link to this heading"></a></h3>
+<p>Rows are discovered phenotypes and columns are samples. Values are numeric
+within-parent percentages derived from the per-sample phenotype tables.</p>
+<p>A high value means that the phenotype is abundant <strong>within the selected parent
+population</strong>, not necessarily within the tissue as a whole.</p>
+<hr class="docutils" />
+</section>
+<section id="two-group-phenotype-comparison">
+<h3>Two-group phenotype comparison<a class="headerlink" href="#two-group-phenotype-comparison" title="Link to this heading"></a></h3>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>These outputs are produced when two sample groups are configured.
+A crucial distinction is:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Detected</span></code>: Uses only samples in which the phenotype passed the <a class="reference internal" href="#detection-filter"><span class="std std-ref">detection filter</span></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">No</span> <span class="pre">filter</span></code>: Can include zero abundance for samples where the phenotype did not pass the <a class="reference internal" href="#detection-filter"><span class="std std-ref">detection filter</span></a>.</p></li>
+</ul>
+<p>These summaries answer different biological questions and should not be mixed.</p>
+</div>
+<section id="statistics-results-sub-cell-type-name-split-test-analysis-common-sub-cell-type-name-csv">
+<h4><code class="docutils literal notranslate"><span class="pre">Statistics/results/sub&lt;cell_type_name&gt;</span> <span class="pre">split</span> <span class="pre">test</span> <span class="pre">analysis/Common</span> <span class="pre">sub&lt;cell_type_name&gt;.csv</span></code><a class="headerlink" href="#statistics-results-sub-cell-type-name-split-test-analysis-common-sub-cell-type-name-csv" title="Link to this heading"></a></h4>
+<p>Rows are the phenotypes detected in both configured groups.</p>
+<p>Key columns include:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Detected</span> <span class="pre">&lt;Group&gt;</span> <span class="pre">average</span> <span class="pre">%</span></code></dt><dd><p>Average phenotype proportion among samples where the phenotype was detected.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Detected</span> <span class="pre">Difference</span> <span class="pre">&lt;Group</span> <span class="pre">2&gt;-&lt;Group</span> <span class="pre">1&gt;</span></code></dt><dd><p>Difference between detected-only group averages.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Interpretation</span></code></dt><dd><p>Direction-only text such as increase/decrease.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Detected</span> <span class="pre">Sample</span> <span class="pre">Frequency</span> <span class="pre">in</span> <span class="pre">&lt;Group&gt;</span></code></dt><dd><p>Number/frequency of group samples where the phenotype was detected.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Detected</span> <span class="pre">&lt;Group&gt;</span> <span class="pre">Proportion</span> <span class="pre">Values</span></code></dt><dd><p>Individual detected-only sample proportions.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">No</span> <span class="pre">filter</span> <span class="pre">&lt;Group&gt;</span> <span class="pre">average</span> <span class="pre">%</span></code></dt><dd><p>Broader average that can include zero abundance for non-detected samples.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">Interpretation</span></code> column does <strong>not</strong> indicate statistical significance.</p>
+</section>
+<hr class="docutils" />
+<section id="statistics-results-sub-cell-type-name-split-test-analysis-unique-sub-cell-type-name-group-csv">
+<h4><code class="docutils literal notranslate"><span class="pre">Statistics/results/sub&lt;cell_type_name&gt;</span> <span class="pre">split</span> <span class="pre">test</span> <span class="pre">analysis/Unique</span> <span class="pre">sub&lt;cell_type_name&gt;</span> <span class="pre">-</span> <span class="pre">&lt;Group&gt;.csv</span></code><a class="headerlink" href="#statistics-results-sub-cell-type-name-split-test-analysis-unique-sub-cell-type-name-group-csv" title="Link to this heading"></a></h4>
+<p>Rows are the phenotypes observed in one configured group but not the
+other under the <a class="reference internal" href="#detection-filter"><span class="std std-ref">detection filter</span></a> rule.</p>
+<p>The columns are:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Phenotype</span></code></dt><dd><p>Human-readable protein-marker-pattern description.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Detected</span> <span class="pre">average</span> <span class="pre">%</span></code></dt><dd><p>Average phenotype proportion among samples where the phenotype was detected.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">No</span> <span class="pre">filter</span> <span class="pre">average</span> <span class="pre">%</span></code></dt><dd><p>Broader average that can include zero abundance for non-detected samples.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Condition</span></code></dt><dd><p>Group’s name.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Detected</span> <span class="pre">Sample</span> <span class="pre">Frequency</span></code></dt><dd><p>Number/frequency of group samples where the phenotype was detected.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>“Unique” does not mean biologically exclusive to that condition. Non-detection
+can reflect sample size, low abundance, filtering, or technical variation.</p>
+</section>
+<hr class="docutils" />
+<section id="statistics-results-sub-cell-type-name-split-test-analysis-common-sub-cell-type-name-proportion-differences-analysis-csv">
+<h4><code class="docutils literal notranslate"><span class="pre">Statistics/results/sub&lt;cell_type_name&gt;</span> <span class="pre">split</span> <span class="pre">test</span> <span class="pre">analysis/Common</span> <span class="pre">sub&lt;cell_type_name&gt;</span> <span class="pre">proportion</span> <span class="pre">differences</span> <span class="pre">analysis.csv</span></code><a class="headerlink" href="#statistics-results-sub-cell-type-name-split-test-analysis-common-sub-cell-type-name-proportion-differences-analysis-csv" title="Link to this heading"></a></h4>
+<p>This table contains statistical comparisons of common phenotype proportions.
+Rows are the same as in <code class="docutils literal notranslate"><span class="pre">Common</span> <span class="pre">sub&lt;cell_type_name&gt;.csv</span></code> file.</p>
+<p>Key columns are:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">&lt;Group&gt;</span> <span class="pre">(mean</span> <span class="pre">±</span> <span class="pre">SD)</span></code></dt><dd><p>Mean value and Standard Deviation of the detected-only sample proportions in the group.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">&lt;Group&gt;</span> <span class="pre">(median</span> <span class="pre">[IQR])</span></code></dt><dd><p>Median value and the Interquartile Range (IQR) of the detected-only sample proportions
+in the group. The interval <code class="docutils literal notranslate"><span class="pre">[Q1-Q3]</span></code> is composed by the values First Quartile and the
+Third Quartile.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Mann-Whitney</span> <span class="pre">p-value</span></code></dt><dd><p>Nominal two-sided Mann–Whitney U p-value.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Raw</span> <span class="pre">p-value</span></code></dt><dd><p>In the current implementation, this is the nominal <strong>Welch t-test</strong> p-value.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">FDR-corrected</span> <span class="pre">M-W</span> <span class="pre">p-value</span></code></dt><dd><p>Benjamini–Hochberg-adjusted Mann–Whitney p-value.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">FDR-corrected</span> <span class="pre">RAW</span> <span class="pre">p-value</span></code></dt><dd><p>Benjamini–Hochberg-adjusted Welch t-test p-value.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>The tests use the detected-only phenotype-proportion values for the common
+phenotype.</p>
+<p>Empty values in <code class="docutils literal notranslate"><span class="pre">p-value</span></code> and <code class="docutils literal notranslate"><span class="pre">FDR-corrected</span></code> columns mean there was no enough data to
+apply the tests.</p>
+<p>Interpret nominal p-values together with sample-level values, detection
+frequency, effect magnitude, biological sample size, and FDR-adjusted p-values.</p>
+<p>Do not treat individual cells from one tissue as independent biological
+replicates. The biological replicate for this comparison is the specimen/sample.</p>
+</section>
+<hr class="docutils" />
+<section id="phenotype-difference-plots">
+<h4>Phenotype-difference plots<a class="headerlink" href="#phenotype-difference-plots" title="Link to this heading"></a></h4>
+<p>Path:</p>
+<p><code class="docutils literal notranslate"><span class="pre">Statistics/plots/phenotypes</span> <span class="pre">differences</span> <span class="pre">analysis/</span></code></p>
+<p>These plots show sample-level detected phenotype proportions and nominal test
+annotations.</p>
+<p>Use them with the statistical CSV located in the <code class="docutils literal notranslate"><span class="pre">Statistics/results/sub&lt;cell_type_name&gt;</span>
+<span class="pre">split</span> <span class="pre">test</span> <span class="pre">analysis/</span></code> folder, especially the FDR-adjusted results.</p>
+<hr class="docutils" />
+</section>
+</section>
+<section id="phenotype-specific-continuous-intensity-outputs">
+<h3>Phenotype-specific continuous intensity outputs<a class="headerlink" href="#phenotype-specific-continuous-intensity-outputs" title="Link to this heading"></a></h3>
+<section id="statistics-results-intensity-analysis-by-phenotype-sample-phenotype-mapping-sample-id-sub-cell-type-name-csv">
+<h4><code class="docutils literal notranslate"><span class="pre">Statistics/results/Intensity</span> <span class="pre">analysis</span> <span class="pre">by</span> <span class="pre">phenotype/&lt;sample&gt;/Phenotype</span> <span class="pre">mapping</span> <span class="pre">-</span> <span class="pre">Sample</span> <span class="pre">&lt;ID&gt;</span> <span class="pre">-</span> <span class="pre">sub&lt;cell_type_name&gt;.csv</span></code><a class="headerlink" href="#statistics-results-intensity-analysis-by-phenotype-sample-phenotype-mapping-sample-id-sub-cell-type-name-csv" title="Link to this heading"></a></h4>
+<p>This table contains the compacted phenotype IDs that are used in the intensities filenames
+to avoid filename-length problems. Rows are the phenotypes detected in the population.</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Phenotype</span> <span class="pre">ID</span></code></dt><dd><p>Compact file-safe identifier such as <code class="docutils literal notranslate"><span class="pre">subCellType_P001</span></code>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Phenotype</span></code></dt><dd><p>Full protein-marker-defined phenotype name.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Always use this mapping when interpreting compact phenotype IDs.</p>
+</section>
+<hr class="docutils" />
+<section id="statistics-results-intensity-analysis-by-phenotype-sample-cell-type-name-box-plot-data-sample-phenotype-id-n-cells-csv">
+<h4><code class="docutils literal notranslate"><span class="pre">Statistics/results/Intensity</span> <span class="pre">analysis</span> <span class="pre">by</span> <span class="pre">phenotype/&lt;sample&gt;/&lt;cell_type_name&gt;/Box</span> <span class="pre">plot</span> <span class="pre">data</span> <span class="pre">-</span> <span class="pre">Sample</span> <span class="pre">...</span> <span class="pre">-</span> <span class="pre">&lt;Phenotype</span> <span class="pre">ID&gt;</span> <span class="pre">(&lt;N&gt;</span> <span class="pre">cells).csv</span></code><a class="headerlink" href="#statistics-results-intensity-analysis-by-phenotype-sample-cell-type-name-box-plot-data-sample-phenotype-id-n-cells-csv" title="Link to this heading"></a></h4>
+<p>This tabel contains Tukey box-plot summary values for the phenotype.</p>
+<p>Rows are:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Lower_Whisker</span></code></dt><dd><p>Represents the lower spread of the data values extending down from the bottom of the
+central box.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Q1</span></code></dt><dd><p>The First Quartile is the 25th percentile, or the median of the lower half of the data.</p>
+</dd>
+</dl>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Median</span> <span class="pre">(Q2)</span></code></p></li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Q3</span></code></dt><dd><p>The Third Quartile is the 75th percentile, or the median of the upper half of the data.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Upper_Whisker</span></code></dt><dd><p>Represents the upper spread of the data values extending up from the top of the central
+box.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Protein-marker columns contain the corresponding intensity statistics.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In v0.3.2, only protein markers that are <strong>positive in the discovered phenotype
+definition</strong> are included.</p>
+</div>
+<p>SpPrAn calculates Q1 and Q3, then <code class="docutils literal notranslate"><span class="pre">IQR</span> <span class="pre">=</span> <span class="pre">Q3</span> <span class="pre">-</span> <span class="pre">Q1</span></code>. Whisker bounds are based on
+the conventional 1.5-IQR rule, and the reported whiskers are the most extreme
+observed values that remain within those bounds.</p>
+<p>Therefore, whiskers are not necessarily the absolute minimum and maximum.</p>
+<p>These files are descriptive. They do not perform a statistical comparison of
+intensity between groups or phenotypes.</p>
+</section>
+<hr class="docutils" />
+<section id="statistics-results-intensity-analysis-by-phenotype-sample-cell-type-name-intensity-data-sample-phenotype-id-n-cells-csv">
+<h4><code class="docutils literal notranslate"><span class="pre">Statistics/results/Intensity</span> <span class="pre">analysis</span> <span class="pre">by</span> <span class="pre">phenotype/&lt;sample&gt;/&lt;cell_type_name&gt;/Intensity</span> <span class="pre">data</span> <span class="pre">-</span> <span class="pre">Sample</span> <span class="pre">...</span> <span class="pre">-</span> <span class="pre">&lt;Phenotype</span> <span class="pre">ID&gt;</span> <span class="pre">(&lt;N&gt;</span> <span class="pre">cells).csv</span></code><a class="headerlink" href="#statistics-results-intensity-analysis-by-phenotype-sample-cell-type-name-intensity-data-sample-phenotype-id-n-cells-csv" title="Link to this heading"></a></h4>
+<p>This contains the complete cell-level continuous intensity values for the
+phenotype’s positive protein markers.</p>
+<p>Rows correspond to phenotype cells; columns correspond to the included protein
+intensities.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In v0.3.2, only protein markers that are <strong>positive in the discovered phenotype
+definition</strong> are included.</p>
+</div>
+<p>These data can support custom visualizations or downstream analyses.</p>
+<p>Do not treat the many cells from a single specimen as many independent
+biological replicates.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="spatial-protein-intensity-plots">
+<h3>Spatial protein-intensity plots<a class="headerlink" href="#spatial-protein-intensity-plots" title="Link to this heading"></a></h3>
+<p>Path:</p>
+<p><code class="docutils literal notranslate"><span class="pre">plots/Spatial</span> <span class="pre">protein</span> <span class="pre">markers</span> <span class="pre">intensity</span> <span class="pre">plots/&lt;sample&gt;/</span></code></p>
+<p>Each cell is plotted at its tissue coordinate and colored by continuous protein
+intensity for one marker.</p>
+<p>The current implementation scales each sample/protein marker independently using that
+plot’s observed minimum and maximum.</p>
+<p>These plots are useful for identifying within-sample gradients and spatial
+compartments.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The same color in two different sample panels does <strong>not</strong> necessarily represent
+the same absolute intensity.</p>
+</div>
+<hr class="docutils" />
+</section>
+<section id="advanced-phenotype-classification-outputs">
+<h3>Advanced phenotype-classification outputs<a class="headerlink" href="#advanced-phenotype-classification-outputs" title="Link to this heading"></a></h3>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Advanced classification preserves the original positivity-defined phenotype and
+then classifies the intensity of each protein marker that is positive in that phenotype.</p>
+<p>Within each sample and marker:</p>
+<ul class="simple">
+<li><p>below the positive-cell 25th percentile -&gt; <code class="docutils literal notranslate"><span class="pre">Low</span></code>;</p></li>
+<li><p>25th through 75th percentile -&gt; <code class="docutils literal notranslate"><span class="pre">Medium</span></code>;</p></li>
+<li><p>above the 75th percentile -&gt; <code class="docutils literal notranslate"><span class="pre">High</span></code>.</p></li>
+</ul>
+<p>These categories are sample-relative.</p>
+</div>
+<section id="statistics-results-advanced-cell-classification-protein-marker-intensity-summary-csv">
+<h4><code class="docutils literal notranslate"><span class="pre">Statistics/results/Advanced</span> <span class="pre">cell</span> <span class="pre">classification/Protein</span> <span class="pre">marker</span> <span class="pre">intensity</span> <span class="pre">summary.csv</span></code><a class="headerlink" href="#statistics-results-advanced-cell-classification-protein-marker-intensity-summary-csv" title="Link to this heading"></a></h4>
+<p>Key columns include sample, parent cell type, phenotype, protein marker, total
+phenotype cells, low/medium/high cell counts, and low/medium/high proportions.</p>
+<p>Each row in the table is a present protein marker in its corresponding phenotype and the
+values are those related to such protein marker.</p>
+<p>This table answers the question: <strong>“Among cells already belonging to this phenotype, how is this
+positive marker’s intensity distributed relative to this sample?”</strong></p>
+</section>
+<hr class="docutils" />
+<section id="statistics-results-advanced-cell-classification-intensity-profiles-analysis-csv">
+<h4><code class="docutils literal notranslate"><span class="pre">Statistics/results/Advanced</span> <span class="pre">cell</span> <span class="pre">classification/Intensity</span> <span class="pre">profiles</span> <span class="pre">analysis.csv</span></code><a class="headerlink" href="#statistics-results-advanced-cell-classification-intensity-profiles-analysis-csv" title="Link to this heading"></a></h4>
+<p>This records observed combinations of low/medium/high states across the
+phenotype’s positive protein markers.</p>
+<p>Key columns are:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Intensity</span> <span class="pre">profile</span></code></dt><dd><p>Combined profile such as <code class="docutils literal notranslate"><span class="pre">MarkerA:High</span> <span class="pre">|</span> <span class="pre">MarkerB:Medium</span> <span class="pre">|</span> <span class="pre">MarkerC:Low</span></code>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Total</span> <span class="pre">cells</span> <span class="pre">in</span> <span class="pre">the</span> <span class="pre">profile</span></code></dt><dd><p>Number of phenotype cells with that combination.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Percentage</span> <span class="pre">(%)</span></code></dt><dd><p>Percentage of the phenotype represented by that profile.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>These profiles describe within-phenotype intensity heterogeneity. They are not
+automatically stable functional cell states.</p>
+</section>
+<hr class="docutils" />
+<section id="statistics-results-advanced-cell-classification-phenotype-intensity-summary-csv">
+<h4><code class="docutils literal notranslate"><span class="pre">Statistics/results/Advanced</span> <span class="pre">cell</span> <span class="pre">classification/Phenotype</span> <span class="pre">intensity</span> <span class="pre">summary.csv</span></code><a class="headerlink" href="#statistics-results-advanced-cell-classification-phenotype-intensity-summary-csv" title="Link to this heading"></a></h4>
+<p>Important columns include:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Total</span> <span class="pre">cells</span></code></dt><dd><p>Cells in the phenotype.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Total</span> <span class="pre">of</span> <span class="pre">positive</span> <span class="pre">protein</span> <span class="pre">markers</span> <span class="pre">in</span> <span class="pre">the</span> <span class="pre">phenotype</span></code></dt><dd><p>Positive protein markers defining the phenotype.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Total</span> <span class="pre">of</span> <span class="pre">observed</span> <span class="pre">profiles</span></code></dt><dd><p>Distinct low/medium/high combinations observed.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Most</span> <span class="pre">common</span> <span class="pre">profile</span> <span class="pre">proportion</span> <span class="pre">(%)</span></code></dt><dd><p>Percentage of phenotype cells belonging to the most frequent profile.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>The number of observed profiles depends on both cell count and number of
+positive protein markers. It should not be treated as a stand-alone biological
+heterogeneity score.</p>
+<hr class="docutils" />
+</section>
+</section>
+<section id="fixed-radius-neighborhood-outputs">
+<h3>Fixed-radius neighborhood outputs<a class="headerlink" href="#fixed-radius-neighborhood-outputs" title="Link to this heading"></a></h3>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Neighborhood analysis uses major cell-type labels to produce a spatial connectivity graph.</p>
+<p>The graph fixed radius is <code class="docutils literal notranslate"><span class="pre">configured</span> <span class="pre">neighborhood</span> <span class="pre">radius</span> <span class="pre">/</span> <span class="pre">pixel</span> <span class="pre">conversion</span> <span class="pre">rate</span></code>. Then,
+two distinct cells in the sample are <em>connected</em> when their Euclidean distance falls within
+the selected radius.</p>
+</div>
+<section id="interaction-matrix-heatmaps">
+<h4>Interaction matrix heatmaps<a class="headerlink" href="#interaction-matrix-heatmaps" title="Link to this heading"></a></h4>
+<p>The interaction matrix quantifies the number of connections between cells belonging
+to different annotated populations. It is a descriptive statistic of the spatial graph.</p>
+<p>The heatmaps derived from the matrix represents <strong>interaction proportions on the spatial
+graph</strong>. Higher proportions can partly reflect higher population abundance.</p>
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p>In v0.3.1, interaction matrix heatmaps show interaction counts.</p>
+</div>
+<p>A large interaction proportion does not by itself imply preferential biological
+interaction.</p>
+<p>Interaction matrix analysis generates heatmaps located in the <code class="docutils literal notranslate"><span class="pre">Statistics/plots/Neighborhood</span> <span class="pre">analysis/&lt;sample&gt;</span></code>
+folder.</p>
+<p>Files are <code class="docutils literal notranslate"><span class="pre">Interaction</span> <span class="pre">matrix</span> <span class="pre">-</span> <span class="pre">Sample</span> <span class="pre">&lt;ID&gt;.png</span></code> plus one highlighted view per major
+population.</p>
+<p>The interaction matrix answers the question: <strong>“How many spatial connections exist
+between different cell populations?”</strong></p>
+</section>
+<hr class="docutils" />
+<section id="neighborhood-enrichment-plots">
+<h4>Neighborhood enrichment plots<a class="headerlink" href="#neighborhood-enrichment-plots" title="Link to this heading"></a></h4>
+<p>The neighborhood enrichment analysis compares connections between two cell
+populations against a randomized distribution of cell-type labels and reports a z-score.</p>
+<ul class="simple">
+<li><p><strong>Positive z-score</strong>: More connections than expected under randomized cell labels.</p></li>
+<li><p><strong>Negative z-score</strong>: Fewer connections events than expected.</p></li>
+<li><p><strong>Near zero</strong>: Little relative enrichment/depletion.</p></li>
+</ul>
+<p>A positive score does not prove direct physical interaction, signaling, or
+causal communication.</p>
+<p>The diagonal is particularly useful for identifying <em>homotypic enrichment</em>
+(connections between cells of the same type), and off-diagonal entries
+describe <em>heterotypic enrichment</em> (connections between different cell types).</p>
+<p>Neighborhood enrichment analysis generates heatmaps located in the <code class="docutils literal notranslate"><span class="pre">Statistics/plots/Neighborhood</span> <span class="pre">analysis/&lt;sample&gt;</span></code> folder.</p>
+<p>Files are <code class="docutils literal notranslate"><span class="pre">Neighborhood</span> <span class="pre">enrichment</span> <span class="pre">analysis</span> <span class="pre">-</span> <span class="pre">Sample</span> <span class="pre">&lt;ID&gt;.png</span></code> plus one highlighted
+view per major population.</p>
+<p>The neighborhood enrichment heatmaps answer the question: <strong>“Are the spatial connections more
+or less frequent than we would expect if cell identities were randomly distributed over the
+same spatial network?”</strong></p>
+</section>
+<hr class="docutils" />
+<section id="co-occurrence-plots">
+<h4>Co-occurrence plots<a class="headerlink" href="#co-occurrence-plots" title="Link to this heading"></a></h4>
+<p>The co-occurrence analysis measures whether two cell populations are found near
+each other more or less frequently than expected from their overall spatial frequencies.</p>
+<p>The co-occurrence analysis computes a distance-dependent ratio:</p>
+<div class="math notranslate nohighlight">
+\[\frac{P(\text{evaluated population | reference population at a distance }r)} {P(\text{evaluated population at a distance }r)}\]</div>
+<p>where:</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(P(\text{evaluated population | reference population at a distance }r)\)</span> measures how frequently evaluated population cells occur around reference population cells inside a neighborhood of radius <span class="math notranslate nohighlight">\(r\)</span>.</p></li>
+<li><p><span class="math notranslate nohighlight">\(P(\text{evaluated population at a distance }r)\)</span> measures how frequently evaluated population cells occur inside a neighborhood of radius <span class="math notranslate nohighlight">\(r\)</span>.</p></li>
+</ul>
+<p>The interpretation of the co-occurrence ratio is:</p>
+<ul class="simple">
+<li><p><strong>Ratio &gt; 1</strong>: Relative enrichment around the reference population at a distance <span class="math notranslate nohighlight">\(r\)</span>.</p></li>
+<li><p><strong>Ratio &lt; 1</strong>: Relative depletion.</p></li>
+<li><p><strong>Ratio = 1</strong>: No relative enrichment.</p></li>
+</ul>
+<p>Co-occurrence is distance-dependent and does not establish causal interaction.</p>
+<p>Co-occurrence analysis generates line plots located in the <code class="docutils literal notranslate"><span class="pre">Statistics/plots/Neighborhood</span> <span class="pre">analysis/&lt;sample&gt;</span></code> folder.</p>
+<p>Files are <code class="docutils literal notranslate"><span class="pre">Co</span> <span class="pre">ocurrence</span> <span class="pre">analysis</span> <span class="pre">-</span> <span class="pre">Sample</span> <span class="pre">&lt;ID&gt;</span> <span class="pre">-</span> <span class="pre">&lt;cell_type_name&gt;.png</span></code>. Each plot includes
+a reference line at ratio = 1.</p>
+<p>The co-occurrence plots answer the question: <strong>“How does relative association
+between cell populations change with spatial distance?”</strong></p>
+<hr class="docutils" />
+</section>
+</section>
+</section>
+<hr class="docutils" />
+<section id="full-mode-outputs">
+<h2>Full mode outputs<a class="headerlink" href="#full-mode-outputs" title="Link to this heading"></a></h2>
+<p>When “<em>Full Phenotype Discovery</em>” (FPD) option is activated in the Unsupervised mode,
+SpPrAn first runs unsupervised phenotype discovery, then
+turns discovered protein marker patterns into subtype definitions and continues through
+the supervised workflow.</p>
+<p>A full-mode run can therefore produce outputs from both major sections above.</p>
+<hr class="docutils" />
+</section>
+<hr class="docutils" />
+<section id="what-sppran-can-and-cannot-establish">
+<h2>What SpPrAn can and cannot establish<a class="headerlink" href="#what-sppran-can-and-cannot-establish" title="Link to this heading"></a></h2>
+<p>SpPrAn <strong>can</strong> support conclusions such as:</p>
+<ul class="simple">
+<li><p>a protein-marker-defined population was more or less abundant;</p></li>
+<li><p>a subtype represented a given fraction of its parent;</p></li>
+<li><p>specific protein marker combinations were observed;</p></li>
+<li><p>a phenotype was detected in more samples from one group;</p></li>
+<li><p>sample-level phenotype proportions differed between groups;</p></li>
+<li><p>protein marker intensity showed a spatial pattern;</p></li>
+<li><p>positive protein markers showed relative intensity heterogeneity within a phenotype;</p></li>
+<li><p>major populations showed spatial enrichment/depletion or distance-dependent
+co-occurrence.</p></li>
+</ul>
+<p>SpPrAn alone generally <strong>cannot</strong> establish:</p>
+<ul class="simple">
+<li><p>developmental lineage;</p></li>
+<li><p>differentiation direction;</p></li>
+<li><p>causal cell-cell communication;</p></li>
+<li><p>ligand-receptor signaling;</p></li>
+<li><p>functional activation;</p></li>
+<li><p>treatment mechanism;</p></li>
+<li><p>absolute cross-sample intensity equivalence without harmonization;</p></li>
+<li><p>biological novelty of every marker combination; or</p></li>
+<li><p>independence of individual cells as biological replicates.</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="outputs.html" class="btn btn-neutral float-left" title="Outputs" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="release_notes.html" class="btn btn-neutral float-right" title="Release notes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

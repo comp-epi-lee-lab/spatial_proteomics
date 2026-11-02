@@ -6,20 +6,20 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Outputs &mdash; SpPrAn 0.3.1 documentation</title>
+  <title>Outputs &mdash; SpPrAn 0.3.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=4621528c"></script>
+      <script src="_static/documentation_options.js?v=71d9d8e6"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Release notes" href="release_notes.html" />
+    <link rel="next" title="Understanding SpPrAn outputs" href="output_guide.html" />
     <link rel="prev" title="Running SpPrAn" href="usage.html" /> 
 </head>
 
@@ -60,6 +60,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#interpretation">Interpretation</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="output_guide.html">Understanding SpPrAn outputs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="release_notes.html">Release notes</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Developer reference</span></p>
@@ -93,7 +94,10 @@
              
   <section id="outputs">
 <h1>Outputs<a class="headerlink" href="#outputs" title="Link to this heading"></a></h1>
-<p>Outputs depend on the analysis mode.</p>
+<p>Outputs depend on the selected analysis mode and optional analyses.</p>
+<p>This page provides a short overview. For the detailed user-oriented explanation
+of filenames, columns, calculations, biological interpretation, and common
+misinterpretations, see <a class="reference internal" href="output_guide.html"><span class="doc">Understanding SpPrAn outputs</span></a>.</p>
 <section id="shared-outputs">
 <h2>Shared outputs<a class="headerlink" href="#shared-outputs" title="Link to this heading"></a></h2>
 <p>AnnData objects can retain major cell-type labels together with spatial and
@@ -135,10 +139,10 @@ and Welch t-tests. Benjamini–Hochberg FDR-adjusted p-values are exported.</p>
 <dt>Intensity outputs</dt><dd><p>For selected markers, SpPrAn exports per-phenotype Tukey box-plot summaries,
 complete intensity-data tables, and protein-intensity spatial maps.</p>
 </dd>
-<dt>(<strong>New in v0.3.1</strong>) Neighborhood analysis outputs</dt><dd><p>When selected, SpPrAn exports neighborhood-enrichment and interaction-matrix
+<dt>Neighborhood analysis outputs</dt><dd><p>When selected, SpPrAn exports neighborhood-enrichment and interaction-matrix
 overview heatmaps, and distance-dependent co-occurrence plots per sample.</p>
 </dd>
-<dt>(<strong>New in v0.3.1</strong>) Advanced phenotype classification</dt><dd><p>When selected, SpPrAn reports:</p>
+<dt>Advanced phenotype classification</dt><dd><p>When selected, SpPrAn reports:</p>
 <ul class="simple">
 <li><p>Low/medium/high intensity abundance for positive markers within each</p></li>
 </ul>
@@ -173,7 +177,7 @@ study design.</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="usage.html" class="btn btn-neutral float-left" title="Running SpPrAn" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="release_notes.html" class="btn btn-neutral float-right" title="Release notes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="output_guide.html" class="btn btn-neutral float-right" title="Understanding SpPrAn outputs" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

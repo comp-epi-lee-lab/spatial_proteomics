@@ -41,13 +41,12 @@ The workflow can generate:
 
 * sample-by-cell-type proportion matrices;
 * optional sample-level pie plots;
-* observed phenotype labels and protein-marker-pattern mappings;
-* phenotype proportions within selected parent populations;
-* optional two-group phenotype comparisons; and
-* optional protein-marker intensity summaries.
+* observed phenotype labels and protein-marker-pattern mappings; and
+* phenotype proportions within selected parent populations.
 
-Version 0.3.1 additionally provides optional:
-
+Optional outputs:
+* two-group phenotype comparisons;
+* protein-marker intensity summaries;
 * continuous protein-marker intensity spatial maps;
 * fixed-radius neighborhood analysis; and
 * advanced low/medium/high phenotype-intensity characterization.
